@@ -1,0 +1,7 @@
+# lume-model
+pcaspy==0.7.2
+epics-base==7.0.3.1
+pyepics
+p4p==3.4.2
+numpy
+bokeh

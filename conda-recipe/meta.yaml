@@ -1,0 +1,30 @@
+package:
+  name: "lume-epics"
+  version: "0.1"
+
+source:
+  path: ..
+#  url: #
+#  sha256: #
+
+requirements:
+  host:
+    - python
+    - setuptools
+    - pcaspy==0.7.2
+    - epics-base==7.0.3.1
+    - pyepics
+    - p4p==3.4.2
+    - numpy
+    - bokeh
+  run:
+    - python
+
+test:
+  imports:
+    - lume_epics
+
+about:
+  home: https://github.com/slaclab/lume-epics
+  license: Apache License 2.0
+  summary: Lume-epics is a dedicated API for serving for EPICS client and server using LUME model variables.
