@@ -4,21 +4,19 @@ package:
 
 source:
   path: ..
-#  url: #
-#  sha256: #
 
 requirements:
   host:
-    - python
+    - python>=3.7
     - setuptools
-    - pcaspy==0.7.2
-    - epics-base==7.0.3.1
+  run:
+    - python>=3.7
+    - epics-base
     - pyepics
-    - p4p==3.4.2
+    - pcaspy
+    - p4p
     - numpy
     - bokeh
-  run:
-    - python
 
 test:
   imports:

@@ -22,6 +22,8 @@ setup(
     url="https://github.com/slaclab/lume-epics",
     include_package_data=True,
     python_requires=">=3.7",
+    author="Jacqueline Garrahan",
+    author_email="jgarra@slac.stanford.edu",
     # setup_requires=['pytest-runner'],
     # tests_require=['pytest'],
 )
