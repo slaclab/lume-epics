@@ -7,3 +7,28 @@ branches:
   only:
   - master
   - package-setup
+
+before_install:
+  # Install Miniconda
+  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+  - chmod +x miniconda.sh
+  - ./miniconda.sh -b
+  - export PATH=/home/travis/miniconda/bin:$PATH
+  - conda update --yes conda  # Update CONDA without command line prompt
+
+install:
+  - conda install conda-build
+
+  # add conda forge for epics-base etc.
+  - conda config --add channels conda-forge
+
+  # Build the conda recipe for this package
+  - conda build -q conda-recipe --python=$TRAVIS_PYTHON_VERSION --output-folder bld-dir
+
+  # Add the built package as a channel with highest priority
+  # this can eventually be used to deploy to conda-forge  
+  - conda config --add channels "file://`pwd`/bld-dir"
+
+  # Create and activate a python environment
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pkg_name --file dev-requirements.txt
+  - source activate test-environment
