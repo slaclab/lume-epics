@@ -1,19 +1,32 @@
-language: python
-python:
-  - "3.6"
-  - "3.7"
-  - "3.8"
+#  Travis uses virtual envs for python and here want to use conda python
+language: c
+
 branches:
   only:
   - master
   - package-setup
 
+env:
+  # Build and test package on all supported python versions
+  - BUILD_TARGET=3.7 MINICONDA_VERSION=4.7.10
+  - BUILD_TARGET=3.6 MINICONDA_VERSION=4.7.10
+  # To make sure it's still working with conda 4.5 and 4.6
+  - BUILD_TARGET=3.7 MINICONDA_VERSION=4.6.14
+  - BUILD_TARGET=3.6 MINICONDA_VERSION=4.5.12
+  # Smoketest the package on conda canary
+  - BUILD_TARGET=3.7 MINICONDA_VERSION=latest CONDA_CANARY="yes"
+
+os:
+  - linux
+  - osx
+
 before_install:
-  # Install Miniconda
-  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+  # Install the appropriate miniconda depending on the os and miniconda version
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then MINICONDA_OS=Linux; else MINICONDA_OS=MacOSX; fi
+  - wget https://repo.anaconda.com/miniconda/Miniconda3-$MINICONDA_VERSION-$MINICONDA_OS-x86_64.sh -O miniconda.sh
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
-  - export PATH=/home/travis/miniconda/bin:$PATH
+  - export PATH=/home/travis/miniconda3/bin:$PATH
   - conda update --yes conda  # Update CONDA without command line prompt
 
 install:
