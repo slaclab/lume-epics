@@ -44,7 +44,7 @@ install:
   - conda config --add channels "file://`pwd`/bld-dir"
 
   # Create and activate a python environment
-  - conda create -n test-environment python=$TRAVIS_PYTHON_VERSION --file dev-requirements.txt
+  - conda create -n test-environment python=$TRAVIS_PYTHON_VERSION --file dev-requirements.txt --yes
   - source activate test-environment
 
 script:
