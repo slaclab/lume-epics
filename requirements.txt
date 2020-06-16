@@ -3,3 +3,4 @@ pyepics
 p4p
 numpy
 bokeh
+lume-model

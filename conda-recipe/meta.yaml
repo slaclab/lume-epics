@@ -17,6 +17,7 @@ requirements:
     - p4p
     - numpy
     - bokeh
+    - lume-model
 
 test:
   imports:
