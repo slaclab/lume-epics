@@ -1,5 +1,6 @@
 from setuptools import setup, find_packages
 from os import path, environ
+import versioneer
 
 cur_dir = path.abspath(path.dirname(__file__))
 
@@ -14,16 +15,16 @@ with open(path.join(cur_dir, "dev-requirements.txt"), "r") as f:
 
 setup(
     name="lume-epics",
-    version="0.1",
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
     packages=find_packages(),
+    author="Jacqueline Garrahan",
+    author_email="jgarra@slac.stanford.edu",
+    license="Apache License, Version 2.0",
     install_requires=requirements,
     # set up development requirements
     extras_require={"dev": dev_requirements},
     url="https://github.com/slaclab/lume-epics",
     include_package_data=True,
-    python_requires=">=3.7",
-    author="Jacqueline Garrahan",
-    author_email="jgarra@slac.stanford.edu",
-    # setup_requires=['pytest-runner'],
-    # tests_require=['pytest'],
+    python_requires=">=3.6",
 )
