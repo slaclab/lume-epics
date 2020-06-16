@@ -26,5 +26,5 @@ setup(
     extras_require={"dev": dev_requirements},
     url="https://github.com/slaclab/lume-epics",
     include_package_data=True,
-    python_requires=">=3.6",
+    python_requires=">=3.7",
 )
