@@ -7,10 +7,10 @@ source:
 
 requirements:
   host:
-    - python>=3.7
+    - python
     - setuptools
   run:
-    - python>=3.7
+    - python
     - epics-base
     - pyepics
     - pcaspy
@@ -21,6 +21,10 @@ requirements:
 test:
   imports:
     - lume_epics
+  requires:
+    - pytest
+  commands:
+    - py.test --pyargs lume_epics
 
 about:
   home: https://github.com/slaclab/lume-epics
