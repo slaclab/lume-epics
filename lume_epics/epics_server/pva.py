@@ -1,16 +1,19 @@
 import threading
 import numpy as np
-from typing import Dict, List
+from typing import Dict, List, Union
 
 from p4p.nt import NTScalar, NTNDArray
 from p4p.server.thread import SharedPV
 from p4p.server import Server
 from p4p.nt.ndarray import ntndarray as NTNDArrayData
 
+from lume_model.variables import Variable
+
+from lume_epics.epics_server import scalar_variable_types, image_variable_types
 from lume_epics.model import OnlineSurrogateModel
 
 
-def format_model_output(model_output, image_pvs):
+def format_model_output(model_output):
     """
     Reformat model for pva server compatibility.
 
@@ -28,21 +31,19 @@ def format_model_output(model_output, image_pvs):
         Output with metadata assigned.
     """
     rebuilt_output = {}
-    for pv, value in model_output.items():
-        if pv in image_pvs:
-            # populate image data
-            array_data = value.view(NTNDArrayData)
-
-            # get dw and dh from model output
+    or variable_name, variable in model_output.items():
+        if isinstance(variable, image_variable_types):
+            rebuilt_output[f"{variable_name}:ArrayData_RBV"] = variable.value.flatten()
+                        # get dw and dh from model output
             array_data.attrib = {
                 "dw": model_output[f"{pv}:dw"],
                 "dh": model_output[f"{pv}:dh"],
             }
-            rebuilt_output[pv] = array_data
+            rebuilt_output[variable_name] = array_data
 
         # do not build attribute pvs
-        elif not ".dw" in pv and not ".dh" in pv:
-            rebuilt_output[pv] = value
+        elif not ".dw" in variable_name and not ".dh" in variable_name:
+            rebuilt_output[variable_name] = variable.value
 
     return rebuilt_output
 
@@ -63,7 +64,9 @@ class ModelLoader(threading.local):
     referenced locally.
     """
 
-    def __init__(self, model_class, model_kwargs: dict) -> None:
+    def __init__(
+        self, model_class, model_kwargs: dict, input_variables, output_variables
+    ) -> None:
         """
         Initializes surrogate model.
 
@@ -77,7 +80,9 @@ class ModelLoader(threading.local):
         """
 
         surrogate_model = model_class(**model_kwargs)
-        self.model = OnlineSurrogateModel([surrogate_model])
+        self.model = OnlineSurrogateModel(
+            [surrogate_model], input_variables, output_variables
+        )
 
 
 class InputHandler:
@@ -86,7 +91,7 @@ class InputHandler:
     process variables.
     """
 
-    def __init__(self, prefix: str, image_pvs: List[str]):
+    def __init__(self, prefix: str):
         """
         Initialize the handler with prefix and image pv attributes
 
@@ -98,7 +103,6 @@ class InputHandler:
 
         """
         self.prefix = prefix
-        self.image_pvs = image_pvs
 
     def put(self, pv, op) -> None:
         """
@@ -125,7 +129,7 @@ class InputHandler:
 
         # run model using global input process variable state
         output_pv_state = model_loader.model.run(input_pvs)
-        output_pv_state = format_model_output(output_pv_state, self.image_pvs)
+        output_pv_state = format_model_output(output_pv_state)
 
         # now update output variables
         for pv, value in output_pv_state.items():
@@ -142,13 +146,6 @@ class PVAServer:
 
     Attributes
     ----------
-    in_pvdb: dict
-        Dictionary that maps the input process variable string to type (str), prec \\
-        (precision), value (float), units (str), range (List[float])
-
-    out_pvdb: dict
-        Dictionary that maps the output process variable string to type (str), prec \\
-        (precision), value (float), units (str), range (List[float])
 
     """
 
@@ -156,10 +153,9 @@ class PVAServer:
         self,
         model_class,
         model_kwargs: dict,
-        in_pvdb: Dict[str, dict],
-        out_pvdb: Dict[str, dict],
+        input_variables: List[Variable],
+        output_variables: List[Variable],
         prefix: str,
-        array_pvs: List[str],
     ) -> None:
         """
         Initialize the global process variable list, populate the initial values for \\
@@ -175,16 +171,8 @@ class PVAServer:
         model_kwargs: dict
             kwargs for initialization
 
-        in_pvdb: dict
-            Dictionary that maps the input process variable string to type (str), prec \\
-            (precision), value (float), units (str), range (List[float])
-
-        out_pvdb: dict
-            Dictionary that maps the output process variable string to type (str), \\
-            prec (precision), value (float), units (str), range (List[float])
-
-        array_pvs: list
-            List of array pvs that need to be served as ntndarray
+        variables: list
+            List of lume_model.variables.Variable objects
 
         prefix: str
             Prefix to use when serving
@@ -193,60 +181,58 @@ class PVAServer:
         global providers
         global input_pvs
         global model_loader
+
         providers = {}
         input_pvs = {}
 
         # initialize loader for model
-        model_loader = ModelLoader(model_class, model_kwargs)
+        model_loader = ModelLoader(
+            model_class, model_kwargs, input_variables, output_variables
+        )
 
-        # these aren't currently used; but, probably not a bad idea to have around
-        # for introspection
-        self.in_pvdb = in_pvdb
-        self.out_pvdb = out_pvdb
+        # initialize global inputs
+        for variable_name, variable in input_variables.items():
+            input_pvs[variable.name] = input_variables.value
 
-        # initialize model and state
-        for in_pv in in_pvdb:
-            input_pvs[in_pv] = in_pvdb[in_pv]["value"]
+            # prepare scalar variable types
+            if isinstance(variable, scalar_variable_types):
+                pvname = f"{prefix}:{variable_name}"
+
+                pv = SharedPV(
+                    handler=InputHandler(
+                        prefix
+                    ),  # Use InputHandler class to handle callbacks
+                    nt=NTScalar("d"),
+                    initial=variable.value,
+                )
+            else:
+                pv = SharedPV(
+                    handler=InputHandler(
+                        prefix
+                    ),  # Use InputHandler class to handle callbacks
+                    nt=NTNDArray(),
+                    initial=variable.value,
+                )
+            providers[variable_name] = variable.value
 
         # use main thread loaded model to do initial model run
         starting_output = model_loader.model.run(input_pvs)
 
         # in this case, the array pvs are the image pvs
-        starting_output = format_model_output(starting_output, array_pvs)
+        starting_output = format_model_output(starting_output)
 
-        # create PVs for model inputs
-        for in_pv in in_pvdb:
-            pvname = f"{prefix}:{in_pv}"
-
-            if in_pv not in array_pvs:
-                pv = SharedPV(
-                    handler=InputHandler(
-                        prefix, array_pvs
-                    ),  # Use InputHandler class to handle callbacks
-                    nt=NTScalar("d"),
-                    initial=in_pvdb[in_pv]["value"],
-                )
-            else:
-                pv = SharedPV(
-                    handler=InputHandler(
-                        prefix, array_pvs
-                    ),  # Use InputHandler class to handle callbacks
-                    nt=NTNDArray(),
-                    initial=in_pvdb[in_pv]["value"],
-                )
-            providers[pvname] = pv
 
         # use default handler for the output process variables
         # updates to output pvs are handled from post calls within the input update
-        for out_pv, value in starting_output.items():
-            pvname = f"{prefix}:{out_pv}"
+        for variable_name, variable in output_variables.items():
+            pvname = f"{prefix}:{variable_name}"
             if out_pv not in array_pvs:
-                pv = SharedPV(nt=NTScalar(), initial=value)
+                pv = SharedPV(nt=NTScalar(), initial=variable.value)
 
             elif out_pv in array_pvs:
-                pv = SharedPV(nt=NTNDArray(), initial=value)
+                pv = SharedPV(nt=NTNDArray(), initial=variable.value)
 
-            providers[pvname] = pv
+            providers[variable_name] = variable.value
 
         else:
             pass  # throw exception for incorrect data type

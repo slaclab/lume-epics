@@ -6,6 +6,7 @@ from typing import Dict, Mapping, Union, List
 from epics import caget
 from pcaspy import Driver, SimpleServer
 
+from lume_epics.server import imm
 from lume_epics.model import OnlineSurrogateModel
 
 
@@ -24,11 +25,11 @@ def format_model_output(model_output, image_pvs):
         Output with appropriate data label.
     """
     rebuilt_output = {}
-    for pv, value in model_output.items():
-        if pv in image_pvs:
-            rebuilt_output[f"{pv}:ArrayData_RBV"] = value.flatten()
+    for variable_name, variable in model_output.items():
+        if isinstance(variable, image_variable_types):
+            rebuilt_output[f"{variable_name}:ArrayData_RBV"] = variable.value.flatten()
         else:
-            rebuilt_output[pv] = value
+            rebuilt_output[variable_name] = variable.value
 
     return rebuilt_output
 
