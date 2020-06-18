@@ -1,39 +1,20 @@
 import numpy as np
 from typing import List, Union
 
-from lume_model.variables import (
-    ScalarInputVariable,
-    ScalarOutputVariable,
-    ImageInputVariable,
-    ImageOutputVariable,
+from lume_epics import (
+    INPUT_VARIABLE_TYPES,
+    OUTPUT_VARIABLE_TYPES,
+    IMAGE_VARIABLE_TYPES,
+    SCALAR_VARIABLE_TYPES,
 )
 from lume_epics.epics_server import ca, pva
 
-input_variable_types = (
-    ScalarInputVariable,
-    ImageInputVariable,
-)
-output_variable_types = (
-    ScalarOutputVariable,
-    ImageOutputVariable,
-)
 
-image_variable_types = (
-    ImageInputVariable,
-    ImageOutputVariable,
-)
-
-scalar_variable_types = (
-    ImageInputVariable,
-    ImageOutputVariable,
-)
-
-
-def pvdb_from_classes(variables):
+def build_pvdb(variables):
     pvdb = {}
 
     for variable in variables.values():
-        if isinstance(variable, image_variable_types):
+        if isinstance(variable, IMAGE_VARIABLE_TYPES):
 
             # infer color mode
             if variable.value.ndim == 2:
@@ -107,20 +88,20 @@ def get_server(
     output_variables = {}
 
     for variable in variables:
-        if isinstance(variable, input_variable_types):
+        if isinstance(variable, INPUT_VARIABLE_TYPES):
             input_variables[variable.name] = variable
 
-        elif isinstance(variable, output_variable_types):
+        elif isinstance(variable, OUTPUT_VARIABLE_TYPES):
             output_variables[variable.name] = variable
 
         else:
             raise Exception("Only input and output lume_model variables permitted.")
 
     if protocol == "ca":
-        input_pvdb = pvdb_from_classes(input_variables)
-        output_pvdb = pvdb_from_classes(output_variables)
+        input_pvdb = build_pvdb(input_variables)
+        output_pvdb = build_pvdb(output_variables)
         server = ca.CAServer(
-            model_class, model_kwargs, input_pvdb, output_pvdb, prefix, array_pvs
+            model_class, model_kwargs, input_variables, output_variables, prefix
         )
 
     elif protocol == "pva":

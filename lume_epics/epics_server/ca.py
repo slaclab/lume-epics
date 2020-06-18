@@ -6,11 +6,81 @@ from typing import Dict, Mapping, Union, List
 from epics import caget
 from pcaspy import Driver, SimpleServer
 
-from lume_epics.server import imm
 from lume_epics.model import OnlineSurrogateModel
+from lume_epics import IMAGE_VARIABLE_TYPES, SCALAR_VARIABLE_TYPES
 
 
-def format_model_output(model_output, image_pvs):
+def build_pvdb(variables):
+    pvdb = {}
+
+    for variable in variables.values():
+        if isinstance(variable, IMAGE_VARIABLE_TYPES):
+
+            # infer color mode
+            if variable.value.ndim == 2:
+                color_mode == 0
+
+            else:
+                raise Exception("Color mode cannot be inferred from image shape.")
+
+            image_pvs = build_image_pvs(
+                variable.name,
+                variable.shape,
+                variable.units,
+                variable.precision,
+                variable.color_mode,
+            )
+
+            # assign default PVS
+            pvdb = {
+                f"{pvname}:NDimensions_RBV": {
+                    "type": "float",
+                    "prec": variable.precision,
+                    "value": variable.value.ndim,
+                },
+                f"{pvname}:Dimensions_RBV": {
+                    "type": "int",
+                    "prec": variable.precision,
+                    "count": variable.value.ndim,
+                    "value": variable.value.shape,
+                },
+                f"{pvname}:ArraySizeX_RBV": {
+                    "type": "int",
+                    "value": variable.value.shape[0],
+                },
+                f"{pvname}:ArraySize_RBV": {
+                    "type": "int",
+                    "value": int(np.prod(variable.value.shape)),
+                },
+                f"{pvname}:ArrayData_RBV": {
+                    "type": "float",
+                    "prec": variable.precision,
+                    "count": int(np.prod(variable.value.shape)),
+                    "units": variable.units,
+                },
+                f"{pvname}:ColorMode_RBV": {"type": "int", "value": color_mode},
+                f"{pvname}:dw": {"type": "float", "prec": variable.precision},
+                f"{pvname}:dh": {"type": "float", "prec": variable.precision},
+                f"{pvname}:ArraySizeY_RBV": {
+                    "type": "int",
+                    "value": variable.value.shape[1],
+                },
+            }
+
+            # placeholder for color images, not yet implemented
+            if ndim > 2:
+                pvdb[f"{pvname}:ArraySizeZ_RBV"] = {
+                    "type": "int",
+                    "value": variable.value.shape[2],
+                }
+
+        else:
+            pvdb[variable.name] = variable.dict(exclude_unset=True, exclude={"io_type"})
+
+    return pvdb
+
+
+def format_model_output(model_output):
     """
     Reformat model for ca server compatibility.
 
@@ -26,7 +96,7 @@ def format_model_output(model_output, image_pvs):
     """
     rebuilt_output = {}
     for variable_name, variable in model_output.items():
-        if isinstance(variable, image_variable_types):
+        if isinstance(variable, IMAGE_VARIABLE_TYPES):
             rebuilt_output[f"{variable_name}:ArrayData_RBV"] = variable.value.flatten()
         else:
             rebuilt_output[variable_name] = variable.value
@@ -191,10 +261,9 @@ class CAServer:
         self,
         model_class,
         model_kwargs: dict,
-        input_pvdb: Dict[str, dict],
-        output_pvdb: Dict[str, dict],
+        input_variables,
+        output_variables,
         prefix: str,
-        array_pvs: List[str],
     ) -> None:
         """
         Create OnlineSurrogateModel instance and initialize output variables by running \\
@@ -227,20 +296,25 @@ class CAServer:
 
         """
         surrogate_model = model_class(**model_kwargs)
-        self.model = OnlineSurrogateModel([surrogate_model])
-        self.array_pvs = array_pvs
+        self.model = OnlineSurrogateModel(
+            [surrogate_model], input_variables, output_variables
+        )
+
+        # output_pvdb = build_pvdb(output_variables)
 
         # set up db for initializing process variables
-        self.pvdb = {}
+
+        variable_dict = {**input_variables, **output_variables}
+        self.pvdb = build_pvdb(variable_dict)
 
         # set up input process variables
-        self.pvdb.update(input_pvdb)
-        self.input_pv_state = {pv: input_pvdb[pv]["value"] for pv in input_pvdb}
+        self.input_pv_state = {
+            variable.name: variable.value for variable in input_variables.values()
+        }
 
         # get starting output from the model and set up output process variables
         self.output_pv_state = self.model.run(self.input_pv_state)
-        self.output_pv_state = format_model_output(self.output_pv_state, self.array_pvs)
-        self.pvdb.update(output_pvdb)
+        self.output_pv_state = format_model_output(self.output_pv_state)
 
         # initialize channel access server
         self.server = SimpleServer()
@@ -261,7 +335,7 @@ class CAServer:
         # Initialize output variables
         print("Initializing sim...")
         output_pv_state = self.model.run(self.input_pv_state)
-        output_pv_state = format_model_output(output_pv_state, self.array_pvs)
+        output_pv_state = format_model_output(output_pv_state)
         self.driver.set_output_pvs(output_pv_state)
         print("...finished initializing.")
 
@@ -279,7 +353,7 @@ class CAServer:
 
                     sim_pv_state = copy.deepcopy(self.input_pv_state)
                     model_output = self.model.run(self.input_pv_state)
-                    model_output = format_model_output(model_output, self.array_pvs)
+                    model_output = format_model_output(model_output)
                     self.driver.set_output_pvs(model_output)
 
         except KeyboardInterrupt:

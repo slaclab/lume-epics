@@ -9,7 +9,12 @@ from p4p.nt.ndarray import ntndarray as NTNDArrayData
 
 from lume_model.variables import Variable
 
-from lume_epics.epics_server import scalar_variable_types, image_variable_types
+from lume_epics import (
+    SCALAR_VARIABLE_TYPES,
+    IMAGE_VARIABLE_TYPES,
+    INPUT_VARIABLE_TYPES,
+    OUTPUT_VARIABLE_TYPES,
+)
 from lume_epics.model import OnlineSurrogateModel
 
 
@@ -31,10 +36,10 @@ def format_model_output(model_output):
         Output with metadata assigned.
     """
     rebuilt_output = {}
-    or variable_name, variable in model_output.items():
-        if isinstance(variable, image_variable_types):
+    for variable_name, variable in model_output.items():
+        if isinstance(variable, IMAGE_VARIABLE_TYPES):
             rebuilt_output[f"{variable_name}:ArrayData_RBV"] = variable.value.flatten()
-                        # get dw and dh from model output
+            # get dw and dh from model output
             array_data.attrib = {
                 "dw": model_output[f"{pv}:dw"],
                 "dh": model_output[f"{pv}:dh"],
@@ -192,10 +197,10 @@ class PVAServer:
 
         # initialize global inputs
         for variable_name, variable in input_variables.items():
-            input_pvs[variable.name] = input_variables.value
+            input_pvs[variable.name] = variable.value
 
             # prepare scalar variable types
-            if isinstance(variable, scalar_variable_types):
+            if isinstance(variable, SCALAR_VARIABLE_TYPES):
                 pvname = f"{prefix}:{variable_name}"
 
                 pv = SharedPV(
@@ -205,7 +210,7 @@ class PVAServer:
                     nt=NTScalar("d"),
                     initial=variable.value,
                 )
-            else:
+            elif isinstance(variable, IMAGE_VARIABLE_TYPES):
                 pv = SharedPV(
                     handler=InputHandler(
                         prefix
@@ -213,7 +218,7 @@ class PVAServer:
                     nt=NTNDArray(),
                     initial=variable.value,
                 )
-            providers[variable_name] = variable.value
+            providers[variable_name] = pv
 
         # use main thread loaded model to do initial model run
         starting_output = model_loader.model.run(input_pvs)
@@ -221,18 +226,20 @@ class PVAServer:
         # in this case, the array pvs are the image pvs
         starting_output = format_model_output(starting_output)
 
-
         # use default handler for the output process variables
         # updates to output pvs are handled from post calls within the input update
         for variable_name, variable in output_variables.items():
             pvname = f"{prefix}:{variable_name}"
-            if out_pv not in array_pvs:
+            if isinstance(variable, SCALAR_VARIABLE_TYPES):
                 pv = SharedPV(nt=NTScalar(), initial=variable.value)
 
-            elif out_pv in array_pvs:
+            elif isinstance(variable, IMAGE_VARIABLE_TYPES):
                 pv = SharedPV(nt=NTNDArray(), initial=variable.value)
 
-            providers[variable_name] = variable.value
+            else:
+                breakpoint()
+
+            providers[variable_name] = pv
 
         else:
             pass  # throw exception for incorrect data type
