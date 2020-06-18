@@ -80,30 +80,6 @@ def build_pvdb(variables):
     return pvdb
 
 
-def format_model_output(model_output):
-    """
-    Reformat model for ca server compatibility.
-
-    Parameters
-    ----------
-    model_ouptut: dict
-        Output from the surrogate model.
-
-    Returns
-    -------
-    dict
-        Output with appropriate data label.
-    """
-    rebuilt_output = {}
-    for variable_name, variable in model_output.items():
-        if isinstance(variable, IMAGE_VARIABLE_TYPES):
-            rebuilt_output[f"{variable_name}:ArrayData_RBV"] = variable.value.flatten()
-        else:
-            rebuilt_output[variable_name] = variable.value
-
-    return rebuilt_output
-
-
 class SimDriver(Driver):
     """
     Class that reacts to read an write requests to process variables.
@@ -207,7 +183,7 @@ class SimDriver(Driver):
             return True
 
     def set_output_pvs(
-        self, output_pvs: Mapping[str, Union[float, np.ndarray]]
+        self, output_variables: Mapping[str, Union[float, np.ndarray]]
     ) -> None:
         """
         Set output process variables.
@@ -217,15 +193,16 @@ class SimDriver(Driver):
         output_pvs: dict
             Dictionary that maps ouput process variable name to values
         """
-        # update output process variable state
-        self.output_pv_state.update(output_pvs)
 
-        # update the output process variables that have been changed
-        for pv in output_pvs:
-            value = self.output_pv_state[pv]
+        for variable_name, variable in output_variables.items():
+            if isinstance(variable, IMAGE_VARIABLE_TYPES):
+                variable_name = f"{variable_name}:ArrayData_RBV"
+                value = variable.value.flatten()
+            else:
+                value = variable.value
 
-            # set parameter with value
-            self.setParam(pv, value)
+            self.output_pv_state[variable_name].value = value
+            self.setParam(variable_name, variable.value)
 
 
 class CAServer:
@@ -279,14 +256,6 @@ class CAServer:
         model_kwargs: dict
             kwargs for initialization
 
-        in_pvdb: dict
-            Dictionary that maps the input process variable string to type (str), prec \\
-             (precision), value (float), units (str), range (List[float])
-
-        out_pvdb: dict
-            Dictionary that maps the output process variable string to type (str), prec \\
-            (precision), value (float), units (str), range (List[float])
-
         prefix: str
             Prefix used to format process variables
 
@@ -300,10 +269,7 @@ class CAServer:
             [surrogate_model], input_variables, output_variables
         )
 
-        # output_pvdb = build_pvdb(output_variables)
-
         # set up db for initializing process variables
-
         variable_dict = {**input_variables, **output_variables}
         self.pvdb = build_pvdb(variable_dict)
 
@@ -314,7 +280,6 @@ class CAServer:
 
         # get starting output from the model and set up output process variables
         self.output_pv_state = self.model.run(self.input_pv_state)
-        self.output_pv_state = format_model_output(self.output_pv_state)
 
         # initialize channel access server
         self.server = SimpleServer()
@@ -335,7 +300,6 @@ class CAServer:
         # Initialize output variables
         print("Initializing sim...")
         output_pv_state = self.model.run(self.input_pv_state)
-        output_pv_state = format_model_output(output_pv_state)
         self.driver.set_output_pvs(output_pv_state)
         print("...finished initializing.")
 
@@ -353,7 +317,6 @@ class CAServer:
 
                     sim_pv_state = copy.deepcopy(self.input_pv_state)
                     model_output = self.model.run(self.input_pv_state)
-                    model_output = format_model_output(model_output)
                     self.driver.set_output_pvs(model_output)
 
         except KeyboardInterrupt:
