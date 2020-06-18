@@ -3,8 +3,8 @@ from typing import List
 from bokeh.plotting import figure
 from bokeh.models import ColumnDataSource
 
-from online_model.app.controllers import Controller
-from online_model.app.monitors import PVImage, PVTimeSeries
+from lume_epics.client.controllers import Controller
+from lume_epics.client.monitors import PVImage, PVTimeSeries
 
 
 class ImagePlot:

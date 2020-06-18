@@ -2,8 +2,8 @@ from typing import List
 
 from bokeh.models import ColumnDataSource, DataTable, TableColumn, StringFormatter
 
-from online_model.app.controllers import Controller
-from online_model.app.monitors import PVScalar
+from lume_epics.client.controllers import Controller
+from lume_epics.client.monitors import PVScalar
 
 
 class ValueTable:
@@ -32,9 +32,7 @@ class ValueTable:
         self.unit_map = {}
 
         for variable in variables:
-            self.pv_monitors[variable.name] = PVScalar(
-                f"{prefix}:{variable.name}", varibale.units, controller
-            )
+            self.pv_monitors[variable.name] = PVScalar(prefix, variable, controller)
             v = self.pv_monitors[variable.name].poll()
 
             self.output_values.append(v)

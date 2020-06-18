@@ -3,7 +3,7 @@ from typing import Union, List
 
 from bokeh.models import Slider
 
-from online_model.app.controllers import Controller
+from lume_epics.client.controllers import Controller
 
 
 def set_pv_from_slider(
@@ -42,7 +42,7 @@ def set_pv_from_slider(
     controller.put(pvname, new * scale)
 
 
-def build_slider(variables, controller) -> Slider:
+def build_slider(prefix, variable, controller) -> Slider:
     """
     Utility function for building a slider.
 
@@ -74,9 +74,12 @@ def build_slider(variables, controller) -> Slider:
     bokeh.models.widgets.sliders.Slider
 
     """
-    title = variable.name + " (" + variable.units + ")"
+    title = variable.name
+    if "units" in variable.__fields_set__:
+        title += " (" + variable.units + ")"
+
     pvname = prefix + ":" + variable.name
-    step = (variable.range[1] - variable.range[0]) / 100.0
+    step = (variable.value_range[1] - variable.value_range[0]) / 100.0
     scale = 1
 
     # initialize value
@@ -90,8 +93,8 @@ def build_slider(variables, controller) -> Slider:
     slider = Slider(
         title=title,
         value=scale * start_val,
-        start=variable.range[0],
-        end=variable.range[1],
+        start=variable.value_range[0],
+        end=variable.value_range[1],
         step=step,
     )
 
@@ -129,7 +132,7 @@ def build_sliders(variables, controller: Controller, prefix: str) -> List[Slider
     sliders = []
 
     for variable in variables:
-        slider = build_slider(variable, controller,)
+        slider = build_slider(prefix, variable, controller,)
         sliders.append(slider)
 
     return sliders
