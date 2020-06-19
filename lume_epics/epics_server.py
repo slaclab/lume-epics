@@ -15,7 +15,7 @@ from p4p.server import Server as P4PServer
 from p4p.nt.ndarray import ntndarray as NTNDArrayData
 
 
-from lume_epics.model import OnlineSurrogateModel
+from lume_epics.model import OnlineSurrogateModel, SurrogateModel
 from lume_epics import IMAGE_VARIABLE_TYPES, SCALAR_VARIABLE_TYPES
 from lume_epics.epics_server.ca import build_pvdb, SimDriver
 
@@ -104,8 +104,12 @@ class SimDriver(Driver):
 
     Attributes
     ----------
-    input_pv_state: dict
-        Dictionary mapping initial input process variables to values.
+    input_variables: 
+        List of lume-model variables to use as inputs
+
+    ouput_variables:
+        List of lume-model variables to use as outputs
+
 
     output_pv_state: dict
         Dictionary mapping initial output process variables to values (np.ndarray in \\
@@ -113,14 +117,17 @@ class SimDriver(Driver):
 
     """
 
-    def __init__(self, input_variables, output_variables) -> None:
+    def __init__(self, input_variables: List[lume_model.variables.Variable], output_variables: List[lume_model.variables.Variable]) -> None:
         """
         Initialize the driver. Store input state and output state.
 
         Parameters
         ----------
-        input_pv_state: dict
-            Dictionary that maps the input process variables to their inital values
+        input_variables: 
+            List of lume-model variables to use as inputs
+
+        ouput_variables:
+            List of lume-model variables to use as outputs
 
         output_pv_state:
             Dictionary that maps the output process variables to their inital values
@@ -130,8 +137,8 @@ class SimDriver(Driver):
         super(SimDriver, self).__init__()
 
         # track input state and output state
-        self.input_variables = input_variables
-        self.output_variables = output_variables
+        self.input_variables = {variable.name: variable for variable in input_variables}
+        self.output_variables = {variable.name: variable for variable in output_variables}
 
     def read(self, pvname: str) -> Union[float, np.ndarray]:
         """
@@ -161,7 +168,7 @@ class SimDriver(Driver):
 
         Parameters
         ----------
-        pv: str
+        pvname: str
             Process variable name
 
         value: float/np.ndarray
@@ -238,7 +245,7 @@ class ModelLoader(threading.local):
     """
 
     def __init__(
-        self, model_class, model_kwargs: dict, input_variables, output_variables
+        self, model_class: SurrogateModel, model_kwargs: dict, input_variables, output_variables
     ) -> None:
         """
         Initializes surrogate model.
@@ -246,7 +253,8 @@ class ModelLoader(threading.local):
         Parameters
         ----------
         model_class
-            Model class to be instantiated
+            Model class to be instantiated. Should have all methods indicated by the abstract\\
+            base class in 
 
         model_kwargs: dict
             kwargs for initialization
@@ -303,7 +311,7 @@ class InputHandler:
         # run model using global input process variable state
         output_variables = model_loader.model.run(input_pvs)
 
-        for variable in output_variables.values():
+        for variable in output_variables:
             if isinstance(variable, IMAGE_VARIABLE_TYPES):
 
                 nd_array = variable.value.flatten()
@@ -340,10 +348,10 @@ class Server:
         OnlineSurrogateModel instance used for getting predictions
 
     input_variables: 
-        Dictionary that maps the input process variables to their current values
+        List of lume-model variables to use as inputs
 
     ouput_variables:
-        Dictionary that maps the output process variables to their current values
+        List of lume-model variables to use as outputs
 
     server: pcaspy.driver.SimpleServer
         Server class that interfaces between the channel access client and the driver. \\
@@ -356,10 +364,10 @@ class Server:
 
     def __init__(
         self,
-        model_class: ,
+        model_class: SurrogateModel,
         model_kwargs: dict,
-        input_variables,
-        output_variables,
+        input_variables: List[lume_model.variables.Variable],
+        output_variables: List[lume_model.variables.Variable],
         prefix: str,
         protocol: List[str] = ["ca", "pva"],
     ) -> None:
@@ -372,14 +380,16 @@ class Server:
         Parameters
         ----------
         model_class
-            Model class to be instantiated
+            Surrogate model class to be instantiated
 
         model_kwargs: dict
-            kwargs for initialization
+            kwargs for initialization surrogate model
 
-        input_variables:
+        input_variables: 
+            List of lume-model variables to use as inputs
 
-        output_variables:
+        ouput_variables:
+            List of lume-model variables to use as outputs
 
         prefix: str
             Prefix used to format process variables
@@ -394,13 +404,13 @@ class Server:
         global providers
         global input_pvs
         global model_loader
-
-        providers = {}
-        input_pvs = input_variables
         self.input_variables = input_variables
         self.output_variables = output_variables
         self.prefix = prefix
         self.protocol = protocol
+
+        providers = {}
+        input_pvs = input_variables
 
         # initialize loader for model
         model_loader = ModelLoader(
@@ -435,9 +445,9 @@ class Server:
 
     def initialize_pva_server(self) -> None:
         # initialize global inputs
-        for variable_name, variable in self.input_variables.items():
+        for variable in self.input_variables:
             # input_pvs[variable.name] = variable.value
-            pvname = f"{self.prefix}:{variable_name}"
+            pvname = f"{self.prefix}:{variable.name}"
 
             # prepare scalar variable types
             if isinstance(variable, SCALAR_VARIABLE_TYPES):
@@ -461,8 +471,8 @@ class Server:
 
         # use default handler for the output process variables
         # updates to output pvs are handled from post calls within the input update
-        for variable_name, variable in self.output_variables.items():
-            pvname = f"{self.prefix}:{variable_name}"
+        for variable in self.output_variables:
+            pvname = f"{self.prefix}:{variable.name}"
             if isinstance(variable, SCALAR_VARIABLE_TYPES):
                 pv = SharedPV(nt=NTScalar(), initial=variable.value)
 
@@ -476,7 +486,7 @@ class Server:
 
     def start_ca_server(self) -> None:
         sim_state = {
-            variable.name: variable.value for variable in self.input_variables.values()
+            variable.name: variable.value for variable in self.input_variables
         }
 
         try:
@@ -487,12 +497,12 @@ class Server:
                 # check if the input process variable state has been updated as
                 # an indicator of new input values
                 while not all(
-                    np.array_equal(sim_state[key], self.input_variables[key].value)
-                    for key in self.input_variables
+                    np.array_equal(sim_state[variable.name], self.input_variables[variable.name].value)
+                    for variable in self.input_variables
                 ):
                     sim_state = {
                         variable.name: variable.value
-                        for variable in self.input_variables.values()
+                        for variable in self.input_variables
                     }
                     model_output = self.model.run(self.input_variables)
                     self.driver.set_output_pvs(model_output)
