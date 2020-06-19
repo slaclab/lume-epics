@@ -41,13 +41,15 @@ def format_model_output(model_output):
             rebuilt_output[f"{variable_name}:ArrayData_RBV"] = variable.value.flatten()
             # get dw and dh from model output
             array_data.attrib = {
-                "dw": model_output[f"{pv}:dw"],
-                "dh": model_output[f"{pv}:dh"],
+                "min_x": variable.min_x,
+                "min_y": variable.min_y,
+                "max_x": variable.max_x,
+                "max_y": variable.max_y,
             }
             rebuilt_output[variable_name] = array_data
 
         # do not build attribute pvs
-        elif not ".dw" in variable_name and not ".dh" in variable_name:
+        else:
             rebuilt_output[variable_name] = variable.value
 
     return rebuilt_output
@@ -133,13 +135,30 @@ class InputHandler:
         input_pvs[op.name().replace(f"{self.prefix}:", "")] = op.value()
 
         # run model using global input process variable state
-        output_pv_state = model_loader.model.run(input_pvs)
-        output_pv_state = format_model_output(output_pv_state)
+        output_variables = model_loader.model.run(input_pvs)
 
-        # now update output variables
-        for pv, value in output_pv_state.items():
-            output_provider = providers[f"{self.prefix}:{pv}"]
-            output_provider.post(value)
+        for variable_name, variable in output_variables:
+            if isinstance(variable, IMAGE_VARIABLE_TYPES):
+                rebuilt_output[f"{variable_name}:ArrayData_RBV"] = 
+                
+                nd_array = variable.value.flatten()
+                # get dw and dh from model output
+                nd_array.attrib = {
+                    "min_x": variable.min_x,
+                    "min_y": variable.min_y,
+                    "max_x": variable.max_x,
+                    "max_y": variable.max_y,
+                }
+
+                output_provider = providers[f"{variable_name}:ArrayData_RBV"]
+                output_provider.post(nd_array)
+
+            # do not build attribute pvs
+            else:
+                rebuilt_output[variable_name] = variable.value
+                output_provider = providers[f"{self.prefix}:{variable_name}"]
+                utput_provider.post(variable.value)
+
 
         # mark server operation as complete
         op.done()
@@ -235,9 +254,6 @@ class PVAServer:
 
             elif isinstance(variable, IMAGE_VARIABLE_TYPES):
                 pv = SharedPV(nt=NTNDArray(), initial=variable.value)
-
-            else:
-                breakpoint()
 
             providers[variable_name] = pv
 
