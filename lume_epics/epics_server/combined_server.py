@@ -1,6 +1,9 @@
 import copy
 import numpy as np
 import random
+import sys
+import time
+import threading
 from typing import Dict, Mapping, Union, List
 
 from epics import caget
@@ -16,6 +19,43 @@ from lume_epics.model import OnlineSurrogateModel
 from lume_epics import IMAGE_VARIABLE_TYPES, SCALAR_VARIABLE_TYPES
 from lume_epics.epics_server.ca import build_pvdb, SimDriver
 from lume_epics.epics_server.pva import ModelLoader
+
+
+class ModelLoader(threading.local):
+    """
+    Subclass of threading.local that will initialize the surrogate model in each \\
+    thread.
+
+    Attributes
+    ----------
+    model: 
+        Surrogate model instance used for predicting
+
+    Note
+    ----
+    Keras models are not thread safe so the model must be loaded in each thread and \\
+    referenced locally.
+    """
+
+    def __init__(
+        self, model_class, model_kwargs: dict, input_variables, output_variables
+    ) -> None:
+        """
+        Initializes surrogate model.
+
+        Parameters
+        ----------
+        model_class
+            Model class to be instantiated
+
+        model_kwargs: dict
+            kwargs for initialization
+        """
+
+        surrogate_model = model_class(**model_kwargs)
+        self.model = OnlineSurrogateModel(
+            [surrogate_model], input_variables, output_variables
+        )
 
 
 class InputHandler:
@@ -121,6 +161,7 @@ class Server:
         input_variables,
         output_variables,
         prefix: str,
+        protocol: List[str] = ["ca", "pva"],
     ) -> None:
         """
         Create OnlineSurrogateModel instance and initialize output variables by running \\
@@ -135,6 +176,10 @@ class Server:
 
         model_kwargs: dict
             kwargs for initialization
+
+        input_variables:
+
+        output_variables:
 
         prefix: str
             Prefix used to format process variables
@@ -153,44 +198,50 @@ class Server:
         providers = {}
         input_pvs = input_variables
         self.input_variables = input_variables
-
-        surrogate_model = model_class(**model_kwargs)
-        self.model = OnlineSurrogateModel(
-            [surrogate_model], input_variables, output_variables
-        )
+        self.output_variables = output_variables
+        self.prefix = prefix
 
         # initialize loader for model
         model_loader = ModelLoader(
             model_class, model_kwargs, input_variables, output_variables
         )
 
-        # set up db for initializing process variables
-        variable_dict = {**input_variables, **output_variables}
-        self.pvdb = build_pvdb(variable_dict)
-
         # get starting output from the model and set up output process variables
-        self.output_variables = self.model.run(input_variables)
+        self.output_variables = model_loader.model.run(input_variables)
+
+        if "ca" in protocol:
+            self.initialize_ca_server()
+
+        if "pva" in protocol:
+            self.initialize_pva_server()
+
+    def initialize_ca_server(self):
+        # set up db for initializing process variables
+        variable_dict = {**self.input_variables, **self.output_variables}
+        self.pvdb = build_pvdb(variable_dict)
 
         # initialize channel access server
         self.ca_server = SimpleServer()
 
         # create all process variables using the process variables stored in self.pvdb
         # with the given prefix
-        self.ca_server.createPV(prefix + ":", self.pvdb)
+        self.ca_server.createPV(self.prefix + ":", self.pvdb)
 
         # set up driver for handing read and write requests to process variables
         self.driver = SimDriver(self.input_variables, self.output_variables)
+        self.driver.set_output_pvs(self.output_variables)
 
+    def initialize_pva_server(self):
         # initialize global inputs
         for variable_name, variable in self.input_variables.items():
             # input_pvs[variable.name] = variable.value
-            pvname = f"{prefix}:{variable_name}"
+            pvname = f"{self.prefix}:{variable_name}"
 
             # prepare scalar variable types
             if isinstance(variable, SCALAR_VARIABLE_TYPES):
                 pv = SharedPV(
                     handler=InputHandler(
-                        prefix
+                        self.prefix
                     ),  # Use InputHandler class to handle callbacks
                     nt=NTScalar("d"),
                     initial=variable.value,
@@ -198,7 +249,7 @@ class Server:
             elif isinstance(variable, IMAGE_VARIABLE_TYPES):
                 pv = SharedPV(
                     handler=InputHandler(
-                        prefix
+                        self.prefix
                     ),  # Use InputHandler class to handle callbacks
                     nt=NTNDArray(),
                     initial=variable.value,
@@ -209,7 +260,7 @@ class Server:
         # use default handler for the output process variables
         # updates to output pvs are handled from post calls within the input update
         for variable_name, variable in self.output_variables.items():
-            pvname = f"{prefix}:{variable_name}"
+            pvname = f"{self.prefix}:{variable_name}"
             if isinstance(variable, SCALAR_VARIABLE_TYPES):
                 pv = SharedPV(nt=NTScalar(), initial=variable.value)
 
@@ -221,22 +272,12 @@ class Server:
         else:
             pass  # throw exception for incorrect data type
 
-    def start_server(self) -> None:
-        """
-        Start the channel access server and continually update.
-        """
+    def start_ca_server(self):
         sim_state = {
             variable.name: variable.value for variable in self.input_variables.values()
         }
 
-        # Initialize output variables
-        print("Initializing sim...")
-        output_variables = self.model.run(self.input_variables)
-        self.driver.set_output_pvs(output_variables)
-        print("...finished initializing.")
-
         try:
-            self.pva_server = P4PServer(providers=[providers])
             while True:
                 # process channel access transactions
                 self.ca_server.process(0.1)
@@ -253,12 +294,35 @@ class Server:
                     }
                     model_output = self.model.run(self.input_variables)
                     self.driver.set_output_pvs(model_output)
-
         except KeyboardInterrupt:
-            print("Terminating server.")
+            print("Stopping ca server")
+
+    def start_pva_server(self):
+        self.pva_server = P4PServer(providers=[providers])
+
+    def start_server(self) -> None:
+        """
+        
+
+        """
+
+        ca_thread = threading.Thread(target=self.start_ca_server, daemon=True)
+
+        ca_thread.start()
+        self.start_pva_server()
+
+        try:
+            while True:
+                time.sleep(2)
+        except KeyboardInterrupt:
+            # Ctrl-C handling and send kill to threads
+            print("Stopping servers...")
+            self.pva_server.stop()
+            sys.exit()
 
     def stop_server(self) -> None:
         """
         Stop the channel access server.
         """
-        self.server.stop()
+        self.ca_server.stop()
+        self.pva_server.stop()
