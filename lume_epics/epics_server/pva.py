@@ -18,8 +18,6 @@ from lume_epics import (
 from lume_epics.model import OnlineSurrogateModel
 
 
-
-
 class ModelLoader(threading.local):
     """
     Subclass of threading.local that will initialize the surrogate model in each \\
@@ -104,8 +102,7 @@ class InputHandler:
 
         for variable_name, variable in output_variables:
             if isinstance(variable, IMAGE_VARIABLE_TYPES):
-                rebuilt_output[f"{variable_name}:ArrayData_RBV"] = 
-                
+
                 nd_array = variable.value.flatten()
                 # get dw and dh from model output
                 nd_array.attrib = {
@@ -115,7 +112,9 @@ class InputHandler:
                     "max_y": variable.max_y,
                 }
 
-                output_provider = providers[f"{variable_name}:ArrayData_RBV"]
+                output_provider = providers[
+                    f"{self.prefix}:{variable_name}:ArrayData_RBV"
+                ]
                 output_provider.post(nd_array)
 
             # do not build attribute pvs
@@ -123,7 +122,6 @@ class InputHandler:
                 rebuilt_output[variable_name] = variable.value
                 output_provider = providers[f"{self.prefix}:{variable_name}"]
                 output_provider.post(variable.value)
-
 
         # mark server operation as complete
         op.done()
@@ -202,12 +200,11 @@ class PVAServer:
                     nt=NTNDArray(),
                     initial=variable.value,
                 )
-            providers[variable_name] = pv
+
+            providers[pvname] = pv
 
         # use main thread loaded model to do initial model run
-        starting_output = model_loader.model.run(input_pvs)
-        for var in output_variables:
-            var.value = starting_output[var.name]
+        output_variables = model_loader.model.run(input_pvs)
 
         # use default handler for the output process variables
         # updates to output pvs are handled from post calls within the input update
@@ -229,7 +226,7 @@ class PVAServer:
         Starts the server and runs until KeyboardInterrupt.
         """
         print("Starting Server...")
-        self.server = Server.forever(providers=[providers])
+        self.server = Server(providers=[providers])
 
     def stop_server(self) -> None:
         """

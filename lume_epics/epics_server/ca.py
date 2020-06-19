@@ -196,11 +196,11 @@ class SimDriver(Driver):
                 self.setParam(variable_name + ":MinY_RBV", variable.min_y)
                 self.setParam(variable_name + ":MaxX_RBV", variable.max_x)
                 self.setParam(variable_name + ":MaxY_RBV", variable.max_y)
-                self.output_pv_state[variable_name].value = variable.value.flatten()
+                self.output_variables[variable_name].value = variable.value.flatten()
 
             else:
                 self.setParam(variable_name, variable.value)
-                self.output_pv_state[variable_name].value = value
+                self.output_variables[variable_name].value = variable.value
 
 
 class CAServer:
