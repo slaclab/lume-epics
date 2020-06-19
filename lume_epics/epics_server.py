@@ -20,7 +20,21 @@ from lume_epics import IMAGE_VARIABLE_TYPES, SCALAR_VARIABLE_TYPES
 from lume_epics.epics_server.ca import build_pvdb, SimDriver
 
 
-def build_pvdb(variables):
+def build_pvdb(variables: List[lume_model.variables.Variable]):
+    """
+    Utility function for building dictionary (pvdb) used to initialize 
+    the channel access server.
+    
+    Parameters
+    ----------
+    variables: list
+        List of lume_model variables to be served with channel access server.
+
+    Returns
+    -------
+    pvdb: dict
+
+    """
     pvdb = {}
 
     for variable in variables.values():
@@ -32,14 +46,6 @@ def build_pvdb(variables):
 
             else:
                 raise Exception("Color mode cannot be inferred from image shape.")
-
-            image_pvs = build_image_pvs(
-                variable.name,
-                variable.shape,
-                variable.units,
-                variable.precision,
-                variable.color_mode,
-            )
 
             # assign default PVS
             pvdb = {
@@ -133,7 +139,7 @@ class SimDriver(Driver):
 
         Parameters
         ----------
-        pv: str
+        pvnamme: str
             Process variable name
 
         Returns
@@ -143,12 +149,12 @@ class SimDriver(Driver):
 
         Notes
         -----
-        In the pcaspy documentation, 'reason' is used instead of pv.
+        In the pcaspy documentation, 'reason' is used instead of pvname.
 
         """
         return self.getParam(pvname)
 
-    def write(self, pv: str, value: Union[float, np.ndarray]) -> bool:
+    def write(self, pvname: str, value: Union[float, np.ndarray]) -> bool:
         """
         Method used by server when clients write a process variable.
 
@@ -171,19 +177,21 @@ class SimDriver(Driver):
         In the pcaspy documentation, 'reason' is used instead of pv.
         """
 
-        if pv in self.output_variables:
-            print(pv + " is a read-only pv")
+        if pvname in self.output_variables:
+            print(pvname + " is a read-only pv")
             return False
 
         else:
+            if pvname in self.input_variables:
+                self.input_variables[pvname].value = value
+                self.setParam(pvname, value)
+                self.updatePVs()
 
-            if pv in self.input_variables:
-                self.input_pv_state[pv] = value
+                return True
 
-            self.setParam(pv, value)
-            self.updatePVs()
-
-            return True
+            else:
+                print(f"{pvname} not found in server variables.")
+                return False
 
     def set_output_pvs(self, output_variables) -> None:
         """
@@ -191,7 +199,7 @@ class SimDriver(Driver):
 
         Parameters
         ----------
-        output_pvs: dict
+        output_variables: list
             Dictionary that maps ouput process variable name to variables
         """
 
