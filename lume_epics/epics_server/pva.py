@@ -18,41 +18,6 @@ from lume_epics import (
 from lume_epics.model import OnlineSurrogateModel
 
 
-def format_model_output(model_output):
-    """
-    Reformat model for pva server compatibility.
-
-    Parameters
-    ----------
-    model_ouptut: dict
-        Output from the surrogate model.
-
-    image_pvs: list
-        List of pvs to format with image attributes
-
-    Returns
-    -------
-    dict
-        Output with metadata assigned.
-    """
-    rebuilt_output = {}
-    for variable_name, variable in model_output.items():
-        if isinstance(variable, IMAGE_VARIABLE_TYPES):
-            rebuilt_output[f"{variable_name}:ArrayData_RBV"] = variable.value.flatten()
-            # get dw and dh from model output
-            array_data.attrib = {
-                "min_x": variable.min_x,
-                "min_y": variable.min_y,
-                "max_x": variable.max_x,
-                "max_y": variable.max_y,
-            }
-            rebuilt_output[variable_name] = array_data
-
-        # do not build attribute pvs
-        else:
-            rebuilt_output[variable_name] = variable.value
-
-    return rebuilt_output
 
 
 class ModelLoader(threading.local):
@@ -157,7 +122,7 @@ class InputHandler:
             else:
                 rebuilt_output[variable_name] = variable.value
                 output_provider = providers[f"{self.prefix}:{variable_name}"]
-                utput_provider.post(variable.value)
+                output_provider.post(variable.value)
 
 
         # mark server operation as complete
@@ -241,9 +206,8 @@ class PVAServer:
 
         # use main thread loaded model to do initial model run
         starting_output = model_loader.model.run(input_pvs)
-
-        # in this case, the array pvs are the image pvs
-        starting_output = format_model_output(starting_output)
+        for var in output_variables:
+            var.value = starting_output[var.name]
 
         # use default handler for the output process variables
         # updates to output pvs are handled from post calls within the input update

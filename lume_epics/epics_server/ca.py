@@ -97,11 +97,7 @@ class SimDriver(Driver):
 
     """
 
-    def __init__(
-        self,
-        input_pv_state: Dict[str, float],
-        output_pv_state: Mapping[str, Union[float, np.ndarray]],
-    ) -> None:
+    def __init__(self, input_variables, output_variables) -> None:
         """
         Initialize the driver. Store input state and output state.
 
@@ -118,10 +114,10 @@ class SimDriver(Driver):
         super(SimDriver, self).__init__()
 
         # track input state and output state
-        self.input_pv_state = input_pv_state
-        self.output_pv_state = output_pv_state
+        self.input_variables = input_variables
+        self.output_variables = output_variables
 
-    def read(self, pv: str) -> Union[float, np.ndarray]:
+    def read(self, pvname: str) -> Union[float, np.ndarray]:
         """
         Method used by server when clients read a process variable.
 
@@ -140,12 +136,7 @@ class SimDriver(Driver):
         In the pcaspy documentation, 'reason' is used instead of pv.
 
         """
-        if pv in self.output_pv_state:
-            value = self.getParam(pv)
-        else:
-            value = self.getParam(pv)
-
-        return value
+        return self.getParam(pvname)
 
     def write(self, pv: str, value: Union[float, np.ndarray]) -> bool:
         """
@@ -170,13 +161,13 @@ class SimDriver(Driver):
         In the pcaspy documentation, 'reason' is used instead of pv.
         """
 
-        if pv in self.output_pv_state:
+        if pv in self.output_variables:
             print(pv + " is a read-only pv")
             return False
 
         else:
 
-            if pv in self.input_pv_state:
+            if pv in self.input_variables:
                 self.input_pv_state[pv] = value
 
             self.setParam(pv, value)
@@ -184,16 +175,14 @@ class SimDriver(Driver):
 
             return True
 
-    def set_output_pvs(
-        self, output_variables: Mapping[str, Union[float, np.ndarray]]
-    ) -> None:
+    def set_output_pvs(self, output_variables) -> None:
         """
         Set output process variables.
 
         Parameters
         ----------
         output_pvs: dict
-            Dictionary that maps ouput process variable name to values
+            Dictionary that maps ouput process variable name to variables
         """
 
         for variable_name, variable in output_variables.items():
@@ -298,7 +287,7 @@ class CAServer:
         self.server.createPV(prefix + ":", self.pvdb)
 
         # set up driver for handing read and write requests to process variables
-        self.driver = SimDriver(self.input_pv_state, self.output_pv_state)
+        self.driver = SimDriver(input_variables, output_variables)
 
     def start_server(self) -> None:
         """
