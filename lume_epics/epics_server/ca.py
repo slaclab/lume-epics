@@ -48,6 +48,10 @@ def build_pvdb(variables):
                     "type": "int",
                     "value": variable.value.shape[0],
                 },
+                f"{pvname}:ArraySizeY_RBV": {
+                    "type": "int",
+                    "value": variable.value.shape[1],
+                },
                 f"{pvname}:ArraySize_RBV": {
                     "type": "int",
                     "value": int(np.prod(variable.value.shape)),
@@ -58,13 +62,11 @@ def build_pvdb(variables):
                     "count": int(np.prod(variable.value.shape)),
                     "units": variable.units,
                 },
+                f"{pvname}:MinX_RBV": {"type": "float", "value": variable.x_min},
+                f"{pvname}:MinY_RBV": {"type": "float", "value": variable.y_min},
+                f"{pvname}:MaxX_RBV": {"type": "float", "value": variable.x_max},
+                f"{pvname}:MaxY_RBV": {"type": "float", "value": variable.y_max},
                 f"{pvname}:ColorMode_RBV": {"type": "int", "value": color_mode},
-                f"{pvname}:dw": {"type": "float", "prec": variable.precision},
-                f"{pvname}:dh": {"type": "float", "prec": variable.precision},
-                f"{pvname}:ArraySizeY_RBV": {
-                    "type": "int",
-                    "value": variable.value.shape[1],
-                },
             }
 
             # placeholder for color images, not yet implemented
@@ -196,13 +198,20 @@ class SimDriver(Driver):
 
         for variable_name, variable in output_variables.items():
             if isinstance(variable, IMAGE_VARIABLE_TYPES):
-                variable_name = f"{variable_name}:ArrayData_RBV"
                 value = variable.value.flatten()
-            else:
-                value = variable.value
 
-            self.output_pv_state[variable_name].value = value
-            self.setParam(variable_name, variable.value)
+                self.setParam(
+                    variable_name + ":ArrayData_RBV", variable.value.flatten()
+                )
+                self.setParam(variable_name + ":MinX_RBV", variable.min_x)
+                self.setParam(variable_name + ":MinY_RBV", variable.min_y)
+                self.setParam(variable_name + ":MaxX_RBV", variable.max_x)
+                self.setParam(variable_name + ":MaxY_RBV", variable.max_y)
+                self.output_pv_state[variable_name].value = variable.value.flatten()
+
+            else:
+                self.setParam(variable_name, variable.value)
+                self.output_pv_state[variable_name].value = value
 
 
 class CAServer:
