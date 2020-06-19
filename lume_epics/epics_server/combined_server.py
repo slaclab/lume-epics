@@ -18,7 +18,6 @@ from p4p.nt.ndarray import ntndarray as NTNDArrayData
 from lume_epics.model import OnlineSurrogateModel
 from lume_epics import IMAGE_VARIABLE_TYPES, SCALAR_VARIABLE_TYPES
 from lume_epics.epics_server.ca import build_pvdb, SimDriver
-from lume_epics.epics_server.pva import ModelLoader
 
 
 class ModelLoader(threading.local):
@@ -200,6 +199,7 @@ class Server:
         self.input_variables = input_variables
         self.output_variables = output_variables
         self.prefix = prefix
+        self.protocol = protocol
 
         # initialize loader for model
         model_loader = ModelLoader(
@@ -209,10 +209,10 @@ class Server:
         # get starting output from the model and set up output process variables
         self.output_variables = model_loader.model.run(input_variables)
 
-        if "ca" in protocol:
+        if "ca" in self.protocol:
             self.initialize_ca_server()
 
-        if "pva" in protocol:
+        if "pva" in self.protocol:
             self.initialize_pva_server()
 
     def initialize_ca_server(self):
@@ -302,27 +302,35 @@ class Server:
 
     def start_server(self) -> None:
         """
-        
+        Starts a server
 
         """
 
-        ca_thread = threading.Thread(target=self.start_ca_server, daemon=True)
+        if "ca" in self.protocol:
+            ca_thread = threading.Thread(target=self.start_ca_server, daemon=True)
+            ca_thread.start()
 
-        ca_thread.start()
-        self.start_pva_server()
+        if "pva" in self.protocol:
+            self.start_pva_server()
 
         try:
             while True:
                 time.sleep(2)
+
         except KeyboardInterrupt:
             # Ctrl-C handling and send kill to threads
             print("Stopping servers...")
-            self.pva_server.stop()
+            if "pva" in self.protocol:
+                self.pva_server.stop()
+
             sys.exit()
 
     def stop_server(self) -> None:
         """
         Stop the channel access server.
         """
-        self.ca_server.stop()
-        self.pva_server.stop()
+        if "ca" in self.protocol:
+            self.ca_server.stop()
+
+        if "pva" in self.protocol:
+            self.pva_server.stop()
