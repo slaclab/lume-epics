@@ -20,6 +20,199 @@ from lume_epics import IMAGE_VARIABLE_TYPES, SCALAR_VARIABLE_TYPES
 from lume_epics.epics_server.ca import build_pvdb, SimDriver
 
 
+def build_pvdb(variables):
+    pvdb = {}
+
+    for variable in variables.values():
+        if isinstance(variable, IMAGE_VARIABLE_TYPES):
+
+            # infer color mode
+            if variable.value.ndim == 2:
+                color_mode == 0
+
+            else:
+                raise Exception("Color mode cannot be inferred from image shape.")
+
+            image_pvs = build_image_pvs(
+                variable.name,
+                variable.shape,
+                variable.units,
+                variable.precision,
+                variable.color_mode,
+            )
+
+            # assign default PVS
+            pvdb = {
+                f"{pvname}:NDimensions_RBV": {
+                    "type": "float",
+                    "prec": variable.precision,
+                    "value": variable.value.ndim,
+                },
+                f"{pvname}:Dimensions_RBV": {
+                    "type": "int",
+                    "prec": variable.precision,
+                    "count": variable.value.ndim,
+                    "value": variable.value.shape,
+                },
+                f"{pvname}:ArraySizeX_RBV": {
+                    "type": "int",
+                    "value": variable.value.shape[0],
+                },
+                f"{pvname}:ArraySizeY_RBV": {
+                    "type": "int",
+                    "value": variable.value.shape[1],
+                },
+                f"{pvname}:ArraySize_RBV": {
+                    "type": "int",
+                    "value": int(np.prod(variable.value.shape)),
+                },
+                f"{pvname}:ArrayData_RBV": {
+                    "type": "float",
+                    "prec": variable.precision,
+                    "count": int(np.prod(variable.value.shape)),
+                    "units": variable.units,
+                },
+                f"{pvname}:MinX_RBV": {"type": "float", "value": variable.x_min},
+                f"{pvname}:MinY_RBV": {"type": "float", "value": variable.y_min},
+                f"{pvname}:MaxX_RBV": {"type": "float", "value": variable.x_max},
+                f"{pvname}:MaxY_RBV": {"type": "float", "value": variable.y_max},
+                f"{pvname}:ColorMode_RBV": {"type": "int", "value": color_mode},
+            }
+
+            # placeholder for color images, not yet implemented
+            if ndim > 2:
+                pvdb[f"{pvname}:ArraySizeZ_RBV"] = {
+                    "type": "int",
+                    "value": variable.value.shape[2],
+                }
+
+        else:
+            pvdb[variable.name] = variable.dict(exclude_unset=True, exclude={"io_type"})
+
+    return pvdb
+
+
+class SimDriver(Driver):
+    """
+    Class that reacts to read an write requests to process variables.
+
+    Attributes
+    ----------
+    input_pv_state: dict
+        Dictionary mapping initial input process variables to values.
+
+    output_pv_state: dict
+        Dictionary mapping initial output process variables to values (np.ndarray in \\
+        the case of image x:y)
+
+    """
+
+    def __init__(self, input_variables, output_variables) -> None:
+        """
+        Initialize the driver. Store input state and output state.
+
+        Parameters
+        ----------
+        input_pv_state: dict
+            Dictionary that maps the input process variables to their inital values
+
+        output_pv_state:
+            Dictionary that maps the output process variables to their inital values
+
+        """
+
+        super(SimDriver, self).__init__()
+
+        # track input state and output state
+        self.input_variables = input_variables
+        self.output_variables = output_variables
+
+    def read(self, pvname: str) -> Union[float, np.ndarray]:
+        """
+        Method used by server when clients read a process variable.
+
+        Parameters
+        ----------
+        pv: str
+            Process variable name
+
+        Returns
+        -------
+        float/np.ndarray
+            Returns the value of the process variable
+
+        Notes
+        -----
+        In the pcaspy documentation, 'reason' is used instead of pv.
+
+        """
+        return self.getParam(pvname)
+
+    def write(self, pv: str, value: Union[float, np.ndarray]) -> bool:
+        """
+        Method used by server when clients write a process variable.
+
+
+        Parameters
+        ----------
+        pv: str
+            Process variable name
+
+        value: float/np.ndarray
+            Value to assign to the process variable.
+
+        Returns
+        -------
+        bool
+            Returns True if the value is accepted, False if rejected
+
+        Notes
+        -----
+        In the pcaspy documentation, 'reason' is used instead of pv.
+        """
+
+        if pv in self.output_variables:
+            print(pv + " is a read-only pv")
+            return False
+
+        else:
+
+            if pv in self.input_variables:
+                self.input_pv_state[pv] = value
+
+            self.setParam(pv, value)
+            self.updatePVs()
+
+            return True
+
+    def set_output_pvs(self, output_variables) -> None:
+        """
+        Set output process variables.
+
+        Parameters
+        ----------
+        output_pvs: dict
+            Dictionary that maps ouput process variable name to variables
+        """
+
+        for variable_name, variable in output_variables.items():
+            if isinstance(variable, IMAGE_VARIABLE_TYPES):
+                value = variable.value.flatten()
+
+                self.setParam(
+                    variable_name + ":ArrayData_RBV", variable.value.flatten()
+                )
+                self.setParam(variable_name + ":MinX_RBV", variable.min_x)
+                self.setParam(variable_name + ":MinY_RBV", variable.min_y)
+                self.setParam(variable_name + ":MaxX_RBV", variable.max_x)
+                self.setParam(variable_name + ":MaxY_RBV", variable.max_y)
+                self.output_variables[variable_name].value = variable.value.flatten()
+
+            else:
+                self.setParam(variable_name, variable.value)
+                self.output_variables[variable_name].value = variable.value
+
+
 class ModelLoader(threading.local):
     """
     Subclass of threading.local that will initialize the surrogate model in each \\
@@ -155,7 +348,7 @@ class Server:
 
     def __init__(
         self,
-        model_class,
+        model_class: ,
         model_kwargs: dict,
         input_variables,
         output_variables,
@@ -163,9 +356,9 @@ class Server:
         protocol: List[str] = ["ca", "pva"],
     ) -> None:
         """
-        Create OnlineSurrogateModel instance and initialize output variables by running \\
-        with the input process variable state, set up the proces variable database and \\
-        input/output variable tracking, start the server, create the process variables, \\
+        Create OnlineSurrogateModel instance in the main thread and initialize output \\
+        variables by running with the input process variable state, input/output variable \\
+        tracking, start the server, create the process variables, \\
         and start the driver.
 
         Parameters
@@ -209,13 +402,14 @@ class Server:
         # get starting output from the model and set up output process variables
         self.output_variables = model_loader.model.run(input_variables)
 
+        # initialize server based on protocols passed
         if "ca" in self.protocol:
             self.initialize_ca_server()
 
         if "pva" in self.protocol:
             self.initialize_pva_server()
 
-    def initialize_ca_server(self):
+    def initialize_ca_server(self) -> None:
         # set up db for initializing process variables
         variable_dict = {**self.input_variables, **self.output_variables}
         self.pvdb = build_pvdb(variable_dict)
@@ -231,7 +425,7 @@ class Server:
         self.driver = SimDriver(self.input_variables, self.output_variables)
         self.driver.set_output_pvs(self.output_variables)
 
-    def initialize_pva_server(self):
+    def initialize_pva_server(self) -> None:
         # initialize global inputs
         for variable_name, variable in self.input_variables.items():
             # input_pvs[variable.name] = variable.value
@@ -272,7 +466,7 @@ class Server:
         else:
             pass  # throw exception for incorrect data type
 
-    def start_ca_server(self):
+    def start_ca_server(self) -> None:
         sim_state = {
             variable.name: variable.value for variable in self.input_variables.values()
         }
@@ -294,10 +488,9 @@ class Server:
                     }
                     model_output = self.model.run(self.input_variables)
                     self.driver.set_output_pvs(model_output)
-        except KeyboardInterrupt:
-            print("Stopping ca server")
 
-    def start_pva_server(self):
+
+    def start_pva_server(self) -> None:
         self.pva_server = P4PServer(providers=[providers])
 
     def start_server(self) -> None:
