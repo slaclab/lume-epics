@@ -3,7 +3,7 @@ import time
 import numpy as np
 from typing import List, Dict, Tuple
 
-from online_model.app.controllers import Controller
+from lume_epics.client.controllers import Controller
 
 
 DEFAULT_IMAGE_DATA = {
@@ -23,31 +23,48 @@ class PVImage:
 
     Attributes
     ----------
-    pvname: str
-        Process variable name
+    prefix: str
+        Server prefix
+
+    variable: lume_model.variables.Variable
+
+    controller: online_model.app.widgets.controllers.Controller
+        Controller object for getting pv values
 
     units: str
-        Units for process variable
+        Units associated with the variable
+
+    pvname: str
+        Name of the process variable to access.
 
     """
 
-    def __init__(self, pvname: str, units: str, controller: Controller) -> None:
+    def __init__(
+        self,
+        prefix: str,
+        variable: lume_model.variables.ImageVariable,
+        controller: Controller,
+    ) -> None:
         """
         Initialize monitor with name and units.
 
         Parameters
         ----------
-        pvname: str
-            Name of the process variable
+        prefix: str
+            Server prefix
 
-        units: str
-            Unit label of the variable
+        variable: lume_model.variables.ImageVariable
+            Image variable to display
 
-        controller: online_model.app.widgets.controllers.Controller
+        controller: lume_epics.client.controllers.Controller
             Controller object for getting pv values
         """
-        self.units = units.split(":")
-        self.pvname = pvname
+        self.units = None
+        # check if units has been set
+        if "units" in variable.__fields_set__:
+            self.units = variable.units.split(":")
+
+        self.pvname = f"{prefix}:{variable.name}"
         self.controller = controller
 
     def poll(self) -> Dict[str, list]:
@@ -67,7 +84,6 @@ class PVImage:
             print(f"No process variable found for {self.pvname}")
             return DEFAULT_IMAGE_DATA
 
-        # now prepare the value using method defined by the model
         return value
 
     def variables(self) -> List[str]:
@@ -83,26 +99,45 @@ class PVTimeSeries:
 
     Attributes
     ----------
-    tstart:
-
     time: np.ndarray
         Array of sample times
 
     data: np.ndarray
         Array of data samples
+
+    prefix: str
+        Server prefix
+
+    variable: lume_model.variables.Variable
+        Variable to monitor for time series
+
+    controller: online_model.app.widgets.controllers.Controller
+        Controller object for getting pv values
+
+    units: str
+        Units associated with the variable
+
+    pvname: str
+        Name of the process variable to access
+
     """
 
-    def __init__(self, pvname: str, units: str, controller: Controller) -> None:
+    def __init__(
+        self,
+        prefix: str,
+        variable: lume_model.variables.Variable,
+        controller: Controller,
+    ) -> None:
         """
         Initializes monitor attributes.
 
         Parameters
         ----------
-        pvname: str
-            Process variable name
+        prefix: str
+            Server prefix
 
-        units: str
-            Units for process variable
+        variable: lume_model.variables.Variable
+            Variable to monitor for time series
 
         controller: online_model.app.widgets.controllers.Controller
             Controller object for getting pv values
@@ -112,25 +147,33 @@ class PVTimeSeries:
         self.tstart = time.time()
         self.time = np.array([])
         self.data = np.array([])
-        self.units = units.split(":")
+
+        self.units = None
+        # check if units has been set
+        if "units" in variable.__fields_set__:
+            self.units = variable.units.split(":")
+
+        self.pvname = f"{prefix}:{variable.name}"
         self.controller = controller
 
     def poll(self) -> Tuple[np.ndarray]:
         """
         Collects image data via appropriate protocol and returns time and data.
+
+        Returns
+        -------
+        tuple
+            (time, data)
         """
         t = time.time()
         try:
             v = self.controller.get(self.pvname)
+            self.time = np.append(self.time, t)
+            self.data = np.append(self.data, v)
+            return self.time - self.tstart, self.data
 
         except TimeoutError:
             print(f"No process variable found for {self.pvname}")
-            v = DEFAULT_SCALAR_VALUE[self.pvname]
-
-        self.time = np.append(self.time, t)
-        self.data = np.append(self.data, v)
-
-        return self.time - self.tstart, self.data
 
 
 class PVScalar:
@@ -139,37 +182,61 @@ class PVScalar:
 
     Attributes
     ----------
+    prefix: str
+        Server prefix
+
+    variable: lume_model.variables.Variable
+        Variable to monitor for time series
+
+    controller: online_model.app.widgets.controllers.Controller
+        Controller object for getting pv values
+
+    units: str
+        Units associated with the variable
+
+    pvname: str
+        Name of the process variable to access
+
     """
 
-    def __init__(self, pvname: str, units: str, controller: Controller) -> None:
+    def __init__(
+        self,
+        prefix: str,
+        variable: lume_model.variables.Variable,
+        controller: Controller,
+    ) -> None:
         """
         Initializes monitor attributes.
 
         Parameters
         ----------
-        pvname: str
-            Process variable name
+        prefix: str
+            Server prefix
 
-        units: str
-            Units for process variable
+        variable: lume_model.variables.Variable
+            Variable to monitor for time series
 
         controller: online_model.app.widgets.controllers.Controller
             Controller object for getting pv values
-
         """
-        self.units = units.split(":")
-        self.pvname = pvname
+        self.units = None
+        # check if units has been set
+        if "units" in variable.__fields_set__:
+            self.units = variable.units.split(":")
+        self.pvname = f"{prefix}:{variable.name}"
         self.controller = controller
 
     def poll(self) -> Tuple[np.ndarray]:
         """
-        Collects image data via appropriate protocol and returns time and data.
+        Poll variable for value
+
+        Returns
+        -------
+        Return value
         """
         try:
             v = self.controller.get(self.pvname)
+            return v
 
         except TimeoutError:
             print(f"No process variable found for {self.pvname}")
-            v = DEFAULT_SCALAR_VALUE
-
-        return v
