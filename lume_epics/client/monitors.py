@@ -26,7 +26,7 @@ class PVImage:
     prefix: str
         Server prefix
 
-    variable: lume_model.variables.Variable
+    variable: lume_model.variables.ImageVariable
 
     controller: online_model.app.widgets.controllers.Controller
         Controller object for getting pv values
@@ -66,6 +66,8 @@ class PVImage:
 
         self.pvname = f"{prefix}:{variable.name}"
         self.controller = controller
+        self.axis_labels = variable.axis_labels
+        self.axis_units = variable.axis_units
 
     def poll(self) -> Dict[str, list]:
         """
@@ -85,12 +87,6 @@ class PVImage:
             return DEFAULT_IMAGE_DATA
 
         return value
-
-    def variables(self) -> List[str]:
-        """
-        Returns variables to be plotted. 'x:y' -> ['x', 'y']
-        """
-        return self.pvname.split(":")
 
 
 class PVTimeSeries:
@@ -151,7 +147,7 @@ class PVTimeSeries:
         self.units = None
         # check if units has been set
         if "units" in variable.__fields_set__:
-            self.units = variable.units.split(":")
+            self.units = variable.units
 
         self.pvname = f"{prefix}:{variable.name}"
         self.controller = controller
@@ -168,12 +164,14 @@ class PVTimeSeries:
         t = time.time()
         try:
             v = self.controller.get(self.pvname)
-            self.time = np.append(self.time, t)
-            self.data = np.append(self.data, v)
-            return self.time - self.tstart, self.data
 
         except TimeoutError:
             print(f"No process variable found for {self.pvname}")
+            v = DEFAULT_SCALAR_VALUE
+
+        self.time = np.append(self.time, t)
+        self.data = np.append(self.data, v)
+        return self.time - self.tstart, self.data
 
 
 class PVScalar:
@@ -222,7 +220,7 @@ class PVScalar:
         self.units = None
         # check if units has been set
         if "units" in variable.__fields_set__:
-            self.units = variable.units.split(":")
+            self.units = variable.units
         self.pvname = f"{prefix}:{variable.name}"
         self.controller = controller
 
@@ -236,7 +234,9 @@ class PVScalar:
         """
         try:
             v = self.controller.get(self.pvname)
-            return v
 
         except TimeoutError:
             print(f"No process variable found for {self.pvname}")
+            v = DEFAULT_SCALAR_VALUE
+
+        return v

@@ -3,6 +3,7 @@ from typing import Union, List
 
 from bokeh.models import Slider
 
+import lume_model
 from lume_epics.client.controllers import Controller
 
 
@@ -34,37 +35,26 @@ def set_pv_from_slider(
     scale:float/int
         Scale of the slider
 
-
-    controller: online_model.app.widgets.controllers.Controller
+    controller: lume_model.widgets.controllers.Controller
         Controller object for getting pv values
 
     """
     controller.put(pvname, new * scale)
 
 
-def build_slider(prefix, variable, controller) -> Slider:
+def build_slider(
+    prefix: str, variable: lume_model.variables.ScalarVariable, controller: Controller
+) -> Slider:
     """
     Utility function for building a slider.
 
     Parameters
     ----------
-    title:str
-        Slider title
+    prefix: str
+        Process variable prefix used in serving pvs
 
-    pvname:str
-        Process variable name
-
-    scale:float/int
-        Scale of the slider
-
-    start:float
-        Lower range of the slider
-
-    end:float
-        Upper range of the slider
-
-    step:np.float64
-        The step between consecutive values
+    variable: lume_model.variables.Variable
+        Variable to build slider for
 
     controller: online_model.app.widgets.controllers.Controller
         Controller object for getting pv values
@@ -107,26 +97,30 @@ def build_slider(prefix, variable, controller) -> Slider:
     return slider
 
 
-def build_sliders(variables, controller: Controller, prefix: str) -> List[Slider]:
+def build_sliders(
+    variables: List[lume_model.variables.ScalarVariable],
+    controller: Controller,
+    prefix: str,
+) -> List[Slider]:
     """
-    Build sliders from the cmd_pvdb.
+    Build sliders for a list of variables.
+
 
     Parameters
     ----------
-    cmd_pvdb: dict
-        Process variable db config for slider inputs
-
     prefix: str
-        Prefix used for server
+        Process variable prefix used in serving pvs
 
-    Return
-    ------
-    list
-        List of slider objects
-
+    variables: list
+        List of scalar variables to render
 
     controller: online_model.app.widgets.controllers.Controller
         Controller object for getting pv values
+
+    Returns
+    -------
+    list
+        List of sliders
 
     """
     sliders = []

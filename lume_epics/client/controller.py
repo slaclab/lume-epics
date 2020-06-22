@@ -75,12 +75,12 @@ class Controller:
             ```
         """
         if self.protocol == "ca":
-            pvname = pvname.replace(":ArrayData_RBV", "")
-            nx = self.get(f"{pvname}:ArraySizeX_RBV")
-            ny = self.get(f"{pvname}:ArraySizeY_RBV")
-            dw = self.get(f"{pvname}:dw")
-            dh = self.get(f"{pvname}:dh")
             image = self.get(f"{pvname}:ArrayData_RBV")
+            pvbase = pvname.replace(":ArrayData_RBV", "")
+            nx = self.get(f"{pvbase}:ArraySizeX_RBV")
+            ny = self.get(f"{pvbase}:ArraySizeY_RBV")
+            dw = self.get(f"{pvbase}:dw")
+            dh = self.get(f"{pvbase}:dh")
             image = image.reshape(int(nx), int(ny))
 
         elif self.protocol == "pva":
