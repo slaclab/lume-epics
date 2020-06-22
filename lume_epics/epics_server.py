@@ -104,16 +104,11 @@ class SimDriver(Driver):
 
     Attributes
     ----------
-    input_variables: 
+    input_variables: list
         List of lume-model variables to use as inputs
 
-    ouput_variables:
+    ouput_variables: list
         List of lume-model variables to use as outputs
-
-
-    output_pv_state: dict
-        Dictionary mapping initial output process variables to values (np.ndarray in \\
-        the case of image x:y)
 
     """
 
@@ -123,14 +118,11 @@ class SimDriver(Driver):
 
         Parameters
         ----------
-        input_variables: 
+        input_variables: list
             List of lume-model variables to use as inputs
 
-        ouput_variables:
+        ouput_variables: list
             List of lume-model variables to use as outputs
-
-        output_pv_state:
-            Dictionary that maps the output process variables to their inital values
 
         """
 
@@ -193,14 +185,13 @@ class SimDriver(Driver):
                 self.input_variables[pvname].value = value
                 self.setParam(pvname, value)
                 self.updatePVs()
-
                 return True
 
             else:
                 print(f"{pvname} not found in server variables.")
                 return False
 
-    def set_output_pvs(self, output_variables) -> None:
+    def set_output_pvs(self, output_variables: List[lume_model.variables.Variable]) -> None:
         """
         Set output process variables.
 
@@ -266,7 +257,7 @@ class ModelLoader(threading.local):
         )
 
 
-class InputHandler:
+class PVAccessInputHandler:
     """
     Handler object that defines the callbacks to execute on put operations to input \\
     process variables.
@@ -278,9 +269,6 @@ class InputHandler:
 
         prefix: str
             prefix used to format pvs
-
-        image_pvs: list
-            List of image process variables to format
 
         """
         self.prefix = prefix
@@ -379,7 +367,7 @@ class Server:
 
         Parameters
         ----------
-        model_class
+        model_class: lume_epics.model.SurrogateModel
             Surrogate model class to be instantiated
 
         model_kwargs: dict
@@ -394,16 +382,26 @@ class Server:
         prefix: str
             Prefix used to format process variables
 
-        array_pvs: list
-            List of image pvs that need to be served
+        protocols: list
+            List of protocols used to instantiate server
 
 
         """
+        # check protocol conditions
+        if not protocols:
+            raise ValueError("Protocol must be provided to start server.")
+
+        if any([protocol not in ["ca", "pva"] for protocol in protocols]):
+            raise ValueError("Invalid protocol provided. Protocol options are \"pva\" (PVAccess) and \"ca\" (Channel Access).")
+
+        # check input variables
+
 
         # need these to be global to access from threads
         global providers
         global input_pvs
         global model_loader
+
         self.input_variables = input_variables
         self.output_variables = output_variables
         self.prefix = prefix
@@ -428,6 +426,10 @@ class Server:
             self.initialize_pva_server()
 
     def initialize_ca_server(self) -> None:
+        """
+        Set up the channel access server.
+
+        """
         # set up db for initializing process variables
         variable_dict = {**self.input_variables, **self.output_variables}
         self.pvdb = build_pvdb(variable_dict)
@@ -444,6 +446,10 @@ class Server:
         self.driver.set_output_pvs(self.output_variables)
 
     def initialize_pva_server(self) -> None:
+        """
+        Set up pvaccess process variables for serving and start pvaccess server.
+
+        """
         # initialize global inputs
         for variable in self.input_variables:
             # input_pvs[variable.name] = variable.value
@@ -452,17 +458,17 @@ class Server:
             # prepare scalar variable types
             if isinstance(variable, SCALAR_VARIABLE_TYPES):
                 pv = SharedPV(
-                    handler=InputHandler(
+                    handler=PVAccessInputHandler(
                         self.prefix
-                    ),  # Use InputHandler class to handle callbacks
+                    ),  # Use PVAccessInputHandler class to handle callbacks
                     nt=NTScalar("d"),
                     initial=variable.value,
                 )
             elif isinstance(variable, IMAGE_VARIABLE_TYPES):
                 pv = SharedPV(
-                    handler=InputHandler(
+                    handler=PVAccessInputHandler(
                         self.prefix
-                    ),  # Use InputHandler class to handle callbacks
+                    ),  # Use PVAccessInputHandler class to handle callbacks
                     nt=NTNDArray(),
                     initial=variable.value,
                 )
@@ -485,6 +491,13 @@ class Server:
             pass  # throw exception for incorrect data type
 
     def start_ca_server(self) -> None:
+        """
+        Start a Channel Access server.
+
+        Note
+        ----
+        To be used in a daemon thread.
+        """
         sim_state = {
             variable.name: variable.value for variable in self.input_variables
         }
@@ -494,8 +507,8 @@ class Server:
                 # process channel access transactions
                 self.ca_server.process(0.1)
 
-                # check if the input process variable state has been updated as
-                # an indicator of new input values
+                # check if any input variable state has been updated
+                # if so, run model and update output variables
                 while not all(
                     np.array_equal(sim_state[variable.name], self.input_variables[variable.name].value)
                     for variable in self.input_variables
@@ -509,11 +522,14 @@ class Server:
 
 
     def start_pva_server(self) -> None:
+        """
+        Start PVAccess server. 
+        """
         self.pva_server = P4PServer(providers=[providers])
 
     def start_server(self) -> None:
         """
-        Starts a server
+        Starts server depending on the passed server protocol.
 
         """
 
