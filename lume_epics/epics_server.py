@@ -38,7 +38,7 @@ def build_pvdb(variables: List[lume_model.variables.Variable]):
     pvdb = {}
 
     for variable in variables.values():
-        if isinstance(variable, IMAGE_VARIABLE_TYPES):
+        if variable.variable_type == "image":
 
             # infer color mode
             if variable.value.ndim == 2:
@@ -202,7 +202,7 @@ class SimDriver(Driver):
         """
 
         for variable_name, variable in output_variables.items():
-            if isinstance(variable, IMAGE_VARIABLE_TYPES):
+            if variable.variable_type == "image":
                 value = variable.value.flatten()
 
                 self.setParam(
@@ -300,7 +300,7 @@ class PVAccessInputHandler:
         output_variables = model_loader.model.run(input_pvs)
 
         for variable in output_variables:
-            if isinstance(variable, IMAGE_VARIABLE_TYPES):
+            if variable.variable_type == "image":
 
                 nd_array = variable.value.flatten()
                 # get dw and dh from model output
@@ -394,8 +394,6 @@ class Server:
         if any([protocol not in ["ca", "pva"] for protocol in protocols]):
             raise ValueError("Invalid protocol provided. Protocol options are \"pva\" (PVAccess) and \"ca\" (Channel Access).")
 
-        # check input variables
-
 
         # need these to be global to access from threads
         global providers
@@ -456,7 +454,7 @@ class Server:
             pvname = f"{self.prefix}:{variable.name}"
 
             # prepare scalar variable types
-            if isinstance(variable, SCALAR_VARIABLE_TYPES):
+            if variable.variable_type == "scalar"::
                 pv = SharedPV(
                     handler=PVAccessInputHandler(
                         self.prefix
@@ -464,7 +462,8 @@ class Server:
                     nt=NTScalar("d"),
                     initial=variable.value,
                 )
-            elif isinstance(variable, IMAGE_VARIABLE_TYPES):
+
+            elif variable.variable_type == "image":
                 pv = SharedPV(
                     handler=PVAccessInputHandler(
                         self.prefix
@@ -473,17 +472,24 @@ class Server:
                     initial=variable.value,
                 )
 
+            else:
+                raise ValueError("Unsupported variable type provided: %s", variable.variable_type)
+
             providers[pvname] = pv
 
         # use default handler for the output process variables
         # updates to output pvs are handled from post calls within the input update
         for variable in self.output_variables:
             pvname = f"{self.prefix}:{variable.name}"
-            if isinstance(variable, SCALAR_VARIABLE_TYPES):
+            if variable.variable_type == "scalar":
                 pv = SharedPV(nt=NTScalar(), initial=variable.value)
 
-            elif isinstance(variable, IMAGE_VARIABLE_TYPES):
+            elif variable.variable_type == "image":
                 pv = SharedPV(nt=NTNDArray(), initial=variable.value)
+
+            else:
+                raise ValueError("Unsupported variable type provided: %s", variable.variable_type)
+
 
             providers[pvname] = pv
 
