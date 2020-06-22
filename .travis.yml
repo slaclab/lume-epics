@@ -4,7 +4,7 @@ sudo: required
 branches:
   only:
   - master
-  - variable-definitions
+  - package-setup
 
 matrix:
   include:
