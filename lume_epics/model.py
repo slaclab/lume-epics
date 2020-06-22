@@ -1,7 +1,9 @@
 import numpy as np
 import time
-from typing import Dict, Tuple, Mapping, Union
+from typing import Dict, Tuple, Mapping, Union, List
 from abc import ABC, abstractmethod
+
+import lume_model
 
 
 class SurrogateModel(ABC):
@@ -21,60 +23,85 @@ class SurrogateModel(ABC):
 
 class OnlineSurrogateModel:
     """
-    Class for running the executing both the scalar and image model.
+    Class for running the executing surrogate models.
 
     Attributes
     ----------
-    scalar_model: online_model.model.surrogate_model.ScalarSurrogateModel
-        Model instance used for predicting scalar outputs.
 
-    image_model: online_model.model.surrogate_model.ImageSurrogateModel
-        Model instance used for predicting image outputs.
+    models: list
+        list of model objects
+            
+    input_variables: list
+        List of lume-model variables to use as inputs
 
-    NOTES
-    -----
-    TODO:
-    Understand the preprocessing here
+    ouput_variables: list
+        List of lume-model variables to use as outputs
+
     """
 
-    def __init__(self, models) -> None:
+    def __init__(
+        self,
+        models: List[SurrogateModel],
+        input_variables: List[lume_model.variables.Variable],
+        output_variables: List[lume_model.variables.Variable],
+    ) -> None:
         """
-        Initialize OnlineSurrogateModel instance using given scalar and image model \\
-        files.
+        Initialize OnlineSurrogateModel provided models. \\
 
         Parameters
         ----------
         models: list
             list of model objects
+            
+        input_variables: list
+            List of lume-model variables to use as inputs
+
+        ouput_variables: list
+            List of lume-model variables to use as outputs
 
         """
         self.models = models
 
-    def run(self, pv_state: Dict[str, float]) -> Mapping[str, Union[float, np.ndarray]]:
+        self.input_variables = input_variables
+
+        # dict of name -> var
+        self.output_variables = {
+            variable.name: variable.value for variable in output_variables
+        }
+
+    def run(
+        self, input_variables: List[lume_model.variables.Variable]
+    ) -> Mapping[str, Union[float, np.ndarray]]:
         """
         Executes both scalar and image model given process variable value inputs.
 
         Parameters
         ----------
-        pv_state: dict
-            State of input process variables.
+        input_variables: list
+            List of lume-model variables to use as inputs
 
         Returns
         -------
-        dict
-            Mapping of process variables to model output values.
+        ouput_variables: list
+            List of updated lume-model output variables
+
+            
 
         """
         t1 = time.time()
 
-        output = {}
+        # update input variables and get state representation
+        self.input_variables = input_variables
+        input_state = {variable.name: variable.value for variable in input_variables}
 
+        # update output variable state
         for model in self.models:
-            predicted_output = model.predict(pv_state)
-            output.update(predicted_output)
+            predicted_output = model.predict(input_state)
+            for output, value in predicted_output.items():
+                self.output_variables[output].value = value
 
         t2 = time.time()
         print("Running model...", end="")
         print("Ellapsed time: " + str(t2 - t1))
 
-        return output
+        return self.output_variables.values()
