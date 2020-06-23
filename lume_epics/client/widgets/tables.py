@@ -2,7 +2,7 @@ from typing import List
 
 from bokeh.models import ColumnDataSource, DataTable, TableColumn, StringFormatter
 
-import lume_model
+import lume_model.variables import ScalarVariable
 from lume_epics.client.controller import Controller
 from lume_epics.client.monitors import PVScalar
 
@@ -10,19 +10,19 @@ from lume_epics.client.monitors import PVScalar
 class ValueTable:
     def __init__(
         self,
-        variables: List[lume_model.variable.ScalarVariable],
+        variables: List[ScalarVariable],
         controller: Controller,
         prefix: str,
     ) -> None:
         """
-        View for value table item. Maps variable name to its value.
+        View for value table mapping variable name to value.
 
         Parameters
         ----------
         variables: list
             List of variables to display in table
 
-        controller: online_model.app.widgets.controller.Controller
+        controller: Controller
             Controller object for getting pv values
 
         prefix: str

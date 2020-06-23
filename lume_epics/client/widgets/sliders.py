@@ -3,7 +3,7 @@ from typing import Union, List
 
 from bokeh.models import Slider
 
-import lume_model
+import lume_model.variables import ScalarVariable
 from lume_epics.client.controller import Controller
 
 
@@ -35,7 +35,7 @@ def set_pv_from_slider(
     scale:float/int
         Scale of the slider
 
-    controller: lume_model.widgets.controllers.Controller
+    controller: Controller
         Controller object for getting pv values
 
     """
@@ -43,7 +43,7 @@ def set_pv_from_slider(
 
 
 def build_slider(
-    prefix: str, variable: lume_model.variables.ScalarVariable, controller: Controller
+    prefix: str, variable: ScalarVariable, controller: Controller
 ) -> Slider:
     """
     Utility function for building a slider.
@@ -53,10 +53,10 @@ def build_slider(
     prefix: str
         Process variable prefix used in serving pvs
 
-    variable: lume_model.variables.Variable
+    variable: ScalarVariable
         Variable to build slider for
 
-    controller: online_model.app.widgets.controllers.Controller
+    controller: Controller
         Controller object for getting pv values
 
     Returns
@@ -98,7 +98,7 @@ def build_slider(
 
 
 def build_sliders(
-    variables: List[lume_model.variables.ScalarVariable],
+    variables: List[ScalarVariable],
     controller: Controller,
     prefix: str,
 ) -> List[Slider]:
@@ -114,7 +114,7 @@ def build_sliders(
     variables: list
         List of scalar variables to render
 
-    controller: online_model.app.widgets.controllers.Controller
+    controller: Controller
         Controller object for getting pv values
 
     Returns

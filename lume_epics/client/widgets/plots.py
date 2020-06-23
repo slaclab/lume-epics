@@ -45,7 +45,7 @@ class ImagePlot:
         variables: list
             List of image variables to include in plot
 
-        controller: online_model.app.widgets.controllers.Controller
+        controller: Controller
             Controller object for getting pv values
 
         prefix: str
@@ -163,7 +163,7 @@ class Striptool:
         variables: list
             List of variables to initialize striptool
 
-        controller: online_model.app.widgets.controllers.Controller
+        controller: Controller
             Controller object for getting pv values
 
         prefix: str
