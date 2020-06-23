@@ -4,7 +4,7 @@ from typing import Union, List
 from bokeh.models import Slider
 
 import lume_model
-from lume_epics.client.controllers import Controller
+from lume_epics.client.controller import Controller
 
 
 def set_pv_from_slider(

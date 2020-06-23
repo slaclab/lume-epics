@@ -3,7 +3,7 @@ from typing import List
 from bokeh.models import ColumnDataSource, DataTable, TableColumn, StringFormatter
 
 import lume_model
-from lume_epics.client.controllers import Controller
+from lume_epics.client.controller import Controller
 from lume_epics.client.monitors import PVScalar
 
 
@@ -22,7 +22,7 @@ class ValueTable:
         variables: list
             List of variables to display in table
 
-        controller: online_model.app.widgets.controllers.Controller
+        controller: online_model.app.widgets.controller.Controller
             Controller object for getting pv values
 
         prefix: str

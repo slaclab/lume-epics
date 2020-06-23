@@ -3,7 +3,7 @@ import time
 import numpy as np
 from typing import List, Dict, Tuple
 
-from lume_epics.client.controllers import Controller
+from lume_epics.client.controller import Controller
 
 
 DEFAULT_IMAGE_DATA = {
@@ -28,7 +28,7 @@ class PVImage:
 
     variable: lume_model.variables.ImageVariable
 
-    controller: online_model.app.widgets.controllers.Controller
+    controller: online_model.app.widgets.controller.Controller
         Controller object for getting pv values
 
     units: str
