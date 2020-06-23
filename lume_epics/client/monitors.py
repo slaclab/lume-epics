@@ -133,7 +133,7 @@ class PVTimeSeries:
             Controller object for getting pv values
 
         """
-        self.pvname = pvname
+        self.pvname = f"{prefix}:{variable.name}"
         self.tstart = time.time()
         self.time = np.array([])
         self.data = np.array([])
@@ -143,7 +143,6 @@ class PVTimeSeries:
         if "units" in variable.__fields_set__:
             self.units = variable.units
 
-        self.pvname = f"{prefix}:{variable.name}"
         self.controller = controller
 
     def poll(self) -> Tuple[np.ndarray]:
