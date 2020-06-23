@@ -2,17 +2,14 @@ from typing import List
 
 from bokeh.models import ColumnDataSource, DataTable, TableColumn, StringFormatter
 
-import lume_model.variables import ScalarVariable
+from lume_model.variables import ScalarVariable
 from lume_epics.client.controller import Controller
 from lume_epics.client.monitors import PVScalar
 
 
 class ValueTable:
     def __init__(
-        self,
-        variables: List[ScalarVariable],
-        controller: Controller,
-        prefix: str,
+        self, variables: List[ScalarVariable], controller: Controller, prefix: str,
     ) -> None:
         """
         View for value table mapping variable name to value.

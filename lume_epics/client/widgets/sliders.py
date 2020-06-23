@@ -3,7 +3,7 @@ from typing import Union, List
 
 from bokeh.models import Slider
 
-import lume_model.variables import ScalarVariable
+from lume_model.variables import ScalarVariable
 from lume_epics.client.controller import Controller
 
 
@@ -98,9 +98,7 @@ def build_slider(
 
 
 def build_sliders(
-    variables: List[ScalarVariable],
-    controller: Controller,
-    prefix: str,
+    variables: List[ScalarVariable], controller: Controller, prefix: str,
 ) -> List[Slider]:
     """
     Build sliders for a list of variables.

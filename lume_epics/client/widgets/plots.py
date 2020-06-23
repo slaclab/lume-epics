@@ -3,7 +3,7 @@ from typing import List
 from bokeh.plotting import figure
 from bokeh.models import ColumnDataSource
 
-import lume_model
+from lume_model.variables import ImageVariable, ScalarVariable
 from lume_epics.client.controllers import Controller
 from lume_epics.client.monitors import PVImage, PVTimeSeries
 
@@ -33,7 +33,7 @@ class ImagePlot:
 
     def __init__(
         self,
-        variables: List[lume_model.variables.ImageVariable],
+        variables: List[ImageVariable],
         controller: Controller,
         prefix: str,
     ) -> None:
@@ -151,7 +151,7 @@ class Striptool:
 
     def __init__(
         self,
-        variables: List[lume_model.variables.ScalarVariable],
+        variables: List[ScalarVariable],
         controller: Controller,
         prefix: str,
     ) -> None:
