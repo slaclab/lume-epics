@@ -257,13 +257,7 @@ class ModelLoader(local):
     referenced locally.
     """
 
-    def __init__(
-        self,
-        model_class: SurrogateModel,
-        model_kwargs: dict,
-        input_variables,
-        output_variables,
-    ) -> None:
+    def __init__(self, model_class: SurrogateModel, model_kwargs: dict = {},) -> None:
         """
         Initializes surrogate model.
 
@@ -279,7 +273,9 @@ class ModelLoader(local):
 
         surrogate_model = model_class(**model_kwargs)
         self.model = OnlineSurrogateModel(
-            [surrogate_model], input_variables, output_variables
+            [surrogate_model],
+            list(model_class.input_variables.values()),
+            list(model_class.output_variables.values()),
         )
 
 
@@ -329,6 +325,7 @@ class PVAccessInputHandler:
             if variable.variable_type == "image":
 
                 nd_array = variable.value.flatten()
+
                 # get dw and dh from model output
                 nd_array.attrib = {
                     "x_min": variable.x_min,
@@ -379,9 +376,9 @@ class Server:
     def __init__(
         self,
         model_class: SurrogateModel,
-        model_kwargs: dict,
         prefix: str,
         protocols: List[str] = ["ca", "pva"],
+        model_kwargs: dict = {},
     ) -> None:
         """
         Create OnlineSurrogateModel instance in the main thread and initialize output \\
@@ -393,9 +390,6 @@ class Server:
         ----------
         model_class: lume_epics.model.SurrogateModel
             Surrogate model class to be instantiated
-
-        model_kwargs: dict
-            kwargs for initialization surrogate model
 
         prefix: str
             Prefix used to format process variables
@@ -427,9 +421,7 @@ class Server:
         self.output_variables = list(model_class.output_variables.values())
 
         # initialize loader for model
-        model_loader = ModelLoader(
-            model_class, model_kwargs, self.input_variables, self.output_variables
-        )
+        model_loader = ModelLoader(model_class, model_kwargs=model_kwargs,)
 
         # get starting output from the model and set up output process variables
         self.output_variables = model_loader.model.run(self.input_variables)

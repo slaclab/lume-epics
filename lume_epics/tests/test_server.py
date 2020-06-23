@@ -40,8 +40,7 @@ def test_scalar_server():
 
     prefix = "test"
     model_class = ExampleModel
-    model_kwargs = {}
-    server = epics_server.Server(model_class, model_kwargs, prefix)
+    server = epics_server.Server(model_class, prefix)
 
     # start and stop pva server
     server.start_pva_server()
@@ -163,8 +162,7 @@ def test_image_server():
 
     prefix = "test"
     model_class = ExampleModel
-    model_kwargs = {}
-    server = epics_server.Server(model_class, model_kwargs, prefix)
+    server = epics_server.Server(model_class, prefix)
 
     # start and stop pva server
     server.start_pva_server()
