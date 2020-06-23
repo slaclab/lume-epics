@@ -4,7 +4,7 @@ from bokeh.plotting import figure
 from bokeh.models import ColumnDataSource
 
 from lume_model.variables import ImageVariable, ScalarVariable
-from lume_epics.client.controllers import Controller
+from lume_epics.client.controller import Controller
 from lume_epics.client.monitors import PVImage, PVTimeSeries
 
 
@@ -32,10 +32,7 @@ class ImagePlot:
     """
 
     def __init__(
-        self,
-        variables: List[ImageVariable],
-        controller: Controller,
-        prefix: str,
+        self, variables: List[ImageVariable], controller: Controller, prefix: str,
     ) -> None:
         """
         Initialize monitors, current process variable, and data source.
@@ -150,10 +147,7 @@ class Striptool:
     """
 
     def __init__(
-        self,
-        variables: List[ScalarVariable],
-        controller: Controller,
-        prefix: str,
+        self, variables: List[ScalarVariable], controller: Controller, prefix: str,
     ) -> None:
         """
         Initialize monitors, current process variable, and data source.
@@ -185,12 +179,13 @@ class Striptool:
         """
         self.plot = figure(plot_width=400, plot_height=400)
         self.plot.line(x="x", y="y", line_width=2, source=self.source)
-        self.plot.yaxis.axis_label = self.live_variable 
-        )
+        self.plot.yaxis.axis_label = self.live_variable
 
         # add units to label
         if self.pv_monitors[self.live_variable].units:
-            self.plot.yaxis.axis_label += f" ({self.pv_monitors[self.live_variable].units})"
+            self.plot.yaxis.axis_label += (
+                f" ({self.pv_monitors[self.live_variable].units})"
+            )
 
         self.plot.xaxis.axis_label = "time (sec)"
 
@@ -210,4 +205,6 @@ class Striptool:
 
         # add units to label
         if self.pv_monitors[self.live_variable].units:
-            self.plot.yaxis.axis_label += f" ({self.pv_monitors[self.live_variable].units})"
+            self.plot.yaxis.axis_label += (
+                f" ({self.pv_monitors[self.live_variable].units})"
+            )
