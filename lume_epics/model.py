@@ -66,7 +66,7 @@ class OnlineSurrogateModel:
 
         # dict of name -> var
         self.output_variables = {
-            variable.name: variable for variable in output_variables
+            variable.name: variable.value for variable in output_variables
         }
 
     def run(
@@ -92,13 +92,12 @@ class OnlineSurrogateModel:
 
         # update input variables and get state representation
         self.input_variables = input_variables
-        input_state = {variable.name: variable.value for variable in input_variables}
 
         # update output variable state
         for model in self.models:
-            predicted_output = model.predict(input_state)
-            for output, value in predicted_output.items():
-                self.output_variables[output].value = value
+            predicted_output = model.predict(self.input_variables)
+            for variable in predicted_output:
+                self.output_variables[variable.name] = variable
 
         t2 = time.time()
         print("Running model...", end="")

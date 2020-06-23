@@ -40,52 +40,72 @@ def build_pvdb(variables: List[Variable]):
 
             # infer color mode
             if variable.value.ndim == 2:
-                color_mode == 0
+                color_mode = 0
 
             else:
                 raise Exception("Color mode cannot be inferred from image shape.")
 
             # assign default PVS
-            pvdb = {
-                f"{pvname}:NDimensions_RBV": {
-                    "type": "float",
-                    "prec": variable.precision,
-                    "value": variable.value.ndim,
-                },
-                f"{pvname}:Dimensions_RBV": {
-                    "type": "int",
-                    "prec": variable.precision,
-                    "count": variable.value.ndim,
-                    "value": variable.value.shape,
-                },
-                f"{pvname}:ArraySizeX_RBV": {
-                    "type": "int",
-                    "value": variable.value.shape[0],
-                },
-                f"{pvname}:ArraySizeY_RBV": {
-                    "type": "int",
-                    "value": variable.value.shape[1],
-                },
-                f"{pvname}:ArraySize_RBV": {
-                    "type": "int",
-                    "value": int(np.prod(variable.value.shape)),
-                },
-                f"{pvname}:ArrayData_RBV": {
-                    "type": "float",
-                    "prec": variable.precision,
-                    "count": int(np.prod(variable.value.shape)),
-                    "units": variable.units,
-                },
-                f"{pvname}:MinX_RBV": {"type": "float", "value": variable.x_min},
-                f"{pvname}:MinY_RBV": {"type": "float", "value": variable.y_min},
-                f"{pvname}:MaxX_RBV": {"type": "float", "value": variable.x_max},
-                f"{pvname}:MaxY_RBV": {"type": "float", "value": variable.y_max},
-                f"{pvname}:ColorMode_RBV": {"type": "int", "value": color_mode},
-            }
+            pvdb.update(
+                {
+                    f"{variable.name}:NDimensions_RBV": {
+                        "type": "float",
+                        "prec": variable.precision,
+                        "value": variable.value.ndim,
+                    },
+                    f"{variable.name}:Dimensions_RBV": {
+                        "type": "int",
+                        "prec": variable.precision,
+                        "count": variable.value.ndim,
+                        "value": variable.value.shape,
+                    },
+                    f"{variable.name}:ArraySizeX_RBV": {
+                        "type": "int",
+                        "value": variable.value.shape[0],
+                    },
+                    f"{variable.name}:ArraySizeY_RBV": {
+                        "type": "int",
+                        "value": variable.value.shape[1],
+                    },
+                    f"{variable.name}:ArraySize_RBV": {
+                        "type": "int",
+                        "value": int(np.prod(variable.value.shape)),
+                    },
+                    f"{variable.name}:ArrayData_RBV": {
+                        "type": "float",
+                        "prec": variable.precision,
+                        "count": int(np.prod(variable.value.shape)),
+                        #   "units": variable.units,
+                    },
+                    f"{variable.name}:MinX_RBV": {
+                        "type": "float",
+                        "value": variable.x_min,
+                    },
+                    f"{variable.name}:MinY_RBV": {
+                        "type": "float",
+                        "value": variable.y_min,
+                    },
+                    f"{variable.name}:MaxX_RBV": {
+                        "type": "float",
+                        "value": variable.x_max,
+                    },
+                    f"{variable.name}:MaxY_RBV": {
+                        "type": "float",
+                        "value": variable.y_max,
+                    },
+                    f"{variable.name}:ColorMode_RBV": {
+                        "type": "int",
+                        "value": color_mode,
+                    },
+                }
+            )
+
+            if "units" in variable.__fields_set__:
+                pvdb[f"{variable.name}:ArrayData_RBV"]["units"] = variable.units
 
             # placeholder for color images, not yet implemented
-            if ndim > 2:
-                pvdb[f"{pvname}:ArraySizeZ_RBV"] = {
+            if variable.value.ndim > 2:
+                pvdb[f"{variable.name}:ArraySizeZ_RBV"] = {
                     "type": "int",
                     "value": variable.value.shape[2],
                 }
@@ -208,13 +228,13 @@ class CADriver(Driver):
                 value = variable.value.flatten()
 
                 self.setParam(
-                    variable_name + ":ArrayData_RBV", variable.value.flatten()
+                    variable.name + ":ArrayData_RBV", variable.value.flatten()
                 )
-                self.setParam(variable_name + ":MinX_RBV", variable.min_x)
-                self.setParam(variable_name + ":MinY_RBV", variable.min_y)
-                self.setParam(variable_name + ":MaxX_RBV", variable.max_x)
-                self.setParam(variable_name + ":MaxY_RBV", variable.max_y)
-                self.output_variables[variable_name].value = variable.value.flatten()
+                self.setParam(variable.name + ":MinX_RBV", variable.x_min)
+                self.setParam(variable.name + ":MinY_RBV", variable.y_min)
+                self.setParam(variable.name + ":MaxX_RBV", variable.x_max)
+                self.setParam(variable.name + ":MaxY_RBV", variable.y_max)
+                self.output_variables[variable.name].value = variable.value.flatten()
 
             else:
                 self.setParam(variable.name, variable.value)
@@ -311,10 +331,10 @@ class PVAccessInputHandler:
                 nd_array = variable.value.flatten()
                 # get dw and dh from model output
                 nd_array.attrib = {
-                    "min_x": variable.min_x,
-                    "min_y": variable.min_y,
-                    "max_x": variable.max_x,
-                    "max_y": variable.max_y,
+                    "x_min": variable.x_min,
+                    "y_min": variable.y_min,
+                    "x_max": variable.x_max,
+                    "y_max": variable.y_max,
                 }
 
                 output_provider = providers[
@@ -360,8 +380,6 @@ class Server:
         self,
         model_class: SurrogateModel,
         model_kwargs: dict,
-        input_variables: List[Variable],
-        output_variables: List[Variable],
         prefix: str,
         protocols: List[str] = ["ca", "pva"],
     ) -> None:
@@ -378,12 +396,6 @@ class Server:
 
         model_kwargs: dict
             kwargs for initialization surrogate model
-
-        input_variables: 
-            List of lume-model variables to use as inputs
-
-        ouput_variables:
-            List of lume-model variables to use as outputs
 
         prefix: str
             Prefix used to format process variables
@@ -406,21 +418,21 @@ class Server:
         global providers
         global input_pvs
         global model_loader
-
-        self.input_variables = input_variables
-        self.output_variables = output_variables
         self.prefix = prefix
         self.protocols = protocols
 
         providers = {}
 
+        self.input_variables = list(model_class.input_variables.values())
+        self.output_variables = list(model_class.output_variables.values())
+
         # initialize loader for model
         model_loader = ModelLoader(
-            model_class, model_kwargs, input_variables, output_variables
+            model_class, model_kwargs, self.input_variables, self.output_variables
         )
 
         # get starting output from the model and set up output process variables
-        self.output_variables = model_loader.model.run(input_variables)
+        self.output_variables = model_loader.model.run(self.input_variables)
 
         # initialize server based on protocols passed
         if "ca" in self.protocols:
@@ -508,9 +520,9 @@ class Server:
         else:
             pass  # throw exception for incorrect data type
 
-    def start_ca_server(self, exit_event) -> None:
+    def ca_thread(self, exit_event) -> None:
         """
-        Start a Channel Access server.
+        Thread used for the channel access server.
 
         Note
         ----
@@ -537,6 +549,17 @@ class Server:
 
         print("Terminating Channel Access server.")
 
+    def start_ca_server(self) -> None:
+        """
+        Start a Channel Access server.
+        """
+        self.exit_event = Event()
+
+        self.ca_thread = Thread(
+            target=self.ca_thread, daemon=True, args=(self.exit_event,)
+        )
+        self.ca_thread.start()
+
     def start_pva_server(self) -> None:
         """
         Start PVAccess server. 
@@ -550,25 +573,22 @@ class Server:
         """
 
         # set up exit event for threads
-        exit_event = Event()
+        self.exit_event = Event()
 
         if "ca" in self.protocols:
-            ca_thread = Thread(
-                target=self.start_ca_server, daemon=True, args=(exit_event,)
-            )
-            ca_thread.start()
+            self.start_ca_server()
 
         if "pva" in self.protocols:
             self.start_pva_server()
 
-        while not exit_event.is_set():
+        while not self.exit_event.is_set():
             try:
                 time.sleep(0.1)
 
             except KeyboardInterrupt:
                 # Ctrl-C handling and send kill to threads
                 print("Stopping servers...")
-                exit_event.set()
+                self.exit_event.set()
                 if "pva" in self.protocols:
                     self.pva_server.stop()
 
@@ -579,7 +599,7 @@ class Server:
         Stop the channel access server.
         """
         if "ca" in self.protocols:
-            self.ca_server.stop()
+            self.exit_event.set()
 
         if "pva" in self.protocols:
             self.pva_server.stop()
