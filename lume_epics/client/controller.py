@@ -119,3 +119,7 @@ class Controller:
 
         elif self.protocol == "pva":
             self.context.put(pvname, value)
+
+    def close(self):
+        if self.protocol == "pva":
+            self.context.close()

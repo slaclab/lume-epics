@@ -26,6 +26,8 @@ def test_sliders():
     # build sliders for the command process variable database
     sliders = build_sliders(inputs, controller, PREFIX)
 
+    controller.close()
+
 
 def test_value_table():
     output1 = ScalarOutputVariable(name="output1")
@@ -39,6 +41,8 @@ def test_value_table():
     outputs = [output1, output2]
 
     value_table = ValueTable(outputs, controller, PREFIX)
+
+    controller.close()
 
 
 def test_image_plot():
@@ -72,6 +76,8 @@ def test_image_plot():
 
     value_table = ImagePlot(outputs, controller, PREFIX)
 
+    controller.close()
+
 
 def test_striptool():
     output1 = ScalarOutputVariable(name="output1")
@@ -85,3 +91,5 @@ def test_striptool():
     outputs = [output1, output2]
 
     value_table = Striptool(outputs, controller, PREFIX)
+
+    controller.close()
