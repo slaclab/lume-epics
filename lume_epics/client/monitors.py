@@ -4,7 +4,7 @@ import numpy as np
 from typing import List, Dict, Tuple
 
 from lume_epics.client.controller import Controller
-
+from lume_model.variables import ImageVariable, ScalarVariable
 
 DEFAULT_IMAGE_DATA = {
     "image": [np.zeros((50, 50))],
@@ -26,9 +26,9 @@ class PVImage:
     prefix: str
         Server prefix
 
-    variable: lume_model.variables.ImageVariable
+    variable: ImageVariable
 
-    controller: online_model.app.widgets.controller.Controller
+    controller: Controller
         Controller object for getting pv values
 
     units: str
@@ -40,23 +40,20 @@ class PVImage:
     """
 
     def __init__(
-        self,
-        prefix: str,
-        variable: lume_model.variables.ImageVariable,
-        controller: Controller,
+        self, prefix: str, variable: ImageVariable, controller: Controller,
     ) -> None:
         """
-        Initialize monitor with name and units.
+        Initialize monitor for an image variable.
 
         Parameters
         ----------
         prefix: str
             Server prefix
 
-        variable: lume_model.variables.ImageVariable
+        variable: ImageVariable
             Image variable to display
 
-        controller: lume_epics.client.controllers.Controller
+        controller: Controller
             Controller object for getting pv values
         """
         self.units = None
@@ -104,10 +101,10 @@ class PVTimeSeries:
     prefix: str
         Server prefix
 
-    variable: lume_model.variables.Variable
+    variable: ScalarVariable
         Variable to monitor for time series
 
-    controller: online_model.app.widgets.controllers.Controller
+    controller: Controller
         Controller object for getting pv values
 
     units: str
@@ -119,10 +116,7 @@ class PVTimeSeries:
     """
 
     def __init__(
-        self,
-        prefix: str,
-        variable: lume_model.variables.Variable,
-        controller: Controller,
+        self, prefix: str, variable: ScalarVariable, controller: Controller,
     ) -> None:
         """
         Initializes monitor attributes.
@@ -132,10 +126,10 @@ class PVTimeSeries:
         prefix: str
             Server prefix
 
-        variable: lume_model.variables.Variable
+        variable: ScalarVariable
             Variable to monitor for time series
 
-        controller: online_model.app.widgets.controllers.Controller
+        controller: Controller
             Controller object for getting pv values
 
         """
@@ -183,10 +177,10 @@ class PVScalar:
     prefix: str
         Server prefix
 
-    variable: lume_model.variables.Variable
+    variable: ScalarVariable
         Variable to monitor for time series
 
-    controller: online_model.app.widgets.controllers.Controller
+    controller: Controller
         Controller object for getting pv values
 
     units: str
@@ -198,10 +192,7 @@ class PVScalar:
     """
 
     def __init__(
-        self,
-        prefix: str,
-        variable: lume_model.variables.Variable,
-        controller: Controller,
+        self, prefix: str, variable: ScalarVariable, controller: Controller,
     ) -> None:
         """
         Initializes monitor attributes.
@@ -211,10 +202,10 @@ class PVScalar:
         prefix: str
             Server prefix
 
-        variable: lume_model.variables.Variable
+        variable: ScalarVariable
             Variable to monitor for time series
 
-        controller: online_model.app.widgets.controllers.Controller
+        controller: Controller
             Controller object for getting pv values
         """
         self.units = None

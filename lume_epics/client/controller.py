@@ -55,8 +55,8 @@ class Controller:
         """
         Gets image data based on protocol.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         pvname: str
             Name of process variable
 
