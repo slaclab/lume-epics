@@ -3,7 +3,7 @@ import time
 from typing import Dict, Tuple, Mapping, Union, List
 from abc import ABC, abstractmethod
 
-import lume_model
+from lume_model.variables import Variable
 
 
 class SurrogateModel(ABC):
@@ -42,8 +42,8 @@ class OnlineSurrogateModel:
     def __init__(
         self,
         models: List[SurrogateModel],
-        input_variables: List[lume_model.variables.Variable],
-        output_variables: List[lume_model.variables.Variable],
+        input_variables: List[Variable],
+        output_variables: List[Variable],
     ) -> None:
         """
         Initialize OnlineSurrogateModel provided models. \\
@@ -66,11 +66,11 @@ class OnlineSurrogateModel:
 
         # dict of name -> var
         self.output_variables = {
-            variable.name: variable.value for variable in output_variables
+            variable.name: variable for variable in output_variables
         }
 
     def run(
-        self, input_variables: List[lume_model.variables.Variable]
+        self, input_variables: List[Variable]
     ) -> Mapping[str, Union[float, np.ndarray]]:
         """
         Executes both scalar and image model given process variable value inputs.
@@ -104,4 +104,4 @@ class OnlineSurrogateModel:
         print("Running model...", end="")
         print("Ellapsed time: " + str(t2 - t1))
 
-        return self.output_variables.values()
+        return list(self.output_variables.values())

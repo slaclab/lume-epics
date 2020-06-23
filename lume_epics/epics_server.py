@@ -3,7 +3,7 @@ import numpy as np
 import random
 import sys
 import time
-import threading
+from threading import Thread, Event, local
 from typing import Dict, Mapping, Union, List
 
 from epics import caget
@@ -14,13 +14,11 @@ from p4p.server.thread import SharedPV
 from p4p.server import Server as P4PServer
 from p4p.nt.ndarray import ntndarray as NTNDArrayData
 
-
+from lume_model.variables import Variable
 from lume_epics.model import OnlineSurrogateModel, SurrogateModel
-from lume_epics import IMAGE_VARIABLE_TYPES, SCALAR_VARIABLE_TYPES
-from lume_epics.epics_server.ca import build_pvdb, SimDriver
 
 
-def build_pvdb(variables: List[lume_model.variables.Variable]):
+def build_pvdb(variables: List[Variable]):
     """
     Utility function for building dictionary (pvdb) used to initialize 
     the channel access server.
@@ -37,7 +35,7 @@ def build_pvdb(variables: List[lume_model.variables.Variable]):
     """
     pvdb = {}
 
-    for variable in variables.values():
+    for variable in variables:
         if variable.variable_type == "image":
 
             # infer color mode
@@ -112,7 +110,9 @@ class SimDriver(Driver):
 
     """
 
-    def __init__(self, input_variables: List[lume_model.variables.Variable], output_variables: List[lume_model.variables.Variable]) -> None:
+    def __init__(
+        self, input_variables: List[Variable], output_variables: List[Variable],
+    ) -> None:
         """
         Initialize the driver. Store input state and output state.
 
@@ -130,7 +130,9 @@ class SimDriver(Driver):
 
         # track input state and output state
         self.input_variables = {variable.name: variable for variable in input_variables}
-        self.output_variables = {variable.name: variable for variable in output_variables}
+        self.output_variables = {
+            variable.name: variable for variable in output_variables
+        }
 
     def read(self, pvname: str) -> Union[float, np.ndarray]:
         """
@@ -191,7 +193,7 @@ class SimDriver(Driver):
                 print(f"{pvname} not found in server variables.")
                 return False
 
-    def set_output_pvs(self, output_variables: List[lume_model.variables.Variable]) -> None:
+    def set_output_pvs(self, output_variables: List[Variable]) -> None:
         """
         Set output process variables.
 
@@ -201,7 +203,7 @@ class SimDriver(Driver):
             Dictionary that maps ouput process variable name to variables
         """
 
-        for variable_name, variable in output_variables.items():
+        for variable in output_variables:
             if variable.variable_type == "image":
                 value = variable.value.flatten()
 
@@ -215,11 +217,11 @@ class SimDriver(Driver):
                 self.output_variables[variable_name].value = variable.value.flatten()
 
             else:
-                self.setParam(variable_name, variable.value)
-                self.output_variables[variable_name].value = variable.value
+                self.setParam(variable.name, variable.value)
+                self.output_variables[variable.name].value = variable.value
 
 
-class ModelLoader(threading.local):
+class ModelLoader(local):
     """
     Subclass of threading.local that will initialize the surrogate model in each \\
     thread.
@@ -236,7 +238,11 @@ class ModelLoader(threading.local):
     """
 
     def __init__(
-        self, model_class: SurrogateModel, model_kwargs: dict, input_variables, output_variables
+        self,
+        model_class: SurrogateModel,
+        model_kwargs: dict,
+        input_variables,
+        output_variables,
     ) -> None:
         """
         Initializes surrogate model.
@@ -354,10 +360,10 @@ class Server:
         self,
         model_class: SurrogateModel,
         model_kwargs: dict,
-        input_variables: List[lume_model.variables.Variable],
-        output_variables: List[lume_model.variables.Variable],
+        input_variables: List[Variable],
+        output_variables: List[Variable],
         prefix: str,
-        protocol: List[str] = ["ca", "pva"],
+        protocols: List[str] = ["ca", "pva"],
     ) -> None:
         """
         Create OnlineSurrogateModel instance in the main thread and initialize output \\
@@ -392,8 +398,9 @@ class Server:
             raise ValueError("Protocol must be provided to start server.")
 
         if any([protocol not in ["ca", "pva"] for protocol in protocols]):
-            raise ValueError("Invalid protocol provided. Protocol options are \"pva\" (PVAccess) and \"ca\" (Channel Access).")
-
+            raise ValueError(
+                'Invalid protocol provided. Protocol options are "pva" (PVAccess) and "ca" (Channel Access).'
+            )
 
         # need these to be global to access from threads
         global providers
@@ -403,10 +410,9 @@ class Server:
         self.input_variables = input_variables
         self.output_variables = output_variables
         self.prefix = prefix
-        self.protocol = protocol
+        self.protocols = protocols
 
         providers = {}
-        input_pvs = input_variables
 
         # initialize loader for model
         model_loader = ModelLoader(
@@ -417,10 +423,10 @@ class Server:
         self.output_variables = model_loader.model.run(input_variables)
 
         # initialize server based on protocols passed
-        if "ca" in self.protocol:
+        if "ca" in self.protocols:
             self.initialize_ca_server()
 
-        if "pva" in self.protocol:
+        if "pva" in self.protocols:
             self.initialize_pva_server()
 
     def initialize_ca_server(self) -> None:
@@ -429,8 +435,11 @@ class Server:
 
         """
         # set up db for initializing process variables
-        variable_dict = {**self.input_variables, **self.output_variables}
-        self.pvdb = build_pvdb(variable_dict)
+        variable_dict = {
+            variable.name: variable.value
+            for variable in self.input_variables + self.output_variables
+        }
+        self.pvdb = build_pvdb(self.input_variables + self.output_variables)
 
         # initialize channel access server
         self.ca_server = SimpleServer()
@@ -454,7 +463,7 @@ class Server:
             pvname = f"{self.prefix}:{variable.name}"
 
             # prepare scalar variable types
-            if variable.variable_type == "scalar"::
+            if variable.variable_type == "scalar":
                 pv = SharedPV(
                     handler=PVAccessInputHandler(
                         self.prefix
@@ -473,7 +482,9 @@ class Server:
                 )
 
             else:
-                raise ValueError("Unsupported variable type provided: %s", variable.variable_type)
+                raise ValueError(
+                    "Unsupported variable type provided: %s", variable.variable_type
+                )
 
             providers[pvname] = pv
 
@@ -488,15 +499,16 @@ class Server:
                 pv = SharedPV(nt=NTNDArray(), initial=variable.value)
 
             else:
-                raise ValueError("Unsupported variable type provided: %s", variable.variable_type)
-
+                raise ValueError(
+                    "Unsupported variable type provided: %s", variable.variable_type
+                )
 
             providers[pvname] = pv
 
         else:
             pass  # throw exception for incorrect data type
 
-    def start_ca_server(self) -> None:
+    def start_ca_server(self, exit_event) -> None:
         """
         Start a Channel Access server.
 
@@ -504,28 +516,26 @@ class Server:
         ----
         To be used in a daemon thread.
         """
-        sim_state = {
-            variable.name: variable.value for variable in self.input_variables
-        }
 
-        try:
-            while True:
-                # process channel access transactions
-                self.ca_server.process(0.1)
+        sim_state = {variable.name: variable.value for variable in self.input_variables}
 
-                # check if any input variable state has been updated
-                # if so, run model and update output variables
-                while not all(
-                    np.array_equal(sim_state[variable.name], self.input_variables[variable.name].value)
-                    for variable in self.input_variables
-                ):
-                    sim_state = {
-                        variable.name: variable.value
-                        for variable in self.input_variables
-                    }
-                    model_output = self.model.run(self.input_variables)
-                    self.driver.set_output_pvs(model_output)
+        while not exit_event.is_set():
+            # process channel access transactions
+            self.ca_server.process(0.1)
 
+            # check if any input variable state has been updated
+            # if so, run model and update output variables
+            while not all(
+                np.array_equal(sim_state[variable.name], variable.value)
+                for variable in self.input_variables
+            ):
+                sim_state = {
+                    variable.name: variable.value for variable in self.input_variables
+                }
+                model_output = self.model.run(self.input_variables)
+                self.driver.set_output_pvs(model_output)
+
+        print("Terminating Channel Access server.")
 
     def start_pva_server(self) -> None:
         """
@@ -539,31 +549,37 @@ class Server:
 
         """
 
-        if "ca" in self.protocol:
-            ca_thread = threading.Thread(target=self.start_ca_server, daemon=True)
+        # set up exit event for threads
+        exit_event = Event()
+
+        if "ca" in self.protocols:
+            ca_thread = Thread(
+                target=self.start_ca_server, daemon=True, args=(exit_event,)
+            )
             ca_thread.start()
 
-        if "pva" in self.protocol:
+        if "pva" in self.protocols:
             self.start_pva_server()
 
-        try:
-            while True:
-                time.sleep(2)
+        while not exit_event.is_set():
+            try:
+                time.sleep(0.1)
 
-        except KeyboardInterrupt:
-            # Ctrl-C handling and send kill to threads
-            print("Stopping servers...")
-            if "pva" in self.protocol:
-                self.pva_server.stop()
+            except KeyboardInterrupt:
+                # Ctrl-C handling and send kill to threads
+                print("Stopping servers...")
+                exit_event.set()
+                if "pva" in self.protocols:
+                    self.pva_server.stop()
 
-            sys.exit()
+                sys.exit()
 
     def stop_server(self) -> None:
         """
         Stop the channel access server.
         """
-        if "ca" in self.protocol:
+        if "ca" in self.protocols:
             self.ca_server.stop()
 
-        if "pva" in self.protocol:
+        if "pva" in self.protocols:
             self.pva_server.stop()
