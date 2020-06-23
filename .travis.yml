@@ -31,6 +31,7 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda config --add channels conda-forge
   - conda config --set channel_priority strict
+  - conda config --add channels jrgarrahan # temporary lume-model fix
 
   # log info for debugging
   - conda info -a
