@@ -96,7 +96,7 @@ def build_pvdb(variables: List[Variable]):
     return pvdb
 
 
-class SimDriver(Driver):
+class CADriver(Driver):
     """
     Class that reacts to read an write requests to process variables.
 
@@ -126,7 +126,7 @@ class SimDriver(Driver):
 
         """
 
-        super(SimDriver, self).__init__()
+        super(CADriver, self).__init__()
 
         # track input state and output state
         self.input_variables = {variable.name: variable for variable in input_variables}
@@ -351,7 +351,7 @@ class Server:
         Server class that interfaces between the channel access client and the driver. \\
         Forwards the read/write requests to the driver
 
-    driver: online_model.server.ca.SimDriver
+    driver: online_model.server.ca.CADriver
         Class that reacts to process variable read/write requests
 
     """
@@ -449,7 +449,7 @@ class Server:
         self.ca_server.createPV(self.prefix + ":", self.pvdb)
 
         # set up driver for handing read and write requests to process variables
-        self.driver = SimDriver(self.input_variables, self.output_variables)
+        self.driver = CADriver(self.input_variables, self.output_variables)
         self.driver.set_output_pvs(self.output_variables)
 
     def initialize_pva_server(self) -> None:
