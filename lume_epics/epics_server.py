@@ -543,7 +543,7 @@ class Server:
         """
         self.pva_server = P4PServer(providers=[providers])
 
-    def start_server(self) -> None:
+    def start(self) -> None:
         """
         Starts server depending on the passed server protocol.
 
@@ -574,7 +574,7 @@ class Server:
 
                 sys.exit()
 
-    def stop_server(self) -> None:
+    def stop(self) -> None:
         """
         Stop the channel access server.
         """
