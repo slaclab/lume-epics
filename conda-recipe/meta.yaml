@@ -2,6 +2,10 @@ package:
   name: "lume-epics"
   version: "0.1"
 
+build:
+  noarch: python
+  number: 0
+
 source:
   path: ..
 
