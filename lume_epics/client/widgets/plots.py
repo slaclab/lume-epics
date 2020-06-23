@@ -169,7 +169,7 @@ class Striptool:
         for variable in variables:
             self.pv_monitors[variable.name] = PVTimeSeries(prefix, variable, controller)
 
-        self.live_variable = list(self.pv_monitors.keys())
+        self.live_variable = list(self.pv_monitors.keys())[0]
         ts, ys = self.pv_monitors[self.live_variable].poll()
         self.source = ColumnDataSource(dict(x=ts, y=ys))
 
