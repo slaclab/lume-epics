@@ -78,10 +78,10 @@ class ImagePlot:
         self.img_obj = self.plot.image(
             name="img",
             image="image",
-            x="x",
-            y="y",
-            dw="dw",
-            dh="dh",
+            x="x_min",
+            y="y_min",
+            dw="x_max",
+            dh="y_max",
             source=self.source,
             palette=palette,
         )
@@ -121,6 +121,8 @@ class ImagePlot:
 
         # get image data
         image_data = self.pv_monitors[self.live_variable].poll()
+
+        print(image_data)
 
         # update data source
         self.img_obj.data_source.data.update(image_data)
