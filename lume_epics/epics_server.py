@@ -413,6 +413,7 @@ class Server:
         self.protocols = protocols
 
         providers = {}
+        input_pvs = model_class.input_variables
 
         self.input_variables = list(model_class.input_variables.values())
         self.output_variables = list(model_class.output_variables.values())
@@ -497,7 +498,18 @@ class Server:
                 pv = SharedPV(nt=NTScalar(), initial=variable.value)
 
             elif variable.variable_type == "image":
-                pv = SharedPV(nt=NTNDArray(), initial=variable.value)
+
+                nd_array = variable.value.view(NTNDArrayData)
+
+                # get dw and dh from model output
+                nd_array.attrib = {
+                    "x_min": variable.x_min,
+                    "y_min": variable.y_min,
+                    "x_max": variable.x_max,
+                    "y_max": variable.y_max,
+                }
+
+                pv = SharedPV(nt=NTNDArray(), initial=nd_array)
 
             else:
                 raise ValueError(

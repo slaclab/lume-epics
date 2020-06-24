@@ -100,10 +100,10 @@ class Controller:
 
         return {
             "image": [image],
-            "x": x,
-            "y": y,
-            "dw": dw,
-            "dh": dh,
+            "x": [x],
+            "y": [y],
+            "dw": [dw],
+            "dh": [dh],
         }
 
     def put(self, pvname, value: Union[np.ndarray, float]) -> None:

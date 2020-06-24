@@ -56,6 +56,7 @@ class ImagePlot:
 
         self.live_variable = list(self.pv_monitors.keys())[0]
         image_data = self.pv_monitors[self.live_variable].poll()
+
         self.source = ColumnDataSource(image_data)
 
     def build_plot(self, palette: tuple) -> None:
@@ -89,12 +90,15 @@ class ImagePlot:
         axis_labels = self.pv_monitors[self.live_variable].axis_labels
         axis_units = self.pv_monitors[self.live_variable].axis_units
 
-        self.plot.xaxis.axis_label = axis_labels[0]
-        self.plot.yaxis.axis_label = axis_labels[1]
+        x_axis_label = axis_labels[0]
+        y_axis_label = axis_labels[1]
 
         if axis_units:
-            self.plot.xaxis.axis_label += " (" + axis_units[0] + ")"
-            self.plot.yaxis.axis_label += " (" + axis_units[1] + ")"
+            x_axis_label += " (" + axis_units[0] + ")"
+            y_axis_label += " (" + axis_units[1] + ")"
+
+        self.plot.xaxis.axis_label = x_axis_label
+        self.plot.yaxis.axis_label = y_axis_label
 
     def update(self, live_variable: str) -> None:
         """
@@ -112,17 +116,18 @@ class ImagePlot:
         axis_labels = self.pv_monitors[self.live_variable].axis_labels
         axis_units = self.pv_monitors[self.live_variable].axis_units
 
-        self.plot.xaxis.axis_label = axis_labels[0]
-        self.plot.yaxis.axis_label = axis_labels[1]
+        x_axis_label = axis_labels[0]
+        y_axis_label = axis_labels[1]
 
         if axis_units:
-            self.plot.xaxis.axis_label += " (" + axis_units[0] + ")"
-            self.plot.yaxis.axis_label += " (" + axis_units[1] + ")"
+            x_axis_label += " (" + axis_units[0] + ")"
+            y_axis_label += " (" + axis_units[1] + ")"
+
+        self.plot.xaxis.axis_label = x_axis_label
+        self.plot.yaxis.axis_label = y_axis_label
 
         # get image data
         image_data = self.pv_monitors[self.live_variable].poll()
-
-        print(image_data)
 
         # update data source
         self.img_obj.data_source.data.update(image_data)
