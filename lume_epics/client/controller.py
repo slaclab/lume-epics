@@ -79,8 +79,11 @@ class Controller:
             pvbase = pvname.replace(":ArrayData_RBV", "")
             nx = self.get(f"{pvbase}:ArraySizeX_RBV")
             ny = self.get(f"{pvbase}:ArraySizeY_RBV")
-            dw = self.get(f"{pvbase}:dw")
-            dh = self.get(f"{pvbase}:dh")
+            x = f"{pvbase}:MinX_RBV"
+            y = f"{pvbase}:MinY_RBV"
+            dw = f"{pvbase}:MaxX_RBV"
+            dh = f"{pvbase}:MaxY_RBV"
+
             image = image.reshape(int(nx), int(ny))
 
         elif self.protocol == "pva":
@@ -88,17 +91,18 @@ class Controller:
             # copy to manipulate array below
             output = self.get(pvname)
             attrib = output.attrib
-            dw = attrib["dw"]
-            dh = attrib["dh"]
-            nx, ny = output.shape
+            x = attrib["x_min"]
+            y = attrib["y_min"]
+            dw = attrib["x_max"]
+            dh = attrib["y_max"]
             image = copy.copy(output)
 
         return {
             "image": [image],
-            "x": [-dw / 2],
-            "y": [-dh / 2],
-            "dw": [dw],
-            "dh": [dh],
+            "x": x,
+            "y": y,
+            "dw": dw,
+            "dh": dh,
         }
 
     def put(self, pvname, value: Union[np.ndarray, float]) -> None:

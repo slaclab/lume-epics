@@ -78,10 +78,10 @@ class ImagePlot:
         self.img_obj = self.plot.image(
             name="img",
             image="image",
-            x="x_min",
-            y="y_min",
-            dw="x_max",
-            dh="y_max",
+            x="x",
+            y="y",
+            dw="dw",
+            dh="dh",
             source=self.source,
             palette=palette,
         )
