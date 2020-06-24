@@ -234,7 +234,7 @@ class CADriver(Driver):
                 self.setParam(variable.name + ":MinY_RBV", variable.y_min)
                 self.setParam(variable.name + ":MaxX_RBV", variable.x_max)
                 self.setParam(variable.name + ":MaxY_RBV", variable.y_max)
-                self.output_variables[variable.name].value = variable.value.flatten()
+                self.output_variables[variable.name].value = variable.value
 
             else:
                 self.setParam(variable.name, variable.value)
@@ -545,7 +545,7 @@ class Server:
                 sim_state = {
                     variable.name: variable.value for variable in self.input_variables
                 }
-                model_output = self.model.run(self.input_variables)
+                model_output = self.model_loader.model.run(self.input_variables)
                 self.driver.set_output_pvs(model_output)
 
         print("Terminating Channel Access server.")
@@ -591,14 +591,14 @@ class Server:
                 print("Stopping servers...")
                 self.exit_event.set()
                 if "pva" in self.protocols:
+                    print("Stopping PVAccess server...")
                     self.pva_server.stop()
-
-                sys.exit()
 
     def stop(self) -> None:
         """
         Stop the channel access server.
         """
+        print("Stopping server..")
         if "ca" in self.protocols:
             self.exit_event.set()
 
