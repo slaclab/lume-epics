@@ -333,9 +333,7 @@ class PVAccessInputHandler:
                     "y_max": variable.y_max,
                 }
 
-                output_provider = providers[
-                    f"{self.prefix}:{variable.name}:ArrayData_RBV"
-                ]
+                output_provider = providers[f"{self.prefix}:{variable.name}"]
                 output_provider.post(nd_array)
 
             # do not build attribute pvs
