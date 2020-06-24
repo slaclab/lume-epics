@@ -90,6 +90,7 @@ class Controller:
             # context returns np array with WRITEABLE=False
             # copy to manipulate array below
             output = self.get(pvname)
+
             attrib = output.attrib
             x = attrib["x_min"]
             y = attrib["y_min"]

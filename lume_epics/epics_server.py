@@ -323,8 +323,7 @@ class PVAccessInputHandler:
 
         for variable in output_variables:
             if variable.variable_type == "image":
-
-                nd_array = variable.value.flatten()
+                nd_array = variable.value.view(NTNDArrayData)
 
                 # get dw and dh from model output
                 nd_array.attrib = {
