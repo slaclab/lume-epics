@@ -100,7 +100,7 @@ class ImagePlot:
         self.plot.xaxis.axis_label = x_axis_label
         self.plot.yaxis.axis_label = y_axis_label
 
-    def update(self, live_variable: str) -> None:
+    def update(self, live_variable: str = None) -> None:
         """
         Update the plot to reflect current process variable.
 
@@ -110,7 +110,8 @@ class ImagePlot:
             Variable to display
         """
         # update internal pv trackinng
-        self.live_variable = live_variable
+        if live_variable:
+            self.live_variable = live_variable
 
         # update axis and labels
         axis_labels = self.pv_monitors[self.live_variable].axis_labels
@@ -195,7 +196,7 @@ class Striptool:
 
         self.plot.xaxis.axis_label = "time (sec)"
 
-    def update(self, live_variable: str) -> None:
+    def update(self, live_variable: str = None) -> None:
         """
         Update the plot to reflect current process variable.
 
@@ -204,7 +205,9 @@ class Striptool:
         live_variable: str
             Variable to display
         """
-        self.live_variable = live_variable
+        if live_variable:
+            self.live_variable = live_variable
+
         ts, ys = self.pv_monitors[self.live_variable].poll()
         self.source.data = dict(x=ts, y=ys)
         self.plot.yaxis.axis_label = f"{self.live_variable}"
