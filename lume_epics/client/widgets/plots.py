@@ -59,7 +59,9 @@ class ImagePlot:
 
         self.source = ColumnDataSource(image_data)
 
-    def build_plot(self, palette: tuple = None, mapper: ColorMapper = None) -> None:
+    def build_plot(
+        self, palette: tuple = None, color_mapper: ColorMapper = None
+    ) -> None:
         """
         Creates the plot object.
 
@@ -76,7 +78,7 @@ class ImagePlot:
         )
         self.plot.x_range.range_padding = self.plot.y_range.range_padding = 0
 
-        if mapper:
+        if color_mapper:
             self.plot.image(
                 name="img",
                 image="image",
@@ -85,7 +87,7 @@ class ImagePlot:
                 dw="dw",
                 dh="dh",
                 source=self.source,
-                color_mapper=mapper,
+                color_mapper=color_mapper,
             )
         elif palette:
             self.plot.image(
