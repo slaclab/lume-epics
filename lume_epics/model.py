@@ -1,9 +1,24 @@
 import numpy as np
 import time
 from typing import Dict, Tuple, Mapping, Union, List
+from abc import ABC, abstractmethod
 
 from lume_model.variables import Variable
-from lume_model.models import SurrogateModel
+
+
+class SurrogateModel(ABC):
+    """
+    Base class for the surrogate models that includes abstract predict method, which \\
+    must be initialized by children.
+
+    """
+
+    @abstractmethod
+    def predict(self):
+        """
+        Abstract prediction method that must be overwritten by inheriting classes.
+        """
+        pass
 
 
 class OnlineSurrogateModel:
