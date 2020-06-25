@@ -1,7 +1,7 @@
 from typing import List
 
 from bokeh.plotting import figure
-from bokeh.models import ColumnDataSource
+from bokeh.models import ColumnDataSource, ColorMapper
 
 from lume_model.variables import ImageVariable, ScalarVariable
 from lume_epics.client.controller import Controller
@@ -59,7 +59,7 @@ class ImagePlot:
 
         self.source = ColumnDataSource(image_data)
 
-    def build_plot(self, palette: tuple) -> None:
+    def build_plot(self, palette: tuple = None, mapper: ColorMapper = None) -> None:
         """
         Creates the plot object.
 
@@ -76,16 +76,28 @@ class ImagePlot:
         )
         self.plot.x_range.range_padding = self.plot.y_range.range_padding = 0
 
-        self.plot.image(
-            name="img",
-            image="image",
-            x="x",
-            y="y",
-            dw="dw",
-            dh="dh",
-            source=self.source,
-            palette=palette,
-        )
+        if mapper:
+            self.plot.image(
+                name="img",
+                image="image",
+                x="x",
+                y="y",
+                dw="dw",
+                dh="dh",
+                source=self.source,
+                color_mapper=mapper,
+            )
+        elif palette:
+            self.plot.image(
+                name="img",
+                image="image",
+                x="x",
+                y="y",
+                dw="dw",
+                dh="dh",
+                source=self.source,
+                palette=palette,
+            )
 
         axis_labels = self.pv_monitors[self.live_variable].axis_labels
         axis_units = self.pv_monitors[self.live_variable].axis_units
