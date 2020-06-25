@@ -71,12 +71,12 @@ class ImagePlot:
         # create plot
         self.plot = figure(
             tooltips=[("x", "$x"), ("y", "$y"), ("value", "@image")],
-            height=400,
-            width=400,
+            #    height=400,
+            #    width=400,
         )
         self.plot.x_range.range_padding = self.plot.y_range.range_padding = 0
 
-        self.img_obj = self.plot.image(
+        self.plot.image(
             name="img",
             image="image",
             x="x",
@@ -129,8 +129,7 @@ class ImagePlot:
         # get image data
         image_data = self.pv_monitors[self.live_variable].poll()
 
-        # update data source
-        self.img_obj.data_source.data.update(image_data)
+        self.source.data.update(image_data)
 
 
 class Striptool:
