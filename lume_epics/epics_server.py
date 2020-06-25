@@ -15,7 +15,8 @@ from p4p.server import Server as P4PServer
 from p4p.nt.ndarray import ntndarray as NTNDArrayData
 
 from lume_model.variables import Variable
-from lume_epics.model import OnlineSurrogateModel, SurrogateModel
+from lume_model.models import SurrogateModel
+from lume_epics.model import OnlineSurrogateModel
 
 
 def build_pvdb(variables: List[Variable]):
