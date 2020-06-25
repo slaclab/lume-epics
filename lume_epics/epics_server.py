@@ -565,7 +565,7 @@ class Server:
         """
         self.pva_server = P4PServer(providers=[providers])
 
-    def start(self) -> None:
+    def start(self, monitor: bool = True) -> None:
         """
         Starts server depending on the passed server protocol.
 
@@ -580,17 +580,20 @@ class Server:
         if "pva" in self.protocols:
             self.start_pva_server()
 
-        while not self.exit_event.is_set():
-            try:
-                time.sleep(0.1)
+        if monitor:
+            while not self.exit_event.is_set():
+                try:
+                    time.sleep(0.1)
 
-            except KeyboardInterrupt:
-                # Ctrl-C handling and send kill to threads
-                print("Stopping servers...")
-                self.exit_event.set()
-                if "pva" in self.protocols:
-                    print("Stopping PVAccess server...")
-                    self.pva_server.stop()
+                except KeyboardInterrupt:
+                    # Ctrl-C handling and send kill to threads
+                    print("Stopping servers...")
+                    self.exit_event.set()
+                    self.ca_thread.join()
+
+                    if "pva" in self.protocols:
+                        print("Stopping PVAccess server...")
+                        self.pva_server.stop()
 
     def stop(self) -> None:
         """
@@ -599,6 +602,7 @@ class Server:
         print("Stopping server..")
         if "ca" in self.protocols:
             self.exit_event.set()
+            self.ca_thread.join()
 
         if "pva" in self.protocols:
             self.pva_server.stop()
