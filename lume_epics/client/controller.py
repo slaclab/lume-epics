@@ -4,6 +4,16 @@ import copy
 from epics import caget, caput
 from p4p.client.thread import Context
 
+DEFAULT_IMAGE_DATA = {
+    "image": [np.zeros((50, 50))],
+    "x": [50],
+    "y": [50],
+    "dw": [0.01],
+    "dh": [0.01],
+}
+
+DEFAULT_SCALAR_VALUE = 0
+
 
 class Controller:
     """
@@ -45,11 +55,16 @@ class Controller:
             Returns numpy array containing value.
 
         """
-        if self.protocol == "ca":
-            return caget(pvname)
+        try:
+            if self.protocol == "ca":
+                return caget(pvname)
 
-        elif self.protocol == "pva":
-            return self.context.get(pvname)
+            elif self.protocol == "pva":
+                return self.context.get(pvname)
+
+        except:
+            print(f"No value found for {pvname}")
+            return DEFAULT_SCALAR_VALUE
 
     def get_image(self, pvname):
         """
@@ -74,37 +89,43 @@ class Controller:
             }
             ```
         """
-        if self.protocol == "ca":
-            image = self.get(f"{pvname}:ArrayData_RBV")
-            pvbase = pvname.replace(":ArrayData_RBV", "")
-            nx = self.get(f"{pvbase}:ArraySizeX_RBV")
-            ny = self.get(f"{pvbase}:ArraySizeY_RBV")
-            x = f"{pvbase}:MinX_RBV"
-            y = f"{pvbase}:MinY_RBV"
-            dw = f"{pvbase}:MaxX_RBV"
-            dh = f"{pvbase}:MaxY_RBV"
 
-            image = image.reshape(int(nx), int(ny))
+        try:
+            if self.protocol == "ca":
+                image = self.get(f"{pvname}:ArrayData_RBV")
+                pvbase = pvname.replace(":ArrayData_RBV", "")
+                nx = self.get(f"{pvbase}:ArraySizeX_RBV")
+                ny = self.get(f"{pvbase}:ArraySizeY_RBV")
+                x = self.get(f"{pvbase}:MinX_RBV")
+                y = self.get(f"{pvbase}:MinY_RBV")
+                dw = self.get(f"{pvbase}:MaxX_RBV")
+                dh = self.get(f"{pvbase}:MaxY_RBV")
 
-        elif self.protocol == "pva":
-            # context returns np array with WRITEABLE=False
-            # copy to manipulate array below
-            output = self.get(pvname)
+                image = image.reshape(int(nx), int(ny))
 
-            attrib = output.attrib
-            x = attrib["x_min"]
-            y = attrib["y_min"]
-            dw = attrib["x_max"]
-            dh = attrib["y_max"]
-            image = copy.copy(output)
+            elif self.protocol == "pva":
+                # context returns np array with WRITEABLE=False
+                # copy to manipulate array below
+                output = self.get(pvname)
 
-        return {
-            "image": [image],
-            "x": [x],
-            "y": [y],
-            "dw": [dw],
-            "dh": [dh],
-        }
+                attrib = output.attrib
+                x = attrib["x_min"]
+                y = attrib["y_min"]
+                dw = attrib["x_max"]
+                dh = attrib["y_max"]
+                image = copy.copy(output)
+
+            return {
+                "image": [image],
+                "x": [x],
+                "y": [y],
+                "dw": [dw],
+                "dh": [dh],
+            }
+
+        except:
+            print(f"No value found for {pvname}")
+            return DEFAULT_IMAGE_DATA
 
     def put(self, pvname, value: Union[np.ndarray, float]) -> None:
         """

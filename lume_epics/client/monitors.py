@@ -6,16 +6,6 @@ from typing import List, Dict, Tuple
 from lume_epics.client.controller import Controller
 from lume_model.variables import ImageVariable, ScalarVariable
 
-DEFAULT_IMAGE_DATA = {
-    "image": [np.zeros((50, 50))],
-    "x": [50],
-    "y": [50],
-    "dw": [0.01],
-    "dh": [0.01],
-}
-
-DEFAULT_SCALAR_VALUE = 0
-
 
 class PVImage:
     """
@@ -76,14 +66,7 @@ class PVImage:
             Dictionary mapping image components to values.
         """
 
-        try:
-            value = self.controller.get_image(self.pvname)
-
-        except TimeoutError:
-            print(f"No process variable found for {self.pvname}")
-            return DEFAULT_IMAGE_DATA
-
-        return value
+        return self.controller.get_image(self.pvname)
 
 
 class PVTimeSeries:
@@ -155,12 +138,7 @@ class PVTimeSeries:
             (time, data)
         """
         t = time.time()
-        try:
-            v = self.controller.get(self.pvname)
-
-        except TimeoutError:
-            print(f"No process variable found for {self.pvname}")
-            v = DEFAULT_SCALAR_VALUE
+        v = self.controller.get(self.pvname)
 
         self.time = np.append(self.time, t)
         self.data = np.append(self.data, v)
@@ -222,11 +200,4 @@ class PVScalar:
         -------
         Return value
         """
-        try:
-            v = self.controller.get(self.pvname)
-
-        except TimeoutError:
-            print(f"No process variable found for {self.pvname}")
-            v = DEFAULT_SCALAR_VALUE
-
-        return v
+        return self.controller.get(self.pvname)
