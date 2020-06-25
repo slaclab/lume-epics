@@ -225,8 +225,6 @@ class CADriver(Driver):
 
         for variable in output_variables:
             if variable.variable_type == "image":
-                value = variable.value.flatten()
-
                 self.setParam(
                     variable.name + ":ArrayData_RBV", variable.value.flatten()
                 )
@@ -545,7 +543,7 @@ class Server:
                 sim_state = {
                     variable.name: variable.value for variable in self.input_variables
                 }
-                model_output = self.model_loader.model.run(self.input_variables)
+                model_output = model_loader.model.run(self.input_variables)
                 self.driver.set_output_pvs(model_output)
 
         print("Terminating Channel Access server.")
