@@ -4,21 +4,7 @@ from typing import Dict, Tuple, Mapping, Union, List
 from abc import ABC, abstractmethod
 
 from lume_model.variables import Variable
-
-
-class SurrogateModel(ABC):
-    """
-    Base class for the surrogate models that includes abstract predict method, which \\
-    must be initialized by children.
-
-    """
-
-    @abstractmethod
-    def predict(self):
-        """
-        Abstract prediction method that must be overwritten by inheriting classes.
-        """
-        pass
+from lume_model.models import SurrogateModel
 
 
 class OnlineSurrogateModel:
@@ -95,7 +81,7 @@ class OnlineSurrogateModel:
 
         # update output variable state
         for model in self.models:
-            predicted_output = model.predict(self.input_variables)
+            predicted_output = model.evaluate(self.input_variables)
             for variable in predicted_output:
                 self.output_variables[variable.name] = variable
 

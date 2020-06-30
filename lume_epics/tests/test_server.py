@@ -7,7 +7,7 @@ from lume_model.variables import (
     ImageOutputVariable,
 )
 from lume_epics import epics_server
-from lume_epics.model import SurrogateModel
+from lume_model.models import SurrogateModel
 
 
 def test_scalar_server():
@@ -22,7 +22,7 @@ def test_scalar_server():
             "output2": ScalarOutputVariable(name="output2"),
         }
 
-        def predict(self, input_variables):
+        def evaluate(self, input_variables):
 
             self.input_variables = {
                 variable.name: variable for variable in input_variables
@@ -121,7 +121,7 @@ def test_image_server():
             ),
         }
 
-        def predict(self, input_variables):
+        def evaluate(self, input_variables):
 
             self.input_variables = {
                 variable.name: variable for variable in input_variables
