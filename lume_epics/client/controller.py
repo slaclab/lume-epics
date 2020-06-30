@@ -57,10 +57,15 @@ class Controller:
         """
         try:
             if self.protocol == "ca":
-                return caget(pvname)
+                value = caget(pvname)
 
             elif self.protocol == "pva":
-                return self.context.get(pvname)
+                value = self.context.get(pvname)
+
+            if not value:
+                value = DEFAULT_SCALAR_VALUE
+
+            return value
 
         except:
             print(f"No value found for {pvname}")
