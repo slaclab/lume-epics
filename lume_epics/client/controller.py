@@ -55,21 +55,21 @@ class Controller:
             Returns numpy array containing value.
 
         """
-        try:
-            if self.protocol == "ca":
-                value = caget(pvname)
+        if self.protocol == "ca":
+            value = caget(pvname)
 
-            elif self.protocol == "pva":
-                value = self.context.get(pvname)
+        elif self.protocol == "pva":
+            value = self.context.get(pvname)
 
-            if not value:
-                value = DEFAULT_SCALAR_VALUE
+        return value
 
-            return value
+    def get_value(self, pvname):
+        value = self.get(pvname)
 
-        except:
-            print(f"No value found for {pvname}")
-            return DEFAULT_SCALAR_VALUE
+        if value is None:
+            value = DEFAULT_SCALAR_VALUE
+
+        return value
 
     def get_image(self, pvname):
         """
@@ -95,42 +95,39 @@ class Controller:
             ```
         """
 
-        try:
-            if self.protocol == "ca":
-                image = self.get(f"{pvname}:ArrayData_RBV")
-                pvbase = pvname.replace(":ArrayData_RBV", "")
-                nx = self.get(f"{pvbase}:ArraySizeX_RBV")
-                ny = self.get(f"{pvbase}:ArraySizeY_RBV")
-                x = self.get(f"{pvbase}:MinX_RBV")
-                y = self.get(f"{pvbase}:MinY_RBV")
-                dw = self.get(f"{pvbase}:MaxX_RBV")
-                dh = self.get(f"{pvbase}:MaxY_RBV")
+        if self.protocol == "ca":
+            image = self.get(f"{pvname}:ArrayData_RBV")
+            pvbase = pvname.replace(":ArrayData_RBV", "")
+            nx = self.get(f"{pvbase}:ArraySizeX_RBV")
+            ny = self.get(f"{pvbase}:ArraySizeY_RBV")
+            x = self.get(f"{pvbase}:MinX_RBV")
+            y = self.get(f"{pvbase}:MinY_RBV")
+            dw = self.get(f"{pvbase}:MaxX_RBV")
+            dh = self.get(f"{pvbase}:MaxY_RBV")
 
-                image = image.reshape(int(nx), int(ny))
+            image = image.reshape(int(nx), int(ny))
 
-            elif self.protocol == "pva":
-                # context returns np array with WRITEABLE=False
-                # copy to manipulate array below
-                output = self.get(pvname)
+        elif self.protocol == "pva":
+            # context returns np array with WRITEABLE=False
+            # copy to manipulate array below
+            output = self.get(pvname)
+            attrib = output.attrib
+            x = attrib["x_min"]
+            y = attrib["y_min"]
+            dw = attrib["x_max"]
+            dh = attrib["y_max"]
+            image = copy.copy(output)
 
-                attrib = output.attrib
-                x = attrib["x_min"]
-                y = attrib["y_min"]
-                dw = attrib["x_max"]
-                dh = attrib["y_max"]
-                image = copy.copy(output)
+        return {
+            "image": [image],
+            "x": [x],
+            "y": [y],
+            "dw": [dw],
+            "dh": [dh],
+        }
 
-            return {
-                "image": [image],
-                "x": [x],
-                "y": [y],
-                "dw": [dw],
-                "dh": [dh],
-            }
-
-        except:
-            print(f"No value found for {pvname}")
-            return DEFAULT_IMAGE_DATA
+    #     print(f"No value found for {pvname}")
+    #     return DEFAULT_IMAGE_DATA
 
     def put(self, pvname, value: Union[np.ndarray, float]) -> None:
         """

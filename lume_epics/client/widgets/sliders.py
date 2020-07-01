@@ -74,7 +74,7 @@ def build_slider(
 
     # initialize value
     try:
-        start_val = controller.get(pvname)
+        start_val = controller.get_value(pvname)
 
     except TimeoutError:
         print(f"No process variable found for {pvname}")

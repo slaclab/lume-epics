@@ -138,7 +138,7 @@ class PVTimeSeries:
             (time, data)
         """
         t = time.time()
-        v = self.controller.get(self.pvname)
+        v = self.controller.get_value(self.pvname)
 
         self.time = np.append(self.time, t)
         self.data = np.append(self.data, v)
@@ -200,4 +200,4 @@ class PVScalar:
         -------
         Return value
         """
-        return self.controller.get(self.pvname)
+        return self.controller.get_value(self.pvname)
