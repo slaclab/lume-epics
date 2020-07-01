@@ -111,7 +111,9 @@ def build_pvdb(variables: List[Variable]):
                 }
 
         else:
-            pvdb[variable.name] = variable.dict(exclude_unset=True, exclude={"io_type"})
+            pvdb[variable.name] = variable.dict(
+                exclude_unset=True, exclude={"io_type"}, by_alias=True
+            )
 
     return pvdb
 
@@ -457,6 +459,7 @@ class Server:
         Set up pvaccess process variables for serving and start pvaccess server.
 
         """
+        print("Initializing pva server...")
         # initialize global inputs
         for variable in self.input_variables:
             # input_pvs[variable.name] = variable.value
@@ -473,12 +476,22 @@ class Server:
                 )
 
             elif variable.variable_type == "image":
+                nd_array = variable.value.view(NTNDArrayData)
+
+                # get dw and dh from model output
+                nd_array.attrib = {
+                    "x_min": variable.x_min,
+                    "y_min": variable.y_min,
+                    "x_max": variable.x_max,
+                    "y_max": variable.y_max,
+                }
+
                 pv = SharedPV(
                     handler=PVAccessInputHandler(
                         self.prefix
                     ),  # Use PVAccessInputHandler class to handle callbacks
                     nt=NTNDArray(),
-                    initial=variable.value,
+                    initial=nd_array,
                 )
 
             else:
@@ -552,18 +565,19 @@ class Server:
         """
         Start a Channel Access server.
         """
-        self.exit_event = Event()
-
+        print("Initializing channel access server...")
         self.ca_thread = Thread(
             target=self.ca_thread, daemon=True, args=(self.exit_event,)
         )
         self.ca_thread.start()
+        print("Channel access server started.")
 
     def start_pva_server(self) -> None:
         """
         Start PVAccess server. 
         """
         self.pva_server = P4PServer(providers=[providers])
+        print("PVAccess server started.")
 
     def start(self, monitor: bool = True) -> None:
         """
@@ -599,10 +613,11 @@ class Server:
         """
         Stop the channel access server.
         """
-        print("Stopping server..")
+        print("Stopping server...")
         if "ca" in self.protocols:
             self.exit_event.set()
             self.ca_thread.join()
 
         if "pva" in self.protocols:
+            print("Stopping PVAcess server...")
             self.pva_server.stop()
