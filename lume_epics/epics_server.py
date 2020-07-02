@@ -112,7 +112,7 @@ def build_pvdb(variables: List[Variable]):
 
         else:
             pvdb[variable.name] = variable.dict(
-                exclude_unset=True, exclude={"io_type"}, by_alias=True
+                exclude_unset=True, by_alias=True
             )
 
     return pvdb
