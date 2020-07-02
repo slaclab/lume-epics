@@ -127,7 +127,7 @@ class Controller:
                 dh = attrib["y_max"]
                 image = copy.copy(image)
 
-        if image:
+        if image is not None:
             return {
                 "image": [image],
                 "x": [x],
