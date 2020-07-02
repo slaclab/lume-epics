@@ -55,11 +55,16 @@ class Controller:
             Returns numpy array containing value.
 
         """
-        if self.protocol == "ca":
-            value = caget(pvname)
+        try:
+            if self.protocol == "ca":
+                value = caget(pvname)
 
-        elif self.protocol == "pva":
-            value = self.context.get(pvname)
+            elif self.protocol == "pva":
+                value = self.context.get(pvname)
+
+        except TimeoutError:
+            print(f"Unable to connect to process variable {pvname}")
+            value = None
 
         return value
 
@@ -97,34 +102,42 @@ class Controller:
 
         if self.protocol == "ca":
             image = self.get(f"{pvname}:ArrayData_RBV")
-            pvbase = pvname.replace(":ArrayData_RBV", "")
-            nx = self.get(f"{pvbase}:ArraySizeX_RBV")
-            ny = self.get(f"{pvbase}:ArraySizeY_RBV")
-            x = self.get(f"{pvbase}:MinX_RBV")
-            y = self.get(f"{pvbase}:MinY_RBV")
-            dw = self.get(f"{pvbase}:MaxX_RBV")
-            dh = self.get(f"{pvbase}:MaxY_RBV")
 
-            image = image.reshape(int(nx), int(ny))
+            if image is not None:
+                pvbase = pvname.replace(":ArrayData_RBV", "")
+                nx = self.get(f"{pvbase}:ArraySizeX_RBV")
+                ny = self.get(f"{pvbase}:ArraySizeY_RBV")
+                x = self.get(f"{pvbase}:MinX_RBV")
+                y = self.get(f"{pvbase}:MinY_RBV")
+                dw = self.get(f"{pvbase}:MaxX_RBV")
+                dh = self.get(f"{pvbase}:MaxY_RBV")
+
+                image = image.reshape(int(nx), int(ny))
 
         elif self.protocol == "pva":
             # context returns np array with WRITEABLE=False
             # copy to manipulate array below
-            output = self.get(pvname)
-            attrib = output.attrib
-            x = attrib["x_min"]
-            y = attrib["y_min"]
-            dw = attrib["x_max"]
-            dh = attrib["y_max"]
-            image = copy.copy(output)
+            image = self.get(pvname)
 
-        return {
-            "image": [image],
-            "x": [x],
-            "y": [y],
-            "dw": [dw],
-            "dh": [dh],
-        }
+            if image is not None:
+                attrib = image.attrib
+                x = attrib["x_min"]
+                y = attrib["y_min"]
+                dw = attrib["x_max"]
+                dh = attrib["y_max"]
+                image = copy.copy(image)
+
+        if image:
+            return {
+                "image": [image],
+                "x": [x],
+                "y": [y],
+                "dw": [dw],
+                "dh": [dh],
+            }
+
+        else:
+            return DEFAULT_IMAGE_DATA
 
     #     print(f"No value found for {pvname}")
     #     return DEFAULT_IMAGE_DATA

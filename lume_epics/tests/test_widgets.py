@@ -49,11 +49,8 @@ class ExampleModel(SurrogateModel):
         return list(self.output_variables.values())
 
 
-def test_sliders():
+def test_sliders_pva():
     PREFIX = "test"
-
-    server = epics_server.Server(ExampleModel, PREFIX)
-    server.start(monitor=False)
 
     inputs = list(ExampleModel.input_variables.values())
 
@@ -64,52 +61,38 @@ def test_sliders():
     sliders = build_sliders(inputs, controller, PREFIX)
 
     controller.close()
-    server.stop()
 
 
-def test_value_table():
-    PROTOCOL = "pva"
+def test_value_table_pva():
     PREFIX = "test"
-
-    server = epics_server.Server(ExampleModel, PREFIX)
-    server.start(monitor=False)
 
     output1 = ScalarOutputVariable(name="output1")
     output2 = ScalarOutputVariable(name="output2")
 
     # create controller
-    controller = Controller(PROTOCOL)
+    controller = Controller("pva")
 
     outputs = [output1, output2]
 
     value_table = ValueTable(outputs, controller, PREFIX)
 
     controller.close()
-    server.stop()
 
 
-def test_image_plot():
-    PROTOCOL = "pva"
+def test_image_plot_pva():
     PREFIX = "test"
 
-    server = epics_server.Server(ExampleModel, PREFIX)
-    server.start(monitor=False)
-    # create controller
-    controller = Controller(PROTOCOL)
+    controller = Controller("pva")
 
     outputs = [ExampleModel.output_variables["output3"]]
     value_table = ImagePlot(outputs, controller, PREFIX)
 
     controller.close()
-    server.stop()
 
 
-def test_striptool():
+def test_striptool_pva():
     PROTOCOL = "pva"
     PREFIX = "test"
-
-    server = epics_server.Server(ExampleModel, PREFIX)
-    server.start(monitor=False)
 
     output1 = ScalarOutputVariable(name="output1")
     output2 = ScalarOutputVariable(name="output2")
@@ -122,4 +105,61 @@ def test_striptool():
     value_table = Striptool(outputs, controller, PREFIX)
 
     controller.close()
-    server.stop()
+
+
+
+def test_sliders():
+    PREFIX = "test"
+
+    inputs = list(ExampleModel.input_variables.values())
+
+    # create controller
+    controller = Controller("ca")
+
+    # build sliders for the command process variable database
+    sliders = build_sliders(inputs, controller, PREFIX)
+
+    controller.close()
+
+
+def test_value_table_ca():
+    PREFIX = "test"
+
+    output1 = ScalarOutputVariable(name="output1")
+    output2 = ScalarOutputVariable(name="output2")
+
+    # create controller
+    controller = Controller("ca")
+
+    outputs = [output1, output2]
+
+    value_table = ValueTable(outputs, controller, PREFIX)
+
+    controller.close()
+
+
+def test_image_plot_ca():
+    PREFIX = "test"
+
+    controller = Controller("ca")
+
+    outputs = [ExampleModel.output_variables["output3"]]
+    value_table = ImagePlot(outputs, controller, PREFIX)
+
+    controller.close()
+
+
+def test_striptool_ca():
+    PREFIX = "test"
+
+    output1 = ScalarOutputVariable(name="output1")
+    output2 = ScalarOutputVariable(name="output2")
+
+    # create controller
+    controller = Controller("ca")
+
+    outputs = [output1, output2]
+
+    value_table = Striptool(outputs, controller, PREFIX)
+
+    controller.close()
