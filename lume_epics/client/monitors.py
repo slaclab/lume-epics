@@ -1,4 +1,5 @@
 import time
+import logging
 
 import numpy as np
 from typing import List, Dict, Tuple
@@ -6,6 +7,7 @@ from typing import List, Dict, Tuple
 from lume_epics.client.controller import Controller
 from lume_model.variables import ImageVariable, ScalarVariable
 
+logger = logging.getLogger(__name__)
 
 class PVImage:
     """

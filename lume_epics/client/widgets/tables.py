@@ -1,4 +1,5 @@
 from typing import List
+import logging
 
 from bokeh.models import ColumnDataSource, DataTable, TableColumn, StringFormatter
 

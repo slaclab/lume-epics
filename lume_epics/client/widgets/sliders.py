@@ -1,11 +1,13 @@
 from functools import partial
 from typing import Union, List
+import logging
 
 from bokeh.models import Slider
 
 from lume_model.variables import ScalarVariable
 from lume_epics.client.controller import Controller
 
+logger = logging.getLogger(__name__)
 
 def set_pv_from_slider(
     attr: str,
@@ -73,12 +75,7 @@ def build_slider(
     scale = 1
 
     # initialize value
-    try:
-        start_val = controller.get_value(pvname)
-
-    except TimeoutError:
-        print(f"No process variable found for {pvname}")
-        start_val = 0
+    start_val = controller.get_value(pvname)
 
     slider = Slider(
         title=title,

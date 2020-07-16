@@ -1,4 +1,5 @@
 from typing import List
+import logging
 
 from bokeh.plotting import figure
 from bokeh.models import ColumnDataSource, ColorMapper
@@ -7,6 +8,7 @@ from lume_model.variables import ImageVariable, ScalarVariable
 from lume_epics.client.controller import Controller
 from lume_epics.client.monitors import PVImage, PVTimeSeries
 
+logger = logging.getLogger(__name__)
 
 class ImagePlot:
     """

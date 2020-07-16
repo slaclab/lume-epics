@@ -1,11 +1,13 @@
 import numpy as np
 import time
+import logging
 from typing import Dict, Tuple, Mapping, Union, List
 from abc import ABC, abstractmethod
 
 from lume_model.variables import Variable
 from lume_model.models import SurrogateModel
 
+logger = logging.getLogger(__name__)
 
 class OnlineSurrogateModel:
     """
@@ -74,18 +76,18 @@ class OnlineSurrogateModel:
             
 
         """
-        t1 = time.time()
-
         # update input variables and get state representation
         self.input_variables = input_variables
 
         # update output variable state
         predicted_output = self.model.evaluate(self.input_variables)
+
+        logger.info("Running model")
+        t1 = time.time()
         for variable in predicted_output:
             self.output_variables[variable.name] = variable
-
         t2 = time.time()
-        print("Running model...", end="")
-        print("Ellapsed time: " + str(t2 - t1))
+    
+        logger.info("Ellapsed time: %s", str(t2 - t1))
 
         return list(self.output_variables.values())

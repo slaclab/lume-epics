@@ -1,8 +1,12 @@
 from typing import Union
 import numpy as np
 import copy
+import logging
+
 from epics import caget, caput
 from p4p.client.thread import Context
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_IMAGE_DATA = {
     "image": [np.zeros((50, 50))],
@@ -63,7 +67,7 @@ class Controller:
                 value = self.context.get(pvname)
 
         except TimeoutError:
-            print(f"Unable to connect to process variable {pvname}")
+            logger.exception("Unable to connect to process variable %s using protocol %s", pvname, self.pva)
             value = None
 
         return value
@@ -139,8 +143,6 @@ class Controller:
         else:
             return DEFAULT_IMAGE_DATA
 
-    #     print(f"No value found for {pvname}")
-    #     return DEFAULT_IMAGE_DATA
 
     def put(self, pvname, value: Union[np.ndarray, float]) -> None:
         """

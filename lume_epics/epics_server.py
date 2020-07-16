@@ -3,6 +3,8 @@ import numpy as np
 import random
 import sys
 import time
+import logging 
+
 from threading import Thread, Event, local
 from typing import Dict, Mapping, Union, List
 
@@ -17,6 +19,7 @@ from p4p.nt.ndarray import ntndarray as NTNDArrayData
 from lume_model.variables import Variable
 from lume_epics.model import OnlineSurrogateModel, SurrogateModel
 
+logger = logging.getLogger(__name__)
 
 def build_pvdb(variables: List[Variable]):
     """
@@ -201,7 +204,7 @@ class CADriver(Driver):
         """
 
         if pvname in self.output_variables:
-            print(pvname + " is a read-only pv")
+            logger.warning("Cannot update variable %s. Output variables can only me updated through surrogate model callback.", pvname)
             return False
 
         else:
@@ -209,10 +212,11 @@ class CADriver(Driver):
                 self.input_variables[pvname].value = value
                 self.setParam(pvname, value)
                 self.updatePVs()
+                logger.debug("Process variable %s updated with value %s", pvname, value)
                 return True
 
             else:
-                print(f"{pvname} not found in server variables.")
+                logger.error("%s not found in server variables.", pvame)
                 return False
 
     def set_output_pvs(self, output_variables: List[Variable]) -> None:
@@ -459,7 +463,7 @@ class Server:
         Set up pvaccess process variables for serving and start pvaccess server.
 
         """
-        print("Initializing pva server...")
+        logger.info("Initializing PVAccess server")
         # initialize global inputs
         for variable in self.input_variables:
             # input_pvs[variable.name] = variable.value
@@ -555,25 +559,25 @@ class Server:
                 model_output = model_loader.model.run(self.input_variables)
                 self.driver.set_output_pvs(model_output)
 
-        print("Terminating Channel Access server.")
+        logger.info("Terminating Channel Access server")
 
     def start_ca_server(self) -> None:
         """
         Start a Channel Access server.
         """
-        print("Initializing channel access server...")
+        logger.info("Initializing channel access server")
         self.ca_thread = Thread(
             target=self.ca_thread, daemon=True, args=(self.exit_event,)
         )
         self.ca_thread.start()
-        print("Channel access server started.")
+        logger.info("Channel access server started")
 
     def start_pva_server(self) -> None:
         """
         Start PVAccess server. 
         """
         self.pva_server = P4PServer(providers=[providers])
-        print("PVAccess server started.")
+        logger.info("PVAccess server started")
 
     def start(self, monitor: bool = True) -> None:
         """
@@ -597,23 +601,23 @@ class Server:
 
                 except KeyboardInterrupt:
                     # Ctrl-C handling and send kill to threads
-                    print("Stopping servers...")
+                    logger.info("Stopping serverss")
                     self.exit_event.set()
                     self.ca_thread.join()
 
                     if "pva" in self.protocols:
-                        print("Stopping PVAccess server...")
+                        logger.info("Stopping PVAccess server")
                         self.pva_server.stop()
 
     def stop(self) -> None:
         """
         Stop the channel access server.
         """
-        print("Stopping server...")
+        logger.info("Stopping server")
         if "ca" in self.protocols:
             self.exit_event.set()
             self.ca_thread.join()
 
         if "pva" in self.protocols:
-            print("Stopping PVAcess server...")
+            logger.info("Stopping PVAcess server")
             self.pva_server.stop()
