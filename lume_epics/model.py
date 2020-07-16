@@ -27,17 +27,17 @@ class OnlineSurrogateModel:
 
     def __init__(
         self,
-        models: List[SurrogateModel],
+        model: SurrogateModel,
         input_variables: List[Variable],
         output_variables: List[Variable],
     ) -> None:
         """
-        Initialize OnlineSurrogateModel provided models. \\
+        Initialize OnlineSurrogateModel with the surrogate model. \\
 
         Parameters
         ----------
-        models: list
-            list of model objects
+        model: list
+            Instantiated surrogate model
             
         input_variables: list
             List of lume-model variables to use as inputs
@@ -46,7 +46,7 @@ class OnlineSurrogateModel:
             List of lume-model variables to use as outputs
 
         """
-        self.models = models
+        self.model = model
 
         self.input_variables = input_variables
 
@@ -80,10 +80,9 @@ class OnlineSurrogateModel:
         self.input_variables = input_variables
 
         # update output variable state
-        for model in self.models:
-            predicted_output = model.evaluate(self.input_variables)
-            for variable in predicted_output:
-                self.output_variables[variable.name] = variable
+        predicted_output = self.model.evaluate(self.input_variables)
+        for variable in predicted_output:
+            self.output_variables[variable.name] = variable
 
         t2 = time.time()
         print("Running model...", end="")

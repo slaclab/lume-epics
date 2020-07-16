@@ -273,7 +273,7 @@ class ModelLoader(local):
 
         surrogate_model = model_class(**model_kwargs)
         self.model = OnlineSurrogateModel(
-            [surrogate_model],
+            surrogate_model,
             list(model_class.input_variables.values()),
             list(model_class.output_variables.values()),
         )
@@ -536,11 +536,7 @@ class Server:
         """
         Thread used for the channel access server.
 
-        Note
-        ----
-        To be used in a daemon thread.
         """
-
         sim_state = {variable.name: variable.value for variable in self.input_variables}
 
         while not exit_event.is_set():
