@@ -1,4 +1,5 @@
 import numpy as np
+import time
 from lume_model.variables import (
     ScalarInputVariable,
     ScalarOutputVariable,
