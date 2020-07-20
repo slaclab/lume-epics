@@ -17,23 +17,19 @@ from p4p.server import Server as P4PServer
 from p4p.nt.ndarray import ntndarray as NTNDArrayData
 
 from lume_model.variables import Variable
-from lume_epics.model import OnlineSurrogateModel, SurrogateModel
+from lume_model.variables import SurrogateModel
+from lume_epics.model import OnlineSurrogateModel
 
 logger = logging.getLogger(__name__)
 
-def build_pvdb(variables: List[Variable]):
+def build_pvdb(variables: List[Variable]) -> dict:
     """
     Utility function for building dictionary (pvdb) used to initialize 
     the channel access server.
     
-    Parameters
-    ----------
-    variables: list
-        List of lume_model variables to be served with channel access server.
-
-    Returns
-    -------
-    pvdb: dict
+    Args:
+        variables (list): List of lume_model variables to be served with channel 
+        access server.
 
     """
     pvdb = {}
@@ -125,13 +121,14 @@ class CADriver(Driver):
     """
     Class that reacts to read an write requests to process variables.
 
-    Attributes
-    ----------
-    input_variables: list
-        List of lume-model variables to use as inputs
+    Attributes:
+        input_variables (list): List of lume-model variables to use as inputs.
 
-    ouput_variables: list
-        List of lume-model variables to use as outputs
+        ouput_variables (list): List of lume-model variables to use as outputs.
+
+    
+    Note:
+        In the pcaspy documentation, 'reason' is used instead of pvname.
 
     """
 
@@ -141,13 +138,10 @@ class CADriver(Driver):
         """
         Initialize the driver. Store input state and output state.
 
-        Parameters
-        ----------
-        input_variables: list
-            List of lume-model variables to use as inputs
+        Args:
+            input_variables (list): List of lume-model variables to use as inputs.
 
-        ouput_variables: list
-            List of lume-model variables to use as outputs
+            ouput_variables (list): List of lume-model variables to use as outputs.
 
         """
 
@@ -163,44 +157,22 @@ class CADriver(Driver):
         """
         Method used by server when clients read a process variable.
 
-        Parameters
-        ----------
-        pvnamme: str
-            Process variable name
-
-        Returns
-        -------
-        float/np.ndarray
-            Returns the value of the process variable
-
-        Notes
-        -----
-        In the pcaspy documentation, 'reason' is used instead of pvname.
+        Args:
+            pvname (str): Process variable name.
 
         """
         return self.getParam(pvname)
 
     def write(self, pvname: str, value: Union[float, np.ndarray]) -> bool:
         """
-        Method used by server when clients write a process variable.
+        Function called by server when clients write a process variable.
 
 
-        Parameters
-        ----------
-        pvname: str
-            Process variable name
+        Args:
+            pvname (str): Process variable name.
 
-        value: float/np.ndarray
-            Value to assign to the process variable.
+            value (Union[float, np.ndarray]): Value to assign to the process variable.
 
-        Returns
-        -------
-        bool
-            Returns True if the value is accepted, False if rejected
-
-        Notes
-        -----
-        In the pcaspy documentation, 'reason' is used instead of pv.
         """
 
         if pvname in self.output_variables:
@@ -223,10 +195,8 @@ class CADriver(Driver):
         """
         Set output process variables.
 
-        Parameters
-        ----------
-        output_variables: list
-            Dictionary that maps ouput process variable name to variables
+        Args:
+            output_variables (list): Dictionary that maps ouput process variable name to variables
         """
 
         for variable in output_variables:
@@ -247,32 +217,22 @@ class CADriver(Driver):
 
 class ModelLoader(local):
     """
-    Subclass of threading.local that will initialize the surrogate model in each \\
-    thread.
+    Subclass of threading.local that initializes the surrogate model in each thread. 
+    This avoids conflicts that may occur when calling a shared graph between threads.
 
-    Attributes
-    ----------
-    model: 
-        Surrogate model instance used for predicting
+    Attributes:
+        model (SurrogateModel): Surrogate model instance used for predicting
 
-    Note
-    ----
-    Keras models are not thread safe so the model must be loaded in each thread and \\
-    referenced locally.
     """
 
     def __init__(self, model_class: SurrogateModel, model_kwargs: dict = {},) -> None:
         """
-        Initializes surrogate model.
+        Initializes the online surrogate model.
 
-        Parameters
-        ----------
-        model_class
-            Model class to be instantiated. Should have all methods indicated by the abstract\\
-            base class in 
+        Args:
+            model_class (SurrogateModel): Surrogate Model class to be instantiated. 
 
-        model_kwargs: dict
-            kwargs for initialization
+            model_kwargs (dict): kwargs for initialization
         """
 
         surrogate_model = model_class(**model_kwargs)
@@ -285,7 +245,7 @@ class ModelLoader(local):
 
 class PVAccessInputHandler:
     """
-    Handler object that defines the callbacks to execute on put operations to input \\
+    Handler object that defines the callbacks to execute on put operations to input 
     process variables.
     """
 
@@ -293,26 +253,23 @@ class PVAccessInputHandler:
         """
         Initialize the handler with prefix and image pv attributes
 
-        prefix: str
-            prefix used to format pvs
+        Args:
+            prefix (str): Prefix used to format process variables
 
         """
         self.prefix = prefix
 
     def put(self, pv, op) -> None:
         """
-        Updates the global input process variable state, posts the input process \\
-        variable value change, runs the thread local OnlineSurrogateModel instance \\
-        using the updated global input process variable states, and posts the model \\
+        Updates the global input process variable state, posts the input process 
+        variable value change, runs the thread local OnlineSurrogateModel instance 
+        using the updated global input process variable states, and posts the model 
         output values to the output process variables.
 
-        Parameters
-        ----------
-        pv: p4p.server.thread.SharedPV
-            Input process variable on which the put is operating
+        Args:
+            pv (SharedPV): Input process variable on which the put operates.
 
-        op: p4p.server.raw.ServOpWrap
-            Server operation initiated by the put call
+            op (p4p.server.raw.ServOpWrap): Server operation initiated by the put call.
 
         """
         global providers
@@ -351,26 +308,23 @@ class PVAccessInputHandler:
 
 class Server:
     """
-    Server object for channel access process variables that updates and reads process \\
+    Server object for channel access process variables that updates and reads process
     values in a single thread.
 
-    Attributes
-    ----------
-    model: online_model.model.surrogate_model.OnlineSurrogateModel
-        OnlineSurrogateModel instance used for getting predictions
+    Attributes:
+        model (OnlineSurrogateModel): OnlineSurrogateModel instance used for getting 
+            predictions.
 
-    input_variables: 
-        List of lume-model variables to use as inputs
+        input_variables (List[Variable]): List of lume-model variables to use as 
+            inputs.
 
-    ouput_variables:
-        List of lume-model variables to use as outputs
+        ouput_variables (List[Variable]): List of lume-model variables to use as 
+            outputs.
 
-    server: pcaspy.driver.SimpleServer
-        Server class that interfaces between the channel access client and the driver. \\
-        Forwards the read/write requests to the driver
+        server (SimpleServer): Server class that interfaces between the channel access
+            client and the driver.
 
-    driver: online_model.server.ca.CADriver
-        Class that reacts to process variable read/write requests
+        driver (CADriver): Class that reacts to process variable read/write requests.
 
     """
 
@@ -382,21 +336,19 @@ class Server:
         model_kwargs: dict = {},
     ) -> None:
         """
-        Create OnlineSurrogateModel instance in the main thread and initialize output \\
-        variables by running with the input process variable state, input/output variable \\
-        tracking, start the server, create the process variables, \\
-        and start the driver.
+        Create OnlineSurrogateModel instance in the main thread and initialize output 
+        variables by running with the input process variable state, input/output 
+        variable tracking, start the server, create the process variables, and start 
+        the driver.
 
-        Parameters
-        ----------
-        model_class: lume_epics.model.SurrogateModel
-            Surrogate model class to be instantiated
+        Args:
+            model_class (SurrogateModel): Surrogate model class to be instantiated.
 
-        prefix: str
-            Prefix used to format process variables
+            prefix (str): Prefix used to format process variables.
 
-        protocols: list
-            List of protocols used to instantiate server
+            protocol (List[str]): List of protocols used to instantiate server.
+
+            model_kwargs (dict): Kwargs to instantiate model.
 
 
         """
@@ -437,7 +389,7 @@ class Server:
 
     def initialize_ca_server(self) -> None:
         """
-        Set up the channel access server.
+        Set up the Channel Access server.
 
         """
         # set up db for initializing process variables
@@ -460,7 +412,7 @@ class Server:
 
     def initialize_pva_server(self) -> None:
         """
-        Set up pvaccess process variables for serving and start pvaccess server.
+        Set up PVAccess process variables for serving and start PVAccess server.
 
         """
         logger.info("Initializing PVAccess server")
@@ -536,9 +488,13 @@ class Server:
         else:
             pass  # throw exception for incorrect data type
 
-    def ca_thread(self, exit_event) -> None:
+    def ca_thread_process(self, exit_event) -> None:
         """
-        Thread used for the channel access server.
+        Server thread for the Channel Access server that monitors the process variable
+        state and executes model.
+
+        Args:
+            exit_event (Event): Threading event to be marked on process exit.
 
         """
         sim_state = {variable.name: variable.value for variable in self.input_variables}
@@ -563,18 +519,18 @@ class Server:
 
     def start_ca_server(self) -> None:
         """
-        Start a Channel Access server.
+        Starts Channel Access server thread.
         """
         logger.info("Initializing channel access server")
-        self.ca_thread = Thread(
-            target=self.ca_thread, daemon=True, args=(self.exit_event,)
+        self.start_ca_thread = Thread(
+            target=self.ca_thread_process, daemon=True, args=(self.exit_event,)
         )
         self.ca_thread.start()
         logger.info("Channel access server started")
 
     def start_pva_server(self) -> None:
         """
-        Start PVAccess server. 
+        Starts PVAccess server. 
         """
         self.pva_server = P4PServer(providers=[providers])
         logger.info("PVAccess server started")
