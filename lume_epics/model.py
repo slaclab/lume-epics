@@ -11,19 +11,14 @@ logger = logging.getLogger(__name__)
 
 class OnlineSurrogateModel:
     """
-    Class for running the executing surrogate models.
+    Class for executing surrogate model.
 
-    Attributes
-    ----------
-
-    models: list
-        list of model objects
+    Attributes:
+        model (SurrogateModel): Model for execution.
             
-    input_variables: list
-        List of lume-model variables to use as inputs
+        input_variables (list): List of lume-model variables to use as inputs.
 
-    ouput_variables: list
-        List of lume-model variables to use as outputs
+        ouput_variables (list): List of lume-model variables to use as outputs.
 
     """
 
@@ -34,18 +29,16 @@ class OnlineSurrogateModel:
         output_variables: List[Variable],
     ) -> None:
         """
-        Initialize OnlineSurrogateModel with the surrogate model. \\
+        Initialize OnlineSurrogateModel with the surrogate model. 
 
-        Parameters
-        ----------
-        model: list
-            Instantiated surrogate model
+        Args:
+            model (SurrogateModel): Instantiated surrogate model.
             
-        input_variables: list
-            List of lume-model variables to use as inputs
+            input_variables (List[Variable]): List of lume-model variables to use as 
+                inputs
 
-        ouput_variables: list
-            List of lume-model variables to use as outputs
+            ouput_variables (List[Variable]): List of lume-model variables to use as 
+                outputs
 
         """
         self.model = model
@@ -59,21 +52,12 @@ class OnlineSurrogateModel:
 
     def run(
         self, input_variables: List[Variable]
-    ) -> Mapping[str, Union[float, np.ndarray]]:
+    ) -> List[Variable]:
         """
         Executes both scalar and image model given process variable value inputs.
 
-        Parameters
-        ----------
-        input_variables: list
-            List of lume-model variables to use as inputs
-
-        Returns
-        -------
-        ouput_variables: list
-            List of updated lume-model output variables
-
-            
+        Args:
+            input_variables (list): List of lume-model variables to use as inputs.            
 
         """
         # update input variables and get state representation
