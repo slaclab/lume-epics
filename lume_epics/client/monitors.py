@@ -11,23 +11,20 @@ logger = logging.getLogger(__name__)
 
 class PVImage:
     """
-    Object for updating and formatting image data.
+    Monitor for updating and formatting image data.
 
-    Attributes
-    ----------
-    prefix: str
-        Server prefix
+    Attributes:
+        prefix (str): Prefix used for initializing server.
 
-    variable: ImageVariable
+        variable (ImageVariable): Image process variable to be displayed.
 
-    controller: Controller
-        Controller object for getting pv values
+        controller (Controller): Controller object for accessing process variable.
 
-    units: str
-        Units associated with the variable
+        pvname (str): Name of the process variable to access.
 
-    pvname: str
-        Name of the process variable to access.
+        axis_units (str): Units associated with the image axes.
+
+        axis_labels (str): Labels associated with the image axes.
 
     """
 
@@ -37,16 +34,13 @@ class PVImage:
         """
         Initialize monitor for an image variable.
 
-        Parameters
-        ----------
-        prefix: str
-            Server prefix
+        Args:
+            prefix (str): Prefix used for initializing server.
 
-        variable: ImageVariable
-            Image variable to display
+            variable (ImageVariable): Image process variable to be displayed.
 
-        controller: Controller
-            Controller object for getting pv values
+            controller (Controller): Controller object for accessing process variable.
+
         """
         self.units = None
         # check if units has been set
@@ -60,12 +54,8 @@ class PVImage:
 
     def poll(self) -> Dict[str, list]:
         """
-        Collects image data via appropriate protocol and builds image data dictionary.
+        Collects image data and builds image data dictionary.
 
-        Returns
-        -------
-        dict
-            Dictionary mapping image components to values.
         """
 
         return self.controller.get_image(self.pvname)
@@ -73,30 +63,22 @@ class PVImage:
 
 class PVTimeSeries:
     """
-    Monitor for scalar process variables.
+    Monitor for time series variables.
 
-    Attributes
-    ----------
-    time: np.ndarray
-        Array of sample times
+    Attributes:
+        time (np.ndarray): Array of times sampled.
 
-    data: np.ndarray
-        Array of data samples
+        data (np.ndarray): Array of sampled data.
 
-    prefix: str
-        Server prefix
+        prefix (str): Prefix used for initializing server.
 
-    variable: ScalarVariable
-        Variable to monitor for time series
+        variable (ScalarVariable): Variable monitored for time series.
 
-    controller: Controller
-        Controller object for getting pv values
+        controller (Controller): Controller object for accessing process variable.
 
-    units: str
-        Units associated with the variable
+        units (str): Units associated with the variable
 
-    pvname: str
-        Name of the process variable to access
+        pvname (str): Name of the process variable to access
 
     """
 
@@ -106,16 +88,12 @@ class PVTimeSeries:
         """
         Initializes monitor attributes.
 
-        Parameters
-        ----------
-        prefix: str
-            Server prefix
+        Args:
+            prefix (str): Prefix used for initializing server.
 
-        variable: ScalarVariable
-            Variable to monitor for time series
+            variable (ScalarVariable): Variable to monitor for time series
 
-        controller: Controller
-            Controller object for getting pv values
+            controller (Controller): Controller object for accessing process variable.
 
         """
         self.pvname = f"{prefix}:{variable.name}"
@@ -134,10 +112,6 @@ class PVTimeSeries:
         """
         Collects image data via appropriate protocol and returns time and data.
 
-        Returns
-        -------
-        tuple
-            (time, data)
         """
         t = time.time()
         v = self.controller.get_value(self.pvname)
@@ -151,22 +125,16 @@ class PVScalar:
     """
     Monitor for scalar process variables.
 
-    Attributes
-    ----------
-    prefix: str
-        Server prefix
+    Attributes:
+        prefix (str): Prefix used for initializing server.
 
-    variable: ScalarVariable
-        Variable to monitor for time series
+        variable (ScalarVariable): Variable to monitor for value.
 
-    controller: Controller
-        Controller object for getting pv values
+        controller (Controller): Controller object for accessing process variable.
 
-    units: str
-        Units associated with the variable
+        units (str): Units associated with the variable
 
-    pvname: str
-        Name of the process variable to access
+        pvname (str): Name of the process variable to access
 
     """
 
@@ -176,16 +144,12 @@ class PVScalar:
         """
         Initializes monitor attributes.
 
-        Parameters
-        ----------
-        prefix: str
-            Server prefix
+        Args:
+            prefix (str): Prefix used for initializing server.
 
-        variable: ScalarVariable
-            Variable to monitor for time series
+            variable (ScalarVariable):  Variable to monitor for value.
 
-        controller: Controller
-            Controller object for getting pv values
+            controller (Controller): Controller object for accessing process variable.
         """
         self.units = None
         # check if units has been set
@@ -198,8 +162,5 @@ class PVScalar:
         """
         Poll variable for value
 
-        Returns
-        -------
-        Return value
         """
         return self.controller.get_value(self.pvname)

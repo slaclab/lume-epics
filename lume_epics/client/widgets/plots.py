@@ -4,7 +4,7 @@ import logging
 from bokeh.plotting import figure
 from bokeh.models import ColumnDataSource, ColorMapper
 
-from lume_model.variables import ImageVariable, ScalarVariable
+from lume_model.variables import Variable, ImageVariable, ScalarVariable
 from lume_epics.client.controller import Controller
 from lume_epics.client.monitors import PVImage, PVTimeSeries
 
@@ -14,22 +14,16 @@ class ImagePlot:
     """
     Object for viewing and updating an image plot.
 
-    Attributes
-    ----------
-    live_variable: str
-        Current variable to be displayed
+    Attributes:
+        live_variable (str): Current variable to be displayed
 
-    source: bokeh.models.sources.ColumnDataSource
-        Data source for the viewer.
+        source (ColumnDataSource): Data source for the viewer.
 
-    pv_monitors: PVImage
-        Monitors for the process variables.
+        pv_monitors (PVImage): Monitors for the process variables.
 
-    plot: bokeh.plotting.figure.Figure
-        Plot object
+        plot (Figure): Bokeh plot object
 
-    img_obj: bokeh.models.renderers.GlyphRenderer
-        Image renderer
+        img_obj (GlyphRenderer): Image renderer
 
     """
 
@@ -39,16 +33,12 @@ class ImagePlot:
         """
         Initialize monitors, current process variable, and data source.
 
-        Parameters
-        ----------
-        variables: list
-            List of image variables to include in plot
+        Args:
+            variables (List[Variable]): List of image variables to include in plot
 
-        controller: Controller
-            Controller object for getting pv values
+            controller (Controller): Controller object for getting pv values
 
-        prefix: str
-            Prefix used for server
+            prefix (str): Prefix used for server
 
         """
         self.pv_monitors = {}
@@ -67,10 +57,11 @@ class ImagePlot:
         """
         Creates the plot object.
 
-        Parameters
-        ----------
-        palette: tuple
-            Color palette to use for plot.
+        Args:
+            palette (Optional[tuple]): Color palette to use for plot.
+
+            color_mapper (Optional[ColorMapper]): Color mapper for rendering plot
+
         """
         # create plot
         self.plot = figure(
@@ -120,10 +111,8 @@ class ImagePlot:
         """
         Update the plot to reflect current process variable.
 
-        Parameters
-        ----------
-        live_variable: str
-            Variable to display
+        Args:
+            live_variable (str): Variable to display
         """
         # update internal pv trackinng
         if live_variable:
@@ -153,19 +142,15 @@ class Striptool:
     """
     View for striptool display.
 
-    Attributes
-    ----------
-    live_variable: str
-        Variable to be displayed
+    Attributes:
 
-    source: bokeh.models.sources.ColumnDataSource
-        Data source for the viewer
+        live_variable (str): Variable to be displayed
 
-    pv_monitors: PVScalarMonitor
-        Monitors for the scalar variables
+        source (ColumnDataSource): Data source for the striptool view
 
-    plot: bokeh.plotting.figure.Figure
-        Plot object
+        pv_monitors (PVScalarMonitor): Monitors for the tracked process variables
+
+        plot (Figure): Bokeh plot object
 
     """
 
@@ -175,16 +160,12 @@ class Striptool:
         """
         Initialize monitors, current process variable, and data source.
 
-        Parameters
-        ----------
-        variables: list
-            List of variables to initialize striptool
+        Args:
+            variables (List[ScalarVariable]): List of variables to display with striptool
 
-        controller: Controller
-            Controller object for getting pv values
+            controller (Controller): Controller object for getting process variable values
 
-        prefix: str
-            Prefix used for server.
+            prefix (str): Prefix used for server.
 
         """
         self.pv_monitors = {}
@@ -216,10 +197,8 @@ class Striptool:
         """
         Update the plot to reflect current process variable.
 
-        Parameters
-        ----------
-        live_variable: str
-            Variable to display
+        Args:
+            live_variable (Optional[str]): Variable to display
         """
         if live_variable:
             self.live_variable = live_variable

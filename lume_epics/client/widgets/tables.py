@@ -9,28 +9,38 @@ from lume_epics.client.monitors import PVScalar
 
 
 class ValueTable:
+    """
+    Table of process variable names and values.
+
+    Attriibutes:
+        pv_monitors (Dict[str, PVScalar]): Monitors associated with process variables.
+
+        output_values (dict): Dict mapping process variable name to current value.
+
+        unit_map (dict): Dict mapping process variable name to units.
+
+        source (ColumnDataSource): Data source for populating bokeh table.
+
+
+
+    """
     def __init__(
         self, variables: List[ScalarVariable], controller: Controller, prefix: str,
     ) -> None:
         """
-        View for value table mapping variable name to value.
+        Initialize table.
 
-        Parameters
-        ----------
-        variables: list
-            List of variables to display in table
+        Args:
+            variables (List[ScalarVariable]): List of variables to display.
 
-        controller: Controller
-            Controller object for getting pv values
+            controller (Controller): Controller object for accessing process variables.
 
-        prefix: str
-            Prefix used for the server
+            prefix (str): Prifix used in setting up the server.
 
         """
         # only creating pvs for non-image pvs
         self.pv_monitors = {}
-        self.output_values = []
-        self.names = []
+        self.output_values = {}
 
         # be sure to surface units in the table
         self.unit_map = {}
@@ -39,8 +49,7 @@ class ValueTable:
             self.pv_monitors[variable.name] = PVScalar(prefix, variable, controller)
             v = self.pv_monitors[variable.name].poll()
 
-            self.output_values.append(v)
-            self.names.append(variable.name)
+            self.output_values[variable.name] = v
 
             # check if units assigned
             if "units" in variable.__fields_set__:
@@ -53,10 +62,10 @@ class ValueTable:
 
     def create_table(self) -> None:
         """
-        Create the table and populate prelim data.
+        Creates the bokeh table and populate data.
         """
-        self.table_data = dict(x=self.names, y=self.output_values)
-        self.source = ColumnDataSource(self.table_data)
+        table_data = dict(x=list(self.output_values.keys()), y=list(self.output_values.values()))
+        self.source = ColumnDataSource(table_data)
         columns = [
             TableColumn(
                 field="x", title="Outputs", formatter=StringFormatter(font_style="bold")
@@ -70,11 +79,10 @@ class ValueTable:
 
     def update(self) -> None:
         """
-        Update data source.
+        Update data source to reflect updated values.
         """
-        output_values = []
         for variable in self.pv_monitors:
             v = self.pv_monitors[variable].poll()
-            output_values.append(v)
+            self.output_values[variable] = v
 
-        self.source.data = dict(x=self.names, y=output_values)
+        self.source.data = dict(x=list(self.output_values.keys()), y=list(self.output_values.values()))

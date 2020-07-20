@@ -23,19 +23,18 @@ class Controller:
     """
     Controller class used to get and put process variables.
 
-    Attributes
-    ----------
-    protocol: str
-        Protocol to use ("pva", "ca")
+    Attributes:
+        protocol (str): Protocol for accessing variables.
+            ("pva" for PVAccess, "ca" for Channel Access)
 
-    context: p4p.client.thread.Context
-        p4p threaded context instance
+        context (Context): P4P threaded context instance for use with PVAccess.
 
     """
 
     def __init__(self, protocol: str):
         """
-        Store protocol and initialize context if using PVAccess.
+        Initializes controller. Stores protocol and creates context attribute if 
+        using PVAccess.
         """
         self.protocol = protocol
 
@@ -44,19 +43,12 @@ class Controller:
         if protocol == "pva":
             self.context = Context("pva")
 
-    def get(self, pvname: str):
+    def get(self, pvname: str) -> np.ndarray:
         """
-        Get the value of a process variable.
+        Accesses and returns the value of a process variable.
 
-        Parameters
-        ----------
-        pvname: str
-            Name of the process variable
-
-        Returns
-        -------
-        np.ndarray
-            Returns numpy array containing value.
+        Args:
+            pvname (str): Process variable name
 
         """
         try:
@@ -67,7 +59,7 @@ class Controller:
                 value = self.context.get(pvname)
 
         except TimeoutError:
-            logger.exception("Unable to connect to process variable %s using protocol %s", pvname, self.pva)
+            logger.exception("Unable to connect to process variable %s using protocol %s", pvname, self.protocol)
             value = None
 
         return value
@@ -80,28 +72,13 @@ class Controller:
 
         return value
 
-    def get_image(self, pvname):
+    def get_image(self, pvname) -> dict:
         """
         Gets image data based on protocol.
 
-        Parameters
-        ----------
-        pvname: str
-            Name of process variable
+        Args:
+            pvname (str): Image process variable name
 
-        Returns
-        -------
-        dict
-            Formatted image data of the form
-            ```
-                {
-                "image": [np.ndarray],
-                "x": [float],
-                "y": [float],
-                "dw": [float],
-                "dh": [float],
-            }
-            ```
         """
 
         if self.protocol == "ca":
@@ -148,13 +125,10 @@ class Controller:
         """
         Assign the value of a process variable.
 
-        Parameters
-        ----------
-        pvname: str
-            Name of the process variable
+        Args:
+            pvname (str): Name of the process variable
 
-        value
-            Value to put. Either float or numpy array
+            value (Union[np.ndarray, float]): Value to assing to process variable.
 
         """
         if self.protocol == "ca":

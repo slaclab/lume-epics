@@ -14,34 +14,26 @@ def set_pv_from_slider(
     old: float,
     new: float,
     pvname: str,
-    scale: Union[float, int],
     controller: Controller,
 ) -> None:
     """
-    Callback function for slider change.
+    Callback function for updating process variables on slider change.
 
-    Parameters
-    ----------
-    attr:str
-        Attribute to update
+    Args:
+        attr (str): Attribute to update.
 
-    old:float
-        Old value
+        old (float): Prior slider value.
 
-    new:float
-        New value
+        new (float): New value assigned by slider.
 
-    pvname: str
-        Process variable name
+        pvname (str): Name of the process variable.
 
-    scale:float/int
-        Scale of the slider
+        scale (float): Scale of the slider. 
 
-    controller: Controller
-        Controller object for getting pv values
+        controller (Controller): Controller object for getting process variable values.
 
     """
-    controller.put(pvname, new * scale)
+    controller.put(pvname, new)
 
 
 def build_slider(
@@ -50,20 +42,12 @@ def build_slider(
     """
     Utility function for building a slider.
 
-    Parameters
-    ----------
-    prefix: str
-        Process variable prefix used in serving pvs
+    Args:
+        prefix (str): Prefix used for serving process variables.
 
-    variable: ScalarVariable
-        Variable to build slider for
+        variable (ScalarVariable): Variable associated with the slider.
 
-    controller: Controller
-        Controller object for getting pv values
-
-    Returns
-    -------
-    bokeh.models.widgets.sliders.Slider
+        controller (Controller): Controller object for getting process variable values.
 
     """
     title = variable.name
@@ -72,14 +56,14 @@ def build_slider(
 
     pvname = prefix + ":" + variable.name
     step = (variable.value_range[1] - variable.value_range[0]) / 100.0
-    scale = 1
+
 
     # initialize value
     start_val = controller.get_value(pvname)
 
     slider = Slider(
         title=title,
-        value=scale * start_val,
+        value= start_val,
         start=variable.value_range[0],
         end=variable.value_range[1],
         step=step,
@@ -88,7 +72,7 @@ def build_slider(
     # set up callback
     slider.on_change(
         "value",
-        partial(set_pv_from_slider, pvname=pvname, scale=scale, controller=controller),
+        partial(set_pv_from_slider, pvname=pvname, controller=controller),
     )
 
     return slider
@@ -100,22 +84,12 @@ def build_sliders(
     """
     Build sliders for a list of variables.
 
+    Args: 
+        prefix (str): Prefix used to serve process variables.
 
-    Parameters
-    ----------
-    prefix: str
-        Process variable prefix used in serving pvs
+        variables (List[ScalarVariable]): List of variables for which to build sliders.
 
-    variables: list
-        List of scalar variables to render
-
-    controller: Controller
-        Controller object for getting pv values
-
-    Returns
-    -------
-    list
-        List of sliders
+        controller (Controller): Controller object for getting process variable values.
 
     """
     sliders = []
