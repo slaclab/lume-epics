@@ -28,8 +28,6 @@ def set_pv_from_slider(
 
         pvname (str): Name of the process variable.
 
-        scale (float): Scale of the slider. 
-
         controller (Controller): Controller object for getting process variable values.
 
     """
