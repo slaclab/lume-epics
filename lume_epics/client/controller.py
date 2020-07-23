@@ -1,8 +1,6 @@
 """
-Controllers are used for interfacing with both Channel Access and PVAccess process
-variables. The controller object is initialized using a single protocol has methods for
-both getting and setting values on the process variables.
-
+The lume-epics controller serves as the intermediary between variable monitors 
+and process variables served over EPICS.
 """
 from typing import Union
 import numpy as np
@@ -27,13 +25,28 @@ DEFAULT_SCALAR_VALUE = 0
 
 class Controller:
     """
-    Controller class used access process variables.
+    Controller class used to access process variables. Controllers are used for 
+    interfacing with both Channel Access and PVAccess process variables. The 
+    controller object is initialized using a single protocol has methods for
+    both getting and setting values on the process variables.
 
     Attributes:
         protocol (str): Protocol for accessing variables ("pva" for PVAccess, "ca" for
             Channel Access)
 
         context (Context): P4P threaded context instance for use with PVAccess.
+
+    Example:
+        ```
+        # create PVAcess controller
+        controller = Controller("pva")
+
+        value = controller.get_value("scalar_input")
+        image_value = controller.get_image("image_input")
+
+        controller.close()
+
+        ```
 
     """
 
@@ -74,7 +87,7 @@ class Controller:
         """Gets scalar value of a process variable.
 
         Args:
-            pvname (str): Image process variable name
+            pvname (str): Image process variable name.
 
         """
         value = self.get(pvname)
@@ -85,7 +98,7 @@ class Controller:
         return value
 
     def get_image(self, pvname) -> dict:
-        """Gets image data via protocol.
+        """Gets image data via controller protocol.
 
         Args:
             pvname (str): Image process variable name

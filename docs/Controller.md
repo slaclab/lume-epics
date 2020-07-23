@@ -1,3 +1,3 @@
-# Client
+# Controller
 
-::: lume_epics.client.controller.Controller
+::: lume_epics.client.controller

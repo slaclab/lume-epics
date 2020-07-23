@@ -1,2 +1,3 @@
 # Monitors
-::: lume_epics.client.monitors.PVImage
+
+::: lume_epics.client.monitors

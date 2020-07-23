@@ -55,7 +55,7 @@ class ImagePlot:
         Initialize monitors, current process variable, and data source.
 
         Args:
-            variables (List[Variable]): List of image variables to include in plot
+            variables (List[ImageVariable]): List of image variables to include in plot
 
             controller (Controller): Controller object for getting pv values
 

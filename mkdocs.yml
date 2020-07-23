@@ -1,11 +1,25 @@
 site_name: lume-epics
 nav:
   - Home: index.md
-  - Client: client.md
-  - Server: server.md
-  
+  - Install: Install.md
+  - Quick Start: QuickStart.md
+  - Documentation:
+    - Client:
+      - Controller: Controller.md
+      - Monitors: Monitors.md
+      - Widgets: Widgets.md
+    - Model: Model.md
+    - Server: Server.md
 theme: material
-
 plugins:
-  - search 
-  - mkdocstrings
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          selection:
+            inherited_members: false
+            filters:
+              - "!^_"  # exlude all members starting with _
+              - "^__init__$"  # but always include __init__ modules and methods
+          rendering:
+            show_source: true

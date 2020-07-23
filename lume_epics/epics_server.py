@@ -123,7 +123,8 @@ def build_pvdb(variables: List[Variable]) -> dict:
 
 
 class CADriver(Driver):
-    """Class for handling read and write requests to Channel Access process variables.
+    """
+    Class for handling read and write requests to Channel Access process variables.
 
     Attributes:
         input_variables (List[Variable]): List of lume-model variables to use as 
@@ -220,7 +221,8 @@ class CADriver(Driver):
 
 
 class ModelLoader(local):
-    """Subclass of threading.local that initializes the surrogate model in each thread. 
+    """
+    Subclass of threading.local that initializes the surrogate model in each thread. 
     This avoids conflicts that may occur when calling a shared graph between threads.
 
     Attributes:
@@ -307,7 +309,8 @@ class PVAccessInputHandler:
 
 
 class Server:
-    """Server for EPICS process variables. Can be optionally initialized with only
+    """
+    Server for EPICS process variables. Can be optionally initialized with only
     PVAccess or Channel Access protocols; but, defaults to serving over both. 
 
     Attributes:
