@@ -1,35 +1,40 @@
+"""
+This module contains the EPICS server class along with the associated PVAccess and 
+Channel Acccess infrastructure. Included is the Channel Access driver, handlers for 
+PVAccess callbacks, and associated utilities. The Server may be optionally initialized
+to use only one protocol, using both by default.
+
+"""
+
 import copy
 import numpy as np
-import random
-import sys
 import time
 import logging 
 
 from threading import Thread, Event, local
 from typing import Dict, Mapping, Union, List
 
-from epics import caget
 from pcaspy import Driver, SimpleServer
 
 from p4p.nt import NTScalar, NTNDArray
 from p4p.server.thread import SharedPV
 from p4p.server import Server as P4PServer
 from p4p.nt.ndarray import ntndarray as NTNDArrayData
+from p4p.server.raw import ServOpWrap
 
 from lume_model.variables import Variable
-from lume_model.variables import SurrogateModel
+from lume_model.models import SurrogateModel
 from lume_epics.model import OnlineSurrogateModel
 
 logger = logging.getLogger(__name__)
 
 def build_pvdb(variables: List[Variable]) -> dict:
-    """
-    Utility function for building dictionary (pvdb) used to initialize 
-    the channel access server.
+    """Utility function for building dictionary (pvdb) used to initialize the channel
+    access server.
     
     Args:
-        variables (list): List of lume_model variables to be served with channel 
-        access server.
+        variables (List[Variable]): List of lume_model variables to be served with
+        channel access server.
 
     """
     pvdb = {}
@@ -118,13 +123,14 @@ def build_pvdb(variables: List[Variable]) -> dict:
 
 
 class CADriver(Driver):
-    """
-    Class that reacts to read an write requests to process variables.
+    """Class for handling read and write requests to Channel Access process variables.
 
     Attributes:
-        input_variables (list): List of lume-model variables to use as inputs.
+        input_variables (List[Variable]): List of lume-model variables to use as 
+        inputs.
 
-        ouput_variables (list): List of lume-model variables to use as outputs.
+        ouput_variables (List[Variable]): List of lume-model variables to use as 
+        outputs.
 
     
     Note:
@@ -135,8 +141,7 @@ class CADriver(Driver):
     def __init__(
         self, input_variables: List[Variable], output_variables: List[Variable],
     ) -> None:
-        """
-        Initialize the driver. Store input state and output state.
+        """Initialize the Channel Access driver. Store input state and output state.
 
         Args:
             input_variables (list): List of lume-model variables to use as inputs.
@@ -154,8 +159,8 @@ class CADriver(Driver):
         }
 
     def read(self, pvname: str) -> Union[float, np.ndarray]:
-        """
-        Method used by server when clients read a process variable.
+        """Method executed by server when clients read a Channel Access process 
+        variable.
 
         Args:
             pvname (str): Process variable name.
@@ -164,8 +169,8 @@ class CADriver(Driver):
         return self.getParam(pvname)
 
     def write(self, pvname: str, value: Union[float, np.ndarray]) -> bool:
-        """
-        Function called by server when clients write a process variable.
+        """Method executed by server when clients write to a Channel Access process
+        variable.
 
 
         Args:
@@ -176,7 +181,7 @@ class CADriver(Driver):
         """
 
         if pvname in self.output_variables:
-            logger.warning("Cannot update variable %s. Output variables can only me updated through surrogate model callback.", pvname)
+            logger.warning("Cannot update variable %s. Output variables can only be updated via surrogate model callback.", pvname)
             return False
 
         else:
@@ -192,11 +197,10 @@ class CADriver(Driver):
                 return False
 
     def set_output_pvs(self, output_variables: List[Variable]) -> None:
-        """
-        Set output process variables.
+        """Update output Channel Access process variables after model execution.
 
         Args:
-            output_variables (list): Dictionary that maps ouput process variable name to variables
+            output_variables (List[Variable]): List of output variables.
         """
 
         for variable in output_variables:
@@ -216,18 +220,16 @@ class CADriver(Driver):
 
 
 class ModelLoader(local):
-    """
-    Subclass of threading.local that initializes the surrogate model in each thread. 
+    """Subclass of threading.local that initializes the surrogate model in each thread. 
     This avoids conflicts that may occur when calling a shared graph between threads.
 
     Attributes:
-        model (SurrogateModel): Surrogate model instance used for predicting
+        model (SurrogateModel): Surrogate model instance to be executed.
 
     """
 
-    def __init__(self, model_class: SurrogateModel, model_kwargs: dict = {},) -> None:
-        """
-        Initializes the online surrogate model.
+    def __init__(self, model_class: SurrogateModel, model_kwargs: dict = {}) -> None:
+        """Initializes the online surrogate model.
 
         Args:
             model_class (SurrogateModel): Surrogate Model class to be instantiated. 
@@ -244,8 +246,7 @@ class ModelLoader(local):
 
 
 class PVAccessInputHandler:
-    """
-    Handler object that defines the callbacks to execute on put operations to input 
+    """Handler object that defines the callbacks to execute on put operations to input
     process variables.
     """
 
@@ -259,9 +260,8 @@ class PVAccessInputHandler:
         """
         self.prefix = prefix
 
-    def put(self, pv, op) -> None:
-        """
-        Updates the global input process variable state, posts the input process 
+    def put(self, pv: SharedPV, op: ServOpWrap) -> None:
+        """Updates the global input process variable state, posts the input process 
         variable value change, runs the thread local OnlineSurrogateModel instance 
         using the updated global input process variable states, and posts the model 
         output values to the output process variables.
@@ -269,7 +269,7 @@ class PVAccessInputHandler:
         Args:
             pv (SharedPV): Input process variable on which the put operates.
 
-            op (p4p.server.raw.ServOpWrap): Server operation initiated by the put call.
+            op (ServOpWrap): Server operation initiated by the put call.
 
         """
         global providers
@@ -307,12 +307,11 @@ class PVAccessInputHandler:
 
 
 class Server:
-    """
-    Server object for channel access process variables that updates and reads process
-    values in a single thread.
+    """Server for EPICS process variables. Can be optionally initialized with only
+    PVAccess or Channel Access protocols; but, defaults to serving over both. 
 
     Attributes:
-        model (OnlineSurrogateModel): OnlineSurrogateModel instance used for getting 
+        model (OnlineSurrogateModel): OnlineSurrogateModel instance used for getting
             predictions.
 
         input_variables (List[Variable]): List of lume-model variables to use as 
@@ -321,10 +320,17 @@ class Server:
         ouput_variables (List[Variable]): List of lume-model variables to use as 
             outputs.
 
-        server (SimpleServer): Server class that interfaces between the channel access
-            client and the driver.
+        ca_server (SimpleServer): Server class that interfaces between the Channel 
+            Access client and the driver.
 
-        driver (CADriver): Class that reacts to process variable read/write requests.
+        ca_driver (CADriver): Class used by server to handle to process variable 
+            read/write requests.
+
+        pva_server (P4PServer): Threaded p4p server used for serving PVAccess 
+            variables.
+
+        exit_event (Event): Threading exit event marking server shutdown.
+
 
     """
 
@@ -335,8 +341,7 @@ class Server:
         protocols: List[str] = ["ca", "pva"],
         model_kwargs: dict = {},
     ) -> None:
-        """
-        Create OnlineSurrogateModel instance in the main thread and initialize output 
+        """Create OnlineSurrogateModel instance in the main thread and initialize output 
         variables by running with the input process variable state, input/output 
         variable tracking, start the server, create the process variables, and start 
         the driver.
@@ -388,8 +393,8 @@ class Server:
             self.initialize_pva_server()
 
     def initialize_ca_server(self) -> None:
-        """
-        Set up the Channel Access server.
+        """Initialize the Channel Access server and driver. Sets the initial
+        output variable values.
 
         """
         # set up db for initializing process variables
@@ -397,22 +402,21 @@ class Server:
             variable.name: variable.value
             for variable in self.input_variables + self.output_variables
         }
-        self.pvdb = build_pvdb(self.input_variables + self.output_variables)
 
         # initialize channel access server
         self.ca_server = SimpleServer()
 
-        # create all process variables using the process variables stored in self.pvdb
+        # create all process variables using the process variables stored in pvdb
         # with the given prefix
-        self.ca_server.createPV(self.prefix + ":", self.pvdb)
+        pvdb = build_pvdb(self.input_variables + self.output_variables)
+        self.ca_server.createPV(self.prefix + ":", pvdb)
 
         # set up driver for handing read and write requests to process variables
-        self.driver = CADriver(self.input_variables, self.output_variables)
-        self.driver.set_output_pvs(self.output_variables)
+        self.ca_driver = CADriver(self.input_variables, self.output_variables)
+        self.ca_driver.set_output_pvs(self.output_variables)
 
     def initialize_pva_server(self) -> None:
-        """
-        Set up PVAccess process variables for serving and start PVAccess server.
+        """Set up PVAccess process variables for serving and start PVAccess server.
 
         """
         logger.info("Initializing PVAccess server")
@@ -431,10 +435,10 @@ class Server:
                     initial=variable.value,
                 )
 
+            # prepare image variable types
             elif variable.variable_type == "image":
                 nd_array = variable.value.view(NTNDArrayData)
 
-                # get dw and dh from model output
                 nd_array.attrib = {
                     "x_min": variable.x_min,
                     "y_min": variable.y_min,
@@ -489,9 +493,8 @@ class Server:
             pass  # throw exception for incorrect data type
 
     def ca_thread_process(self, exit_event) -> None:
-        """
-        Server thread for the Channel Access server that monitors the process variable
-        state and executes model.
+        """ Server thread for the Channel Access server that monitors the process 
+        variable state and executes model.
 
         Args:
             exit_event (Event): Threading event to be marked on process exit.
@@ -513,13 +516,13 @@ class Server:
                     variable.name: variable.value for variable in self.input_variables
                 }
                 model_output = model_loader.model.run(self.input_variables)
-                self.driver.set_output_pvs(model_output)
+                self.ca_driver.set_output_pvs(model_output)
 
         logger.info("Terminating Channel Access server")
 
     def start_ca_server(self) -> None:
-        """
-        Starts Channel Access server thread.
+        """Starts Channel Access server thread.
+
         """
         logger.info("Initializing channel access server")
         self.start_ca_thread = Thread(
@@ -529,15 +532,19 @@ class Server:
         logger.info("Channel access server started")
 
     def start_pva_server(self) -> None:
-        """
-        Starts PVAccess server. 
+        """ Starts PVAccess server. 
+
         """
         self.pva_server = P4PServer(providers=[providers])
         logger.info("PVAccess server started")
 
     def start(self, monitor: bool = True) -> None:
-        """
-        Starts server depending on the passed server protocol.
+        """Starts server using set server protocol(s).
+
+        Args: 
+            monitor (bool): Indicates whether to run the server in the background
+                or to continually monitor. If monitor = False, the server must be
+                explicitely stopped using server.stop()
 
         """
 
@@ -557,7 +564,7 @@ class Server:
 
                 except KeyboardInterrupt:
                     # Ctrl-C handling and send kill to threads
-                    logger.info("Stopping serverss")
+                    logger.info("Stopping servers")
                     self.exit_event.set()
                     self.ca_thread.join()
 
@@ -566,8 +573,8 @@ class Server:
                         self.pva_server.stop()
 
     def stop(self) -> None:
-        """
-        Stop the channel access server.
+        """Stops the server.
+
         """
         logger.info("Stopping server")
         if "ca" in self.protocols:
