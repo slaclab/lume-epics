@@ -9,3 +9,5 @@ p4p
 numpy
 bokeh
 lume-model
+mkdocs
+mkdocstrings
