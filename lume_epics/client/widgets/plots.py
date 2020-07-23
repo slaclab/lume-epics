@@ -1,3 +1,9 @@
+"""
+The plots module contains bokeh figure based widgets. These widgets are initialized with 
+variables and a lume_epics.client.controller.Controller for interfacing with the EPICS 
+process variables.
+"""
+
 from typing import List
 import logging
 
@@ -21,10 +27,25 @@ class ImagePlot:
 
         pv_monitors (PVImage): Monitors for the process variables.
 
-        plot (Figure): Bokeh plot object
+        plot (Figure): Bokeh figure object for rendering.
 
-        img_obj (GlyphRenderer): Image renderer
+        img_obj (GlyphRenderer): Bokeh glyph renderer for displaying image.
 
+    Example:
+
+        ```
+        prefix = "test"
+
+        # controller initialized to use Channel Access
+        controller = Controller("ca")
+
+        value_table = ImagePlot(
+                [output_variables["image_variable"]], 
+                controller, 
+                prefix
+            )
+
+        ```
     """
 
     def __init__(
@@ -58,9 +79,10 @@ class ImagePlot:
         Creates the plot object.
 
         Args:
-            palette (Optional[tuple]): Color palette to use for plot.
+            palette (Optional[tuple]): Bokeh color palette to use for plot.
 
-            color_mapper (Optional[ColorMapper]): Color mapper for rendering plot
+            color_mapper (Optional[ColorMapper]): Bokeh color mapper for rendering 
+                plot.
 
         """
         # create plot
@@ -73,7 +95,7 @@ class ImagePlot:
 
         if color_mapper:
             self.plot.image(
-                name="img",
+                name="image_plot",
                 image="image",
                 x="x",
                 y="y",
@@ -84,7 +106,7 @@ class ImagePlot:
             )
         elif palette:
             self.plot.image(
-                name="img",
+                name="image_plot",
                 image="image",
                 x="x",
                 y="y",
@@ -109,7 +131,8 @@ class ImagePlot:
 
     def update(self, live_variable: str = None) -> None:
         """
-        Update the plot to reflect current process variable.
+        Callback which updates the plot to reflect updated process variable values or 
+        new process variable.
 
         Args:
             live_variable (str): Variable to display
@@ -144,13 +167,13 @@ class Striptool:
 
     Attributes:
 
-        live_variable (str): Variable to be displayed
+        live_variable (str): Variable to be displayed.
 
-        source (ColumnDataSource): Data source for the striptool view
+        source (ColumnDataSource): Data source for the striptool view.
 
-        pv_monitors (PVScalarMonitor): Monitors for the tracked process variables
+        pv_monitors (PVScalarMonitor): Monitors for the tracked process variables.
 
-        plot (Figure): Bokeh plot object
+        plot (Figure): Bokeh figure object.
 
     """
 
@@ -158,7 +181,7 @@ class Striptool:
         self, variables: List[ScalarVariable], controller: Controller, prefix: str,
     ) -> None:
         """
-        Initialize monitors, current process variable, and data source.
+        Set up monitors, current process variable, and data source.
 
         Args:
             variables (List[ScalarVariable]): List of variables to display with striptool
@@ -195,10 +218,11 @@ class Striptool:
 
     def update(self, live_variable: str = None) -> None:
         """
-        Update the plot to reflect current process variable.
+        Callback to update the plot to reflect updated process variable values or to 
+        display a new process variable.
 
         Args:
-            live_variable (Optional[str]): Variable to display
+            live_variable (Optional[str]): Variable to display.
         """
         if live_variable:
             self.live_variable = live_variable

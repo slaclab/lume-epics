@@ -1,10 +1,17 @@
+"""
+The sliders module contains tools for constructing bokeh slider widgets. These can be 
+constructed on a variable by basis using build_slider() or in bulk using build_sliders(). 
+The sliders may be built for lume-model ScalarInputVariables.
+
+"""
+
 from functools import partial
 from typing import Union, List
 import logging
 
 from bokeh.models import Slider
 
-from lume_model.variables import ScalarVariable
+from lume_model.variables import ScalarInputVariable
 from lume_epics.client.controller import Controller
 
 logger = logging.getLogger(__name__)
@@ -28,14 +35,15 @@ def set_pv_from_slider(
 
         pvname (str): Name of the process variable.
 
-        controller (Controller): Controller object for getting process variable values.
+        controller (Controller): Controller object for interacting with process 
+            variable values.
 
     """
     controller.put(pvname, new)
 
 
 def build_slider(
-    prefix: str, variable: ScalarVariable, controller: Controller
+    prefix: str, variable: ScalarInputVariable, controller: Controller
 ) -> Slider:
     """
     Utility function for building a slider.
@@ -43,7 +51,7 @@ def build_slider(
     Args:
         prefix (str): Prefix used for serving process variables.
 
-        variable (ScalarVariable): Variable associated with the slider.
+        variable (ScalarInputVariable): Variable associated with the slider.
 
         controller (Controller): Controller object for getting process variable values.
 
@@ -59,6 +67,7 @@ def build_slider(
     # initialize value
     start_val = controller.get_value(pvname)
 
+    # construct slider
     slider = Slider(
         title=title,
         value= start_val,
@@ -77,7 +86,7 @@ def build_slider(
 
 
 def build_sliders(
-    variables: List[ScalarVariable], controller: Controller, prefix: str,
+    variables: List[ScalarInputVariable], controller: Controller, prefix: str,
 ) -> List[Slider]:
     """
     Build sliders for a list of variables.
@@ -85,7 +94,7 @@ def build_sliders(
     Args: 
         prefix (str): Prefix used to serve process variables.
 
-        variables (List[ScalarVariable]): List of variables for which to build sliders.
+        variables (List[ScalarInputVariable]): List of variables for which to build sliders.
 
         controller (Controller): Controller object for getting process variable values.
 

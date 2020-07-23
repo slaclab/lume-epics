@@ -1,3 +1,9 @@
+"""
+This module contains table widgets for displaying the values of lume-model scalar 
+variables.
+
+"""
+
 from typing import List
 import logging
 
@@ -62,7 +68,7 @@ class ValueTable:
 
     def create_table(self) -> None:
         """
-        Creates the bokeh table and populate data.
+        Creates the bokeh table and populates variable data.
         """
         table_data = dict(x=list(self.output_values.keys()), y=list(self.output_values.values()))
         self.source = ColumnDataSource(table_data)
@@ -79,7 +85,7 @@ class ValueTable:
 
     def update(self) -> None:
         """
-        Update data source to reflect updated values.
+        Callback function to update data source to reflect updated values.
         """
         for variable in self.pv_monitors:
             v = self.pv_monitors[variable].poll()
