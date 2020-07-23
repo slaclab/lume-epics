@@ -351,7 +351,7 @@ class Server:
 
             prefix (str): Prefix used to format process variables.
 
-            protocol (List[str]): List of protocols used to instantiate server.
+            protocols (List[str]): List of protocols used to instantiate server.
 
             model_kwargs (dict): Kwargs to instantiate model.
 

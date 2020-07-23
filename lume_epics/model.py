@@ -1,3 +1,11 @@
+"""
+This module is used for executing callbacks on the user's SurrogateModel class for use
+with the EPICS server defined in lume_epics.epics_server. The SurrogateModel must be
+defined using the guidelines outlined in the lume_model.models module to be surfaced 
+using the OnlineSurrogateModel class.
+
+"""
+
 import numpy as np
 import time
 import logging
