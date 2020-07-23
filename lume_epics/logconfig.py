@@ -3,12 +3,8 @@ import logging.config
 import logging.handlers
 import os
 
-def is_debug():
-    """
-    Check for environment variable to be debug or not
-    
-    Returns:
-    bool
+def is_debug() -> bool:
+    """Check for debug environment variable.
 
     """
     if os.environ.get("LOGLEVEL") == "DEBUG":
@@ -16,8 +12,8 @@ def is_debug():
 
 
 def configure():
-    """
-    Configures file and console loggers
+    """Configures file and console loggers.
+    
     """
 
 
