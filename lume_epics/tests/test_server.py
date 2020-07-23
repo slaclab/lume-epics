@@ -12,8 +12,8 @@ from lume_model.models import SurrogateModel
 
 class ExampleScalarModel(SurrogateModel):
     input_variables = {
-        "input1": ScalarInputVariable(name="input1", value=1, range=[0.0, 5.0]),
-        "input2": ScalarInputVariable(name="input2", value=2, range=[0.0, 5.0]),
+        "input1": ScalarInputVariable(name="input1", value=1, default=1, range=[0.0, 5.0]),
+        "input2": ScalarInputVariable(name="input2", value=2, default=2, range=[0.0, 5.0]),
     }
 
     output_variables = {
@@ -49,6 +49,7 @@ class ExampleImageModel(SurrogateModel):
         "input1": ImageInputVariable(
             name="input1",
             value=np.array([[1, 2,], [3, 4]]),
+            default=np.array([[1, 2,], [3, 4]]),
             value_range=[1, 10],
             axis_labels=["count_1", "count_2"],
             x_min=0,
@@ -59,6 +60,7 @@ class ExampleImageModel(SurrogateModel):
         "input2": ImageInputVariable(
             name="input2",
             value=np.array([[1, 6,], [4, 1]]),
+            default=np.array([[1, 6,], [4, 1]]),
             value_range=[1, 10],
             axis_labels=["count_1", "count_2"],
             x_min=0,
