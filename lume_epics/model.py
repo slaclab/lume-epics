@@ -12,7 +12,7 @@ import logging
 from typing import Dict, Tuple, Mapping, Union, List
 from abc import ABC, abstractmethod
 
-from lume_model.variables import Variable
+from lume_model.variables import InputVariable, OutputVariable
 from lume_model.models import SurrogateModel
 
 logger = logging.getLogger(__name__)
@@ -24,17 +24,17 @@ class OnlineSurrogateModel:
     Attributes:
         model (SurrogateModel): Model for execution.
             
-        input_variables (list): List of lume-model variables to use as inputs.
+        input_variables (List[InputVariable]): List of lume-model variables to use as inputs.
 
-        ouput_variables (list): List of lume-model variables to use as outputs.
+        ouput_variables (List[OutputVariable]): List of lume-model variables to use as outputs.
 
     """
 
     def __init__(
         self,
         model: SurrogateModel,
-        input_variables: List[Variable],
-        output_variables: List[Variable],
+        input_variables: List[InputVariable],
+        output_variables: List[OutputVariable],
     ) -> None:
         """
         Initialize OnlineSurrogateModel with the surrogate model. 
@@ -42,10 +42,10 @@ class OnlineSurrogateModel:
         Args:
             model (SurrogateModel): Instantiated surrogate model.
             
-            input_variables (List[Variable]): List of lume-model variables to use as 
+            input_variables (List[InputVariable]): List of lume-model variables to use as 
                 inputs
 
-            ouput_variables (List[Variable]): List of lume-model variables to use as 
+            ouput_variables (List[OutputVariable]): List of lume-model variables to use as 
                 outputs
 
         """
@@ -59,13 +59,13 @@ class OnlineSurrogateModel:
         }
 
     def run(
-        self, input_variables: List[Variable]
-    ) -> List[Variable]:
+        self, input_variables: List[InputVariable]
+    ) -> List[OutputVariable]:
         """
         Executes both scalar and image model given process variable value inputs.
 
         Args:
-            input_variables (list): List of lume-model variables to use as inputs.            
+            input_variables (List[InputVariable]): List of lume-model variables to use as inputs.            
 
         """
         # update input variables and get state representation
