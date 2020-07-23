@@ -525,7 +525,7 @@ class Server:
 
         """
         logger.info("Initializing channel access server")
-        self.start_ca_thread = Thread(
+        self.ca_thread = Thread(
             target=self.ca_thread_process, daemon=True, args=(self.exit_event,)
         )
         self.ca_thread.start()
