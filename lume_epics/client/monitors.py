@@ -1,3 +1,9 @@
+"""
+Monitors interface with widgets to surface process variable information. They are initialized using a lume-model variable and a controller used to access values over
+EPICs.
+
+"""
+
 import time
 import logging
 
@@ -10,8 +16,7 @@ from lume_model.variables import ImageVariable, ScalarVariable
 logger = logging.getLogger(__name__)
 
 class PVImage:
-    """
-    Monitor for updating and formatting image data.
+    """Monitor for updating and formatting image data.
 
     Attributes:
         prefix (str): Prefix used for initializing server.
@@ -31,8 +36,7 @@ class PVImage:
     def __init__(
         self, prefix: str, variable: ImageVariable, controller: Controller,
     ) -> None:
-        """
-        Initialize monitor for an image variable.
+        """Initialize monitor for an image variable.
 
         Args:
             prefix (str): Prefix used for initializing server.
@@ -53,8 +57,7 @@ class PVImage:
         self.axis_units = variable.axis_units
 
     def poll(self) -> Dict[str, list]:
-        """
-        Collects image data and builds image data dictionary.
+        """Collects image data and builds image data dictionary.
 
         """
 
@@ -62,8 +65,7 @@ class PVImage:
 
 
 class PVTimeSeries:
-    """
-    Monitor for time series variables.
+    """Monitor for time series variables.
 
     Attributes:
         time (np.ndarray): Array of times sampled.
@@ -85,8 +87,7 @@ class PVTimeSeries:
     def __init__(
         self, prefix: str, variable: ScalarVariable, controller: Controller,
     ) -> None:
-        """
-        Initializes monitor attributes.
+        """Initializes monitor attributes.
 
         Args:
             prefix (str): Prefix used for initializing server.
@@ -122,8 +123,7 @@ class PVTimeSeries:
 
 
 class PVScalar:
-    """
-    Monitor for scalar process variables.
+    """Monitor for scalar process variables.
 
     Attributes:
         prefix (str): Prefix used for initializing server.
@@ -132,17 +132,16 @@ class PVScalar:
 
         controller (Controller): Controller object for accessing process variable.
 
-        units (str): Units associated with the variable
+        units (str): Units associated with the variable.
 
-        pvname (str): Name of the process variable to access
+        pvname (str): Name of the process variable to access.
 
     """
 
     def __init__(
         self, prefix: str, variable: ScalarVariable, controller: Controller,
     ) -> None:
-        """
-        Initializes monitor attributes.
+        """Initializes monitor attributes.
 
         Args:
             prefix (str): Prefix used for initializing server.
@@ -160,7 +159,7 @@ class PVScalar:
 
     def poll(self) -> Tuple[np.ndarray]:
         """
-        Poll variable for value
+        Poll variable for value,
 
         """
         return self.controller.get_value(self.pvname)

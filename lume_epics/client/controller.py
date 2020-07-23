@@ -1,3 +1,9 @@
+"""
+Controllers are used for interfacing with both Channel Access and PVAccess process
+variables. The controller object is initialized using a single protocol has methods for
+both getting and setting values on the process variables.
+
+"""
 from typing import Union
 import numpy as np
 import copy
@@ -21,11 +27,11 @@ DEFAULT_SCALAR_VALUE = 0
 
 class Controller:
     """
-    Controller class used to get and put process variables.
+    Controller class used access process variables.
 
     Attributes:
-        protocol (str): Protocol for accessing variables.
-            ("pva" for PVAccess, "ca" for Channel Access)
+        protocol (str): Protocol for accessing variables ("pva" for PVAccess, "ca" for
+            Channel Access)
 
         context (Context): P4P threaded context instance for use with PVAccess.
 
@@ -65,6 +71,12 @@ class Controller:
         return value
 
     def get_value(self, pvname):
+        """Gets scalar value of a process variable.
+
+        Args:
+            pvname (str): Image process variable name
+
+        """
         value = self.get(pvname)
 
         if value is None:
@@ -73,8 +85,7 @@ class Controller:
         return value
 
     def get_image(self, pvname) -> dict:
-        """
-        Gets image data based on protocol.
+        """Gets image data via protocol.
 
         Args:
             pvname (str): Image process variable name
@@ -96,7 +107,7 @@ class Controller:
                 image = image.reshape(int(nx), int(ny))
 
         elif self.protocol == "pva":
-            # context returns np array with WRITEABLE=False
+            # context returns numpy array with WRITEABLE=False
             # copy to manipulate array below
             image = self.get(pvname)
 
@@ -122,8 +133,7 @@ class Controller:
 
 
     def put(self, pvname, value: Union[np.ndarray, float]) -> None:
-        """
-        Assign the value of a process variable.
+        """Assign the value of a process variable.
 
         Args:
             pvname (str): Name of the process variable
