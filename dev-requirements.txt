@@ -1,7 +1,6 @@
 pre-commit
 black
 mkdocs
-h5py
 pytest
 pcaspy
 pyepics
