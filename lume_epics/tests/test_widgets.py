@@ -26,7 +26,7 @@ class ExampleModel(SurrogateModel):
         "output2": ScalarOutputVariable(name="output2"),
         "output3": ImageOutputVariable(
             name="output3",
-            value=np.array([[1, 2,], [3, 4]]),
+            default=np.array([[1, 2,], [3, 4]]),
             axis_labels=["count_1", "count_2"],
             x_min=0,
             y_min=0,

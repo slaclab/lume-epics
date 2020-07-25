@@ -25,12 +25,8 @@ class ExampleScalarModel(SurrogateModel):
 
         self.input_variables = {variable.name: variable for variable in input_variables}
 
-        self.output_variables["output1"].value = (
-            self.input_variables["input1"].value * 2
-        )
-        self.output_variables["output2"].value = (
-            self.input_variables["input2"].value * 2
-        )
+        self.output_variables["output1"].value = self.input_variables["input1"].value * 2
+        self.output_variables["output2"].value = self.input_variables["input2"].value * 2
 
         # return inputs * 2
         return list(self.output_variables.values())
@@ -38,7 +34,7 @@ class ExampleScalarModel(SurrogateModel):
 
 def test_scalar_server():
     prefix = "test"
-    server = epics_server.Server(ExampleScalarModel, prefix)
+    server = epics_server.Server(ExampleScalarModel, ExampleScalarModel.input_variables, ExampleScalarModel.output_variables, prefix)
     server.start(monitor=False)
     time.sleep(0.5)
     server.stop()
@@ -48,7 +44,6 @@ class ExampleImageModel(SurrogateModel):
     input_variables = {
         "input1": ImageInputVariable(
             name="input1",
-            value=np.array([[1, 2,], [3, 4]]),
             default=np.array([[1, 2,], [3, 4]]),
             value_range=[1, 10],
             axis_labels=["count_1", "count_2"],
@@ -59,7 +54,6 @@ class ExampleImageModel(SurrogateModel):
         ),
         "input2": ImageInputVariable(
             name="input2",
-            value=np.array([[1, 6,], [4, 1]]),
             default=np.array([[1, 6,], [4, 1]]),
             value_range=[1, 10],
             axis_labels=["count_1", "count_2"],
@@ -119,7 +113,7 @@ class ExampleImageModel(SurrogateModel):
 
 def test_image_server():
     prefix = "test"
-    server = epics_server.Server(ExampleImageModel, prefix)
+    server = epics_server.Server(ExampleImageModel, ExampleImageModel.input_variables, ExampleImageModel.output_variables, prefix)
 
     # start and stop pva server
     server.start(monitor=False)
