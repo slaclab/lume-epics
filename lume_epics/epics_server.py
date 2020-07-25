@@ -22,7 +22,7 @@ from p4p.server import Server as P4PServer
 from p4p.nt.ndarray import ntndarray as NTNDArrayData
 from p4p.server.raw import ServOpWrap
 
-from lume_model.variables import Variable
+from lume_model.variables import Variable, InputVariable, OutputVariable
 from lume_model.models import SurrogateModel
 from lume_epics.model import OnlineSurrogateModel
 
@@ -340,6 +340,8 @@ class Server:
     def __init__(
         self,
         model_class: SurrogateModel,
+        input_variables: List[InputVariable],
+        output_variables: List[OutputVariable],
         prefix: str,
         protocols: List[str] = ["ca", "pva"],
         model_kwargs: dict = {},
@@ -351,6 +353,10 @@ class Server:
 
         Args:
             model_class (SurrogateModel): Surrogate model class to be instantiated.
+
+            input_variables (List[InputVariable]): Model input variables.
+            
+            output_variables (Lis[OutputVariable]): Model output variables.
 
             prefix (str): Prefix used to format process variables.
 
@@ -377,10 +383,15 @@ class Server:
         self.protocols = protocols
 
         providers = {}
-        input_pvs = model_class.input_variables
+        input_pvs = input_variables
 
-        self.input_variables = list(model_class.input_variables.values())
-        self.output_variables = list(model_class.output_variables.values())
+        self.input_variables = list(input_variables.values())
+        self.output_variables = list(output_variables.values())
+
+        # update inputs for starting value to be the default
+        for variable in self.input_variables:
+            if not variable.value:
+                variable.value = variable.default
 
         # initialize loader for model
         model_loader = ModelLoader(model_class, model_kwargs=model_kwargs,)
