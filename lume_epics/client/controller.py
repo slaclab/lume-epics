@@ -31,10 +31,14 @@ class Controller:
     both getting and setting values on the process variables.
 
     Attributes:
-        protocol (str): Protocol for accessing variables ("pva" for PVAccess, "ca" for
+        protocol (str): Protocol for getting values from variables ("pva" for PVAccess, "ca" for
             Channel Access)
 
         context (Context): P4P threaded context instance for use with PVAccess.
+
+        set_ca (bool): Update Channel Access variable on put.
+
+        set_pva (bool): Upddate PVAccess variable on put.
 
     Example:
         ```
@@ -50,16 +54,29 @@ class Controller:
 
     """
 
-    def __init__(self, protocol: str):
+    def __init__(self, protocol: str, set_pva: bool = True, set_ca: bool = True):
         """
         Initializes controller. Stores protocol and creates context attribute if 
         using PVAccess.
+
+        Args: 
+            protocol (str): Protocol for getting values from variables ("pva" for PVAccess, "ca" for
+            Channel Access)
+
+            set_ca (bool): Update Channel Access variable on put.
+
+            set_pva (bool): Upddate PVAccess variable on put.
+
         """
         self.protocol = protocol
+        self.set_pva = set_pva
+        self.set_ca = set_ca
+
+
 
         # initalize context for pva
         self.context = None
-        if protocol == "pva":
+        if set_pva:
             self.context = Context("pva")
 
     def get(self, pvname: str) -> np.ndarray:
@@ -154,12 +171,12 @@ class Controller:
             value (Union[np.ndarray, float]): Value to assing to process variable.
 
         """
-        if self.protocol == "ca":
+        if self.set_ca:
             caput(pvname, value)
 
-        elif self.protocol == "pva":
+        elif self.set_pva:
             self.context.put(pvname, value)
 
     def close(self):
-        if self.protocol == "pva":
+        if self.set_pva:
             self.context.close()
