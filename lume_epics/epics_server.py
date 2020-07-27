@@ -190,7 +190,7 @@ class CADriver(Driver):
                 self.input_variables[pvname].value = value
                 self.setParam(pvname, value)
                 self.updatePVs()
-                logger.debug("Process variable %s updated with value %s", pvname, value)
+                logger.debug("Channel Access process variable %s updated with value %s", pvname, value)
                 return True
 
             else:
@@ -206,6 +206,7 @@ class CADriver(Driver):
 
         for variable in output_variables:
             if variable.variable_type == "image":
+                logger.debug("Channel Access image process variable %s updated.", variable.name)
                 self.setParam(
                     variable.name + ":ArrayData_RBV", variable.value.flatten()
                 )
@@ -216,6 +217,7 @@ class CADriver(Driver):
                 self.output_variables[variable.name].value = variable.value
 
             else:
+                logger.debug("Channel Access process variable %s updated wth value %s.", variable.name, variable.value)
                 self.setParam(variable.name, variable.value)
                 self.output_variables[variable.name].value = variable.value
 
@@ -286,6 +288,7 @@ class PVAccessInputHandler:
 
         for variable in output_variables:
             if variable.variable_type == "image":
+                logger.debug("PVAccess image process variable %s updated.", variable.name)
                 nd_array = variable.value.view(NTNDArrayData)
 
                 # get dw and dh from model output
@@ -301,6 +304,7 @@ class PVAccessInputHandler:
 
             # do not build attribute pvs
             else:
+                logger.debug("PVAccess process variable %s updated with value %s.", variable.name, variable.value)
                 output_provider = providers[f"{self.prefix}:{variable.name}"]
                 output_provider.post(variable.value)
 
