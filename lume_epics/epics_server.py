@@ -390,7 +390,7 @@ class Server:
 
         # update inputs for starting value to be the default
         for variable in self.input_variables:
-            if not variable.value:
+            if variable.value is None:
                 variable.value = variable.default
 
         # initialize loader for model
