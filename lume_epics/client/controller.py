@@ -174,7 +174,7 @@ class Controller:
         if self.set_ca:
             caput(pvname, value)
 
-        elif self.set_pva:
+        if self.set_pva:
             self.context.put(pvname, value)
 
     def close(self):
