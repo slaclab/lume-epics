@@ -530,6 +530,7 @@ class Server:
                 np.array_equal(sim_state[variable.name], variable.value)
                 for variable in self.input_variables
             ):
+                logger.debug("Input changes detected. Executing model and updating Channel Access process variables.")
                 sim_state = {
                     variable.name: variable.value for variable in self.input_variables
                 }
