@@ -79,6 +79,7 @@ def build_pvdb(variables: List[Variable]) -> dict:
                         "type": "float",
                         "prec": variable.precision,
                         "count": int(np.prod(variable.value.shape)),
+                        "value": variable.value,
                         #   "units": variable.units,
                     },
                     f"{variable.name}:MinX_RBV": {
