@@ -285,7 +285,7 @@ class PVAccessInputHandler:
         input_pvs[op.name().replace(f"{self.prefix}:", "")].value = op.value()
 
         # run model using global input process variable state
-        output_variables = model_loader.model.run(input_pvs)
+        output_variables = model_loader.model.run(list(input_pvs.values()))
 
         for variable in output_variables:
             if variable.variable_type == "image":
@@ -403,6 +403,9 @@ class Server:
 
         # get starting output from the model and set up output process variables
         self.output_variables = model_loader.model.run(self.input_variables)
+
+        if "pva" in self.protocols:
+            self.initialize_pva_server()
 
 
     def initialize_ca_server(self) -> None:
@@ -558,7 +561,6 @@ class Server:
         """ Starts PVAccess server. 
 
         """
-        self.initialize_pva_server()
         self.pva_server = P4PServer(providers=[providers])
         logger.info("PVAccess server started")
 
@@ -584,13 +586,13 @@ class Server:
         if monitor:
             while not self.exit_event.is_set():
                 try:
-                    time.sleep(0.01)
+                    time.sleep(0.1)
 
                 except KeyboardInterrupt:
                     # Ctrl-C handling and send kill to threads
                     logger.info("Stopping servers")
+                    self.exit_event.set()
                     if "ca" in self.protocols:
-                        self.exit_event.set()
                         self.ca_thread.join()
 
                     if "pva" in self.protocols:
