@@ -244,9 +244,7 @@ class ModelLoader(local):
 
         surrogate_model = model_class(**model_kwargs)
         self.model = OnlineSurrogateModel(
-            surrogate_model,
-            list(model_class.input_variables.values()),
-            list(model_class.output_variables.values()),
+            surrogate_model
         )
 
 

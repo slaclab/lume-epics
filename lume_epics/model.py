@@ -33,8 +33,6 @@ class OnlineSurrogateModel:
     def __init__(
         self,
         model: SurrogateModel,
-        input_variables: List[InputVariable],
-        output_variables: List[OutputVariable],
     ) -> None:
         """
         Initialize OnlineSurrogateModel with the surrogate model. 
@@ -51,12 +49,8 @@ class OnlineSurrogateModel:
         """
         self.model = model
 
-        self.input_variables = input_variables
-
-        # dict of name -> var
-        self.output_variables = {
-            variable.name: variable.value for variable in output_variables
-        }
+        self.input_variables = list(self.model.input_variables.values())
+        self.output_variables = self.model.output_variables
 
     def run(
         self, input_variables: List[InputVariable]
