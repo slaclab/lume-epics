@@ -404,12 +404,6 @@ class Server:
         # get starting output from the model and set up output process variables
         self.output_variables = model_loader.model.run(self.input_variables)
 
-        # initialize server based on protocols passed
-        if "ca" in self.protocols:
-            self.initialize_ca_server()
-
-        if "pva" in self.protocols:
-            self.initialize_pva_server()
 
     def initialize_ca_server(self) -> None:
         """Initialize the Channel Access server and driver. Sets the initial
@@ -519,11 +513,14 @@ class Server:
             exit_event (Event): Threading event to be marked on process exit.
 
         """
+        self.initialize_ca_server()
+
         sim_state = {variable.name: variable.value for variable in self.input_variables}
 
         while not exit_event.is_set():
+
             # process channel access transactions
-            self.ca_server.process(0.1)
+            self.ca_server.process(0.01)
 
             # check if any input variable state has been updated
             # if so, run model and update output variables
@@ -531,12 +528,18 @@ class Server:
                 np.array_equal(sim_state[variable.name], variable.value)
                 for variable in self.input_variables
             ):
+                start = time.time()
                 logger.debug("Input changes detected. Executing model and updating Channel Access process variables.")
+
+              #  model_variables = copy.deepcopy(self.input_variables)
+                model_output = model_loader.model.run(self.input_variables)
+
+                self.ca_driver.set_output_pvs(model_output)
+
                 sim_state = {
                     variable.name: variable.value for variable in self.input_variables
                 }
-                model_output = model_loader.model.run(self.input_variables)
-                self.ca_driver.set_output_pvs(model_output)
+
 
         logger.info("Terminating Channel Access server")
 
@@ -546,7 +549,7 @@ class Server:
         """
         logger.info("Initializing channel access server")
         self.ca_thread = Thread(
-            target=self.ca_thread_process, daemon=True, args=(self.exit_event,)
+            target=self.ca_thread_process, args=(self.exit_event,)
         )
         self.ca_thread.start()
         logger.info("Channel access server started")
@@ -555,6 +558,7 @@ class Server:
         """ Starts PVAccess server. 
 
         """
+        self.initialize_pva_server()
         self.pva_server = P4PServer(providers=[providers])
         logger.info("PVAccess server started")
 
@@ -580,13 +584,14 @@ class Server:
         if monitor:
             while not self.exit_event.is_set():
                 try:
-                    time.sleep(0.1)
+                    time.sleep(0.01)
 
                 except KeyboardInterrupt:
                     # Ctrl-C handling and send kill to threads
                     logger.info("Stopping servers")
-                    self.exit_event.set()
-                    self.ca_thread.join()
+                    if "ca" in self.protocols:
+                        self.exit_event.set()
+                        self.ca_thread.join()
 
                     if "pva" in self.protocols:
                         logger.info("Stopping PVAccess server")
