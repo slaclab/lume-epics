@@ -1,8 +1,9 @@
 # Installation
 
-`Lume-epics` requires python>=3.7
+Lume-epics may be installed using conda over the channel `jrgarrahan`:
 <br>
-`Lume-epics` has `lume-model` as a dependency, which includes all code associated with `lume-model` variables and associated models.
-<br>
-Lume-epics is available on conda under the channel `jrgarrahan`:
 ``` $ conda install lume-epics -c jrgarrahan ```
+<br>
+
+### Dependencies
+The dependencies for lume-epics are python>=3.7, pydantic, pcaspy, pyepics, p4p, numpy, bokeh, lume-model, and an epics-base installation (>4.0.0).

@@ -1,9 +1,12 @@
 site_name: lume-epics
 nav:
-  - Home: index.md
+  - Overview: index.md
   - Install: Install.md
-  - Quick Start: QuickStart.md
+  - Tutorial:
+    - Bokeh Server: BokehServer.md
+    - Jupyter Notebook: Jupyter.md
   - Documentation:
+    - Layout: Layout.md
     - Client:
       - Controller: Controller.md
       - Monitors: Monitors.md
