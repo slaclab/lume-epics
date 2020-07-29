@@ -1,8 +1,6 @@
-# Jupyter Notebook Tutorial
+# Jupyter Notebook Demo
 
-This tutorial follows the simple demo outlined in [lume-model-server-demo](https://github.com/jacquelinegarrahan/lume-model-server-demo). 
-
-This tutorial requires a conda installation. 
+This demo follows the simple implementation outlined in [lume-model-server-demo](https://github.com/jacquelinegarrahan/lume-model-server-demo). A conda installation is required for setting up the required packages.
 
 ## Clone the demo repository
 
@@ -10,11 +8,15 @@ This tutorial requires a conda installation.
 
 ## Navigate to the demo repository
 
-``` $ cd lume-model-server-demo.git ```
+``` $ cd lume-model-server-demo ```
 
 ## Set up and activate conda environment
 
+Create the environment using conda and the environment.yml file included with the repository:
+
 ``` $ conda env create -f environment.yml ```
+
+Activate the environment:
 
 ``` $ conda activate lume-model-server-demo```
 
@@ -26,7 +28,6 @@ This tutorial requires a conda installation.
 
 ``` $ jupyter notebook ```
 
-## 
+## Run demo
 
-
-The functional code for this demo can be found in #
+In two tabs, open the `SimpleServer` and `SimpleClient` notebooks. Begin by following the code outlined in the `SimpleServer` notebook, and then execute the code in the `SimpleClient` to render the application. Finally, terminate the server using the `Server.stop()` method in the `SimpleServer` notebook.

@@ -4,7 +4,7 @@ nav:
   - Install: Install.md
   - Tutorial:
     - Bokeh Server: BokehServer.md
-    - Jupyter Notebook: Jupyter.md
+    - Jupyter Notebook Demo: Jupyter.md
   - Documentation:
     - Layout: Layout.md
     - Client:
