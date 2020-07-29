@@ -3,7 +3,7 @@
 For this tutorial, we will create a simple model which generates an image from sampled from a uniform distribution between the two scalar input variables. This model will be served using the lume-epics server and a bokeh client will be used to display simple sliders for controlling the image, and the image output. 
 
 ### Note: 
-The code for this example can be found in [lume-epics/examples](https://github.com/jacquelinegarrahan/lume-epics/tree/package-setup/examples)
+The code for this example can be found in [lume-epics/examples](https://github.com/slaclab/lume-epics/examples)
 
 
 ## Set up conda environment
