@@ -8,7 +8,7 @@ from lume_model.variables import (
 )
 
 from lume_epics.client.widgets.tables import ValueTable
-from lume_epics.client.widgets.sliders import build_sliders
+from lume_epics.client.widgets.controls import build_sliders
 from lume_epics.client.widgets.plots import ImagePlot, Striptool
 from lume_epics.client.controller import Controller
 from lume_epics import epics_server

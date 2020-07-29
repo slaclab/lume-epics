@@ -1,7 +1,6 @@
 """
-The sliders module contains tools for constructing bokeh slider widgets. These can be 
-constructed on a variable by basis using build_slider() or in bulk using build_sliders(). 
-The sliders may be built for lume-model ScalarInputVariables.
+The controls module contains tools for constructing bokeh control widgets. 
+Controls may be built for lume-model ScalarInputVariables.
 
 """
 
