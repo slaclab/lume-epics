@@ -131,8 +131,8 @@ class Controller:
                 ny = self.get(f"{pvbase}:ArraySizeY_RBV")
                 x = self.get(f"{pvbase}:MinX_RBV")
                 y = self.get(f"{pvbase}:MinY_RBV")
-                dw = self.get(f"{pvbase}:MaxX_RBV")
-                dh = self.get(f"{pvbase}:MaxY_RBV")
+                dw = self.get(f"{pvbase}:MaxX_RBV") - x
+                dh = self.get(f"{pvbase}:MaxY_RBV") - y
 
                 image = image.reshape(int(nx), int(ny))
 
@@ -145,8 +145,8 @@ class Controller:
                 attrib = image.attrib
                 x = attrib["x_min"]
                 y = attrib["y_min"]
-                dw = attrib["x_max"]
-                dh = attrib["y_max"]
+                dw = attrib["x_max"] - attrib["x_min"]
+                dh = attrib["y_max"] - attrib["y_min"]
                 image = copy.copy(image)
 
         if image is not None:
