@@ -1,5 +1,5 @@
 site_name: lume-epics
-site_url: https://lume-epics.github.io/
+site_url: https://slaclab.github.io/lume-epics
 repo_url: https://github.com/slaclab/lume-epics
 nav:
   - Overview: index.md
