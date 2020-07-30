@@ -26,19 +26,19 @@ DEFAULT_SCALAR_VALUE = 0
 class Controller:
     """
     Controller class used to access process variables. Controllers are used for 
-    interfacing with both Channel Access and PVAccess process variables. The 
+    interfacing with both Channel Access and pvAccess process variables. The 
     controller object is initialized using a single protocol has methods for
     both getting and setting values on the process variables.
 
     Attributes:
-        protocol (str): Protocol for getting values from variables ("pva" for PVAccess, "ca" for
+        protocol (str): Protocol for getting values from variables ("pva" for pvAccess, "ca" for
             Channel Access)
 
-        context (Context): P4P threaded context instance for use with PVAccess.
+        context (Context): P4P threaded context instance for use with pvAccess.
 
         set_ca (bool): Update Channel Access variable on put.
 
-        set_pva (bool): Upddate PVAccess variable on put.
+        set_pva (bool): Upddate pvAccess variable on put.
 
     Example:
         ```
@@ -57,15 +57,15 @@ class Controller:
     def __init__(self, protocol: str, set_pva: bool = True, set_ca: bool = True):
         """
         Initializes controller. Stores protocol and creates context attribute if 
-        using PVAccess.
+        using pvAccess.
 
         Args: 
-            protocol (str): Protocol for getting values from variables ("pva" for PVAccess, "ca" for
+            protocol (str): Protocol for getting values from variables ("pva" for pvAccess, "ca" for
             Channel Access)
 
             set_ca (bool): Update Channel Access variable on put.
 
-            set_pva (bool): Upddate PVAccess variable on put.
+            set_pva (bool): Upddate pvAccess variable on put.
 
         """
         self.protocol = protocol

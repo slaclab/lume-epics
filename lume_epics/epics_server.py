@@ -1,7 +1,7 @@
 """
-This module contains the EPICS server class along with the associated PVAccess and 
+This module contains the EPICS server class along with the associated pvAccess and 
 Channel Acccess infrastructure. Included is the Channel Access driver, handlers for 
-PVAccess callbacks, and associated utilities. The Server may be optionally initialized
+pvAccess callbacks, and associated utilities. The Server may be optionally initialized
 to use only one protocol, using both by default.
 
 """
@@ -287,7 +287,7 @@ class PVAccessInputHandler:
 
         for variable in output_variables:
             if variable.variable_type == "image":
-                logger.debug("PVAccess image process variable %s updated.", variable.name)
+                logger.debug("pvAccess image process variable %s updated.", variable.name)
                 nd_array = variable.value.view(NTNDArrayData)
 
                 # get dw and dh from model output
@@ -303,7 +303,7 @@ class PVAccessInputHandler:
 
             # do not build attribute pvs
             else:
-                logger.debug("PVAccess process variable %s updated with value %s.", variable.name, variable.value)
+                logger.debug("pvAccess process variable %s updated with value %s.", variable.name, variable.value)
                 output_provider = providers[f"{self.prefix}:{variable.name}"]
                 output_provider.post(variable.value)
 
@@ -314,7 +314,7 @@ class PVAccessInputHandler:
 class Server:
     """
     Server for EPICS process variables. Can be optionally initialized with only
-    PVAccess or Channel Access protocols; but, defaults to serving over both. 
+    pvAccess or Channel Access protocols; but, defaults to serving over both. 
 
     Attributes:
         model (OnlineSurrogateModel): OnlineSurrogateModel instance used for getting
@@ -332,7 +332,7 @@ class Server:
         ca_driver (CADriver): Class used by server to handle to process variable 
             read/write requests.
 
-        pva_server (P4PServer): Threaded p4p server used for serving PVAccess 
+        pva_server (P4PServer): Threaded p4p server used for serving pvAccess 
             variables.
 
         exit_event (Event): Threading exit event marking server shutdown.
@@ -375,7 +375,7 @@ class Server:
 
         if any([protocol not in ["ca", "pva"] for protocol in protocols]):
             raise ValueError(
-                'Invalid protocol provided. Protocol options are "pva" (PVAccess) and "ca" (Channel Access).'
+                'Invalid protocol provided. Protocol options are "pva" (pvAccess) and "ca" (Channel Access).'
             )
 
         # need these to be global to access from threads
@@ -430,10 +430,10 @@ class Server:
         self.ca_driver.set_output_pvs(self.output_variables)
 
     def initialize_pva_server(self) -> None:
-        """Set up PVAccess process variables for serving and start PVAccess server.
+        """Set up pvAccess process variables for serving and start pvAccess server.
 
         """
-        logger.info("Initializing PVAccess server")
+        logger.info("Initializing pvAccess server")
         # initialize global inputs
         for variable in self.input_variables:
             # input_pvs[variable.name] = variable.value
@@ -556,11 +556,11 @@ class Server:
         logger.info("Channel access server started")
 
     def start_pva_server(self) -> None:
-        """ Starts PVAccess server. 
+        """ Starts pvAccess server. 
 
         """
         self.pva_server = P4PServer(providers=[providers])
-        logger.info("PVAccess server started")
+        logger.info("pvAccess server started")
 
     def start(self, monitor: bool = True) -> None:
         """Starts server using set server protocol(s).
@@ -594,7 +594,7 @@ class Server:
                         self.ca_thread.join()
 
                     if "pva" in self.protocols:
-                        logger.info("Stopping PVAccess server")
+                        logger.info("Stopping pvAccess server")
                         self.pva_server.stop()
 
     def stop(self) -> None:
