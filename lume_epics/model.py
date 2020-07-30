@@ -39,12 +39,6 @@ class OnlineSurrogateModel:
 
         Args:
             model (SurrogateModel): Instantiated surrogate model.
-            
-            input_variables (List[InputVariable]): List of lume-model variables to use as 
-                inputs
-
-            ouput_variables (List[OutputVariable]): List of lume-model variables to use as 
-                outputs
 
         """
         self.model = model
