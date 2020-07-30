@@ -1,5 +1,5 @@
 # lume-epics
-Lume-epics is a dedicated API for serving and interacting with online models using EPICS process variables. 
+Lume-epics is a dedicated API for serving LUME model variables with EPICS. 
 
 ## Model Development
 Model input and output variables are represented by [lume-model](https://github.com/slaclab/lume-model) variable representations. These variables enforce the minimal data requirements necessary for serving EPICS process variables associated with an online model. Lume-model defines two variable types: scalar and image. Scalar variables hold float values while image variables hold two dimensional arrays. The lume-epics server must be instantiated with a user defined class holding all methods necessary for model execution.

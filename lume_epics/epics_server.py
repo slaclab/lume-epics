@@ -34,7 +34,7 @@ def build_pvdb(variables: List[Variable]) -> dict:
     
     Args:
         variables (List[Variable]): List of lume_model variables to be served with
-        channel access server.
+            channel access server.
 
     """
     pvdb = {}
@@ -129,14 +129,10 @@ class CADriver(Driver):
 
     Attributes:
         input_variables (List[Variable]): List of lume-model variables to use as 
-        inputs.
+            inputs.
 
         ouput_variables (List[Variable]): List of lume-model variables to use as 
-        outputs.
-
-    
-    Note:
-        In the pcaspy documentation, 'reason' is used instead of pvname.
+            outputs.
 
     """
 
@@ -146,9 +142,9 @@ class CADriver(Driver):
         """Initialize the Channel Access driver. Store input state and output state.
 
         Args:
-            input_variables (list): List of lume-model variables to use as inputs.
+            input_variables (list): List of lume-model variables to use as model inputs.
 
-            ouput_variables (list): List of lume-model variables to use as outputs.
+            ouput_variables (list): List of lume-model variables to use as model outputs.
 
         """
 
@@ -320,8 +316,7 @@ class Server:
         model (OnlineSurrogateModel): OnlineSurrogateModel instance used for getting
             predictions.
 
-        input_variables (List[Variable]): List of lume-model variables to use as 
-            inputs.
+        input_variables (List[Variable]): List of lume-model variables passed to model.
 
         ouput_variables (List[Variable]): List of lume-model variables to use as 
             outputs.
@@ -336,7 +331,6 @@ class Server:
             variables.
 
         exit_event (Event): Threading exit event marking server shutdown.
-
 
     """
 
