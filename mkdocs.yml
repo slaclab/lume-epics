@@ -1,4 +1,6 @@
 site_name: lume-epics
+site_url: https://lume-epics.github.io/
+repo_url: https://github.com/slaclab/lume-epics
 nav:
   - Overview: index.md
   - Install: Install.md
