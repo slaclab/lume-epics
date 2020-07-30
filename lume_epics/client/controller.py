@@ -92,10 +92,16 @@ class Controller:
                 value = caget(pvname)
 
             elif self.protocol == "pva":
-                value = self.context.get(pvname)
+                value = self.context.get(pvname, throw=False)
+
+                # p4p returns exception on failure
+                if isinstance(value, (Exception)):
+                    value = None
+                    raise TimeoutError
+
 
         except TimeoutError:
-            logger.exception("Unable to connect to process variable %s using protocol %s", pvname, self.protocol)
+            logger.error("Unable to connect to process variable %s using protocol %s", pvname, self.protocol)
             value = None
 
         return value
