@@ -73,6 +73,7 @@ def build_slider(
         start=variable.value_range[0],
         end=variable.value_range[1],
         step=step,
+        format = "0[.]0000"
     )
 
     # set up callback

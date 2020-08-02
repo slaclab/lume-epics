@@ -288,10 +288,10 @@ class PVAccessInputHandler:
 
                 # get dw and dh from model output
                 nd_array.attrib = {
-                    "x_min": variable.x_min,
-                    "y_min": variable.y_min,
-                    "x_max": variable.x_max,
-                    "y_max": variable.y_max,
+                    "x_min": np.float64(variable.x_min),
+                    "y_min": np.float64(variable.y_min),
+                    "x_max": np.float64(variable.x_max),
+                    "y_max": np.float64(variable.y_max),
                 }
 
                 output_provider = providers[f"{self.prefix}:{variable.name}"]
@@ -482,10 +482,10 @@ class Server:
 
                 # get dw and dh from model output
                 nd_array.attrib = {
-                    "x_min": variable.x_min,
-                    "y_min": variable.y_min,
-                    "x_max": variable.x_max,
-                    "y_max": variable.y_max,
+                    "x_min": np.float64(variable.x_min),
+                    "y_min": np.float64(variable.y_min),
+                    "x_max": np.float64(variable.x_max),
+                    "y_max": np.float64(variable.y_max),
                 }
 
                 pv = SharedPV(nt=NTNDArray(), initial=nd_array)
