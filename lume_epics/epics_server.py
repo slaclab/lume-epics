@@ -10,6 +10,7 @@ import copy
 import numpy as np
 import time
 import logging 
+import threading
 
 from threading import Thread, Event, local
 from typing import Dict, Mapping, Union, List
@@ -159,6 +160,12 @@ class CADriver(Driver):
             variable.name: variable for variable in output_variables
         }
 
+        self.execute_event = threading.Event()
+        self.exit_event = threading.Event()
+        self.execution_thread = threading.Thread(target = self.execute_model) 
+        self.execution_thread.setDaemon(True)
+        self.execution_thread.start()
+
     def read(self, pvname: str) -> Union[float, np.ndarray]:
         """Method executed by server when clients read a Channel Access process 
         variable.
@@ -185,17 +192,20 @@ class CADriver(Driver):
             logger.warning("Cannot update variable %s. Output variables can only be updated via surrogate model callback.", pvname)
             return False
 
-        else:
-            if pvname in self.input_variables:
-                self.input_variables[pvname].value = value
-                self.setParam(pvname, value)
-                self.updatePVs()
-                logger.debug("Channel Access process variable %s updated with value %s", pvname, value)
-                return True
 
-            else:
-                logger.error("%s not found in server variables.", pvame)
-                return False
+        if pvname in self.input_variables:
+            self.input_variables[pvname].value = value
+            self.setParam(pvname, value)
+            self.updatePVs()
+            
+            # trigger model execution
+            self.execute_event.set()
+            logger.debug("Channel Access process variable %s updated with value %s", pvname, value)
+            return True
+
+        else:
+            logger.error("%s not found in server variables.", pvame)
+            return False
 
     def set_output_pvs(self, output_variables: List[Variable]) -> None:
         """Update output Channel Access process variables after model execution.
@@ -220,6 +230,31 @@ class CADriver(Driver):
                 logger.debug("Channel Access process variable %s updated wth value %s.", variable.name, variable.value)
                 self.setParam(variable.name, variable.value)
                 self.output_variables[variable.name].value = variable.value
+
+    def execute_model(self):
+        while not self.exit_event.is_set():
+            self.execute_event.wait()
+            model_output = model_loader.model.run(self.input_variables)
+
+
+            for variable in model_output:
+                if variable.variable_type == "image":
+                    logger.debug("Channel Access image process variable %s updated.", variable.name)
+                    self.setParam(
+                        variable.name + ":ArrayData_RBV", variable.value.flatten()
+                    )
+                    self.setParam(variable.name + ":MinX_RBV", variable.x_min)
+                    self.setParam(variable.name + ":MinY_RBV", variable.y_min)
+                    self.setParam(variable.name + ":MaxX_RBV", variable.x_max)
+                    self.setParam(variable.name + ":MaxY_RBV", variable.y_max)
+                    self.output_variables[variable.name].value = variable.value
+
+                else:
+                    logger.debug("Channel Access process variable %s updated wth value %s.", variable.name, variable.value)
+                    self.setParam(variable.name, variable.value)
+                    self.output_variables[variable.name].value = variable.value
+
+            self.execute_event.clear()
 
 
 class ModelLoader(local):
@@ -483,7 +518,7 @@ class Server:
 
                 nd_array = variable.value.view(NTNDArrayData)
 
-                # get dw and dh from model output
+                # get limits from model output
                 nd_array.attrib = {
                     "x_min": np.float64(variable.x_min),
                     "y_min": np.float64(variable.y_min),
@@ -503,53 +538,14 @@ class Server:
         else:
             pass  # throw exception for incorrect data type
 
-    def ca_thread_process(self, exit_event) -> None:
-        """ Server thread for the Channel Access server that monitors the process 
-        variable state and executes model.
 
-        Args:
-            exit_event (Event): Threading event to be marked on process exit.
-
-        """
-        self.initialize_ca_server()
-
-        sim_state = {variable.name: variable.value for variable in self.input_variables}
-
-        while not exit_event.is_set():
-
-            # process channel access transactions
-            self.ca_server.process(0.01)
-
-            # check if any input variable state has been updated
-            # if so, run model and update output variables
-            while not all(
-                np.array_equal(sim_state[variable.name], variable.value)
-                for variable in self.input_variables
-            ):
-                start = time.time()
-                logger.debug("Input changes detected. Executing model and updating Channel Access process variables.")
-
-              #  model_variables = copy.deepcopy(self.input_variables)
-                model_output = model_loader.model.run(self.input_variables)
-
-                self.ca_driver.set_output_pvs(model_output)
-
-                sim_state = {
-                    variable.name: variable.value for variable in self.input_variables
-                }
-
-
-        logger.info("Terminating Channel Access server")
 
     def start_ca_server(self) -> None:
         """Starts Channel Access server thread.
 
         """
         logger.info("Initializing channel access server")
-        self.ca_thread = Thread(
-            target=self.ca_thread_process, args=(self.exit_event,), daemon=True
-        )
-        self.ca_thread.start()
+        self.initialize_ca_server()
         logger.info("Channel access server started")
 
     def start_pva_server(self) -> None:
@@ -579,30 +575,29 @@ class Server:
             self.start_pva_server()
 
         if monitor:
-            while not self.exit_event.is_set():
-                try:
-                    time.sleep(0.1)
-
-                except KeyboardInterrupt:
-                    # Ctrl-C handling and send kill to threads
-                    logger.info("Stopping servers")
-                    self.exit_event.set()
+            try:
+                while True:
                     if "ca" in self.protocols:
-                        self.ca_thread.join()
+                        self.ca_server.process(0.1)
+                    else:
+                        time.sleep(0.1)
 
-                    if "pva" in self.protocols:
-                        logger.info("Stopping pvAccess server")
-                        self.pva_server.stop()
+            except KeyboardInterrupt:
+                logger.info("Stopping servers")
+                if "ca" in self.protocols:
+                    self.ca_driver.exit_event.set()
+
+                if "pva" in self.protocols:
+                    self.pva_server.stop()
 
     def stop(self) -> None:
         """Stops the server.
 
         """
-        logger.info("Stopping server")
+        logger.info("Stopping server.")
+
         if "ca" in self.protocols:
-            self.exit_event.set()
-            self.ca_thread.join()
+            self.ca_driver.exit_event.set()
 
         if "pva" in self.protocols:
-            logger.info("Stopping PVAcess server")
             self.pva_server.stop()
