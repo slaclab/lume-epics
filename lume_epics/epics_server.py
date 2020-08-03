@@ -119,6 +119,9 @@ def build_pvdb(variables: List[Variable]) -> dict:
             pvdb[variable.name] = variable.dict(
                 exclude_unset=True, by_alias=True
             )
+            if variable.value_range is not None:
+                pvdb[variable.name]["hilim"] = variable.value_range[1]
+                pvdb[variable.name]["lolim"] = variable.value_range[0]
 
     return pvdb
 
