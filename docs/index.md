@@ -53,7 +53,7 @@ class ExampleModel(SurrogateModel):
 In the case that image variable axis bounds are dictated by the output of other variables, associations can be created between the bound scalar variable and the axis values of the image variables. This is accomplished by defining the `parent` attribute on the bound variables and assigning the corresponding variable name to the bound variable attributes of the image variable.
 
 For example:
-```
+```python
 x_min = ScalarOutputVariable(
             name="x_min"
         )
@@ -153,25 +153,24 @@ controller = Controller("pva")
 
 # build sliders for the command process variable database
 sliders = build_sliders(
-            input_variables["input1], 
-            input_variables["input2], 
+            [input_variables["input1"], input_variables["input2"]],
             controller, 
             prefix
         )
 
 # build value table
 value_table = ValueTable(
-                [output_variables["output1], output_variables["output2], 
+                [output_variables["output1"], output_variables["output2"]], 
                 controller, 
                 prefix
             )
 
 # build image plot
-value_table = ImagePlot([output_variables["output3]], controller, prefix)
+value_table = ImagePlot([output_variables["output3"]], controller, prefix)
 
 # build striptool
 striptool = Striptool(
-                [output_variables["output1], output_variables["output2], 
+                [output_variables["output1"], output_variables["output2"]], 
                 controller, 
                 prefix
             )
