@@ -22,7 +22,7 @@ Install lume-model and lume-epics from the `jrgarrahan` conda channel:
 
 Create a new file named `model.py`. At the top of the file, import the `lume-model` `SurrogateModel` base class, `lume-model` `ScalarInputVariable` and `ImageOutputVariable`, `numpy`, and the `lume-model` `save_variables` utility.
 
-```
+```python
 import numpy as np
 from lume_model.variables import ScalarInputVariable, ImageOutputVariable
 from lume_model.models import SurrogateModel
@@ -32,7 +32,7 @@ from lume_model.utils import save_variables
 Next, define the demo model. Here, we define the input and output variables as keyword arguments. In order for the evaluate method to execute correctly, these 
 passed variables must be dictionaries of variables with corresponding types and names. These could also be defined as class attributes.
 
-```
+```python
 class DemoModel(SurrogateModel):
     def __init__(self, input_variables=None, output_variables=None):
         self.input_variables = input_variables
@@ -50,7 +50,7 @@ class DemoModel(SurrogateModel):
 
 Now, we use the main method to define and save the input and output variables. This is done in the main method because the server will import and execute the `DemoModel` class. 
 
-```
+```python
 if __name__ == "__main__":
     input_variables = {
         "input1": ScalarInputVariable(
@@ -91,7 +91,7 @@ if __name__ == "__main__":
 
 Create a new file named `server.py`. Import the `DemoModel`, load the variables, and configure the server. 
 
-```
+```python
 from examples.model import DemoModel
 from lume_epics.epics_server import Server
 from lume_model.utils import load_variables
@@ -121,7 +121,7 @@ server.start(monitor=True)
 
 Create a new file named `client.py`. Add the following imports:
 
-```
+```python
 from bokeh.io import curdoc
 from bokeh import palettes
 from bokeh.layouts import column, row
@@ -137,17 +137,17 @@ from lume_epics.client.controller import Controller
 
 Set up the `Controller` for interfacing with EPICS process variables:
 
-```
+```python
 controller = Controller("ca")
 ```
 
 Load variables from your variable file:
-```
+```python
 input_variables, output_variables = load_variables("variables.pickle")
 ```
 
 Prepare sliders:
-```
+```python
 prefix = "test"
 
 # use all input variables for slider
@@ -159,7 +159,7 @@ sliders = build_sliders(input_variables, controller, prefix)
 ```
 
 Setup the image output variable:
-```
+```python
 output_variables = list(output_variables.values())
 
 # create image plot
@@ -173,7 +173,7 @@ image_plot.build_plot(color_mapper=color_mapper)
 ```
 
 The image plot will require a callback to continually update the plot to display the lates process variables. Here we define the callback function:
-```
+```python
 # Set up image update callback
 def image_update_callback():
     image_plot.update()
@@ -181,7 +181,7 @@ def image_update_callback():
 ```
 Render the application using bokeh `curdoc()` function. The image_plot object's `plot` attribute must be used in formatting:
 
-```
+```python
 curdoc().title = "Demo App"
 curdoc().add_root(
             row(

@@ -7,7 +7,7 @@ Model input and output variables are represented by [lume-model](https://github.
 Lume-model also defines a SurrogateModel base class to enforce the defined class's compatability with the lume-epics server. The primary function of this base class is to force the implementation of an evaluate method. This method must accept a list of lume-model input variables, execute the model, and return a list of output variables. Input variables and output variables must be defined as class attributes. They may be defined directly as class attributes or assigned in __init__.
 
 Below is an example of an model defined using class attributes.
-```
+```python
 from lume_epics.model import SurrogateModel
 from lume_model.variables import ScalarInputVariable, ImageOutputVariable
 
@@ -84,7 +84,7 @@ image_input = ImageOutputVariable(
 
 The EPICS server requires a model class, input variables, output variables, and a prefix for intantiation. By default, the server uses both the pvAccess and Channel Access protocols when serving the EPICS process variables.An optional keyword argument allows the server to be started using a single protocol (`protocols=["pva"]` for pvAccess, `protocols=["ca"]` for Channel Access). Once instantiated, the server is started using the `Server.start()` method, which has an optional monitor keyword argument, `monitor`, that controls thread execution. When `monitor=True`, the server is run in the main thread and may be stopped using keyboard interrupt (`Ctr+C`). If using `monitor=False`, the server can be stopped manually using the `Server.stop()` method. 
 
-```
+```python
 from lume_epics.epics_server import Server
 
 prefix = "test"
@@ -109,7 +109,7 @@ The controller fetches variables using a configurable protocol defined on instan
 The same variables and prefix used for instantiating the server must be used for building the client tooling. For the purpose of separability, these variables should be saved during model development and loaded on the client side. `lume-model.utils` contains utility functions for saving variables. 
 
 Example of client tooling:
-```
+```python
 from lume_model.variables import ScalarInputVariable, ScalarOutputVariable, ImageOutputVariable
 from lume_epics.client.controller import Controller
 from lume_epics.client.widgets.plots import ImagePlot, Striptool
