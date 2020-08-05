@@ -15,7 +15,6 @@ nav:
       - Widgets: Widgets.md
     - Model: Model.md
     - Server: Server.md
-theme: material
 plugins:
   - mkdocstrings:
       default_handler: python
