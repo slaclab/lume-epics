@@ -1,6 +1,6 @@
 package:
   name: "lume-epics"
-  version: "0.1"
+  version: "0.2"
 
 build:
   noarch: python
