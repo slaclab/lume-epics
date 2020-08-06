@@ -237,7 +237,7 @@ class CADriver(Driver):
     def execute_model(self):
         while not self.exit_event.is_set():
             self.execute_event.wait()
-            model_output = model_loader.model.run(self.input_variables)
+            model_output = model_loader.model.run(list(self.input_variables.values()))
 
 
             for variable in model_output:
