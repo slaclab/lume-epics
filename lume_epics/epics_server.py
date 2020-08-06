@@ -107,7 +107,7 @@ def build_pvdb(variables: List[Variable]) -> dict:
             )
 
             if "units" in variable.__fields_set__:
-                pvdb[f"{variable.name}:ArrayData_RBV"]["units"] = variable.units
+                pvdb[f"{variable.name}:ArrayData_RBV"]["unit"] = variable.units
 
             # placeholder for color images, not yet implemented
             if variable.value.ndim > 2:
@@ -123,6 +123,9 @@ def build_pvdb(variables: List[Variable]) -> dict:
             if variable.value_range is not None:
                 pvdb[variable.name]["hilim"] = variable.value_range[1]
                 pvdb[variable.name]["lolim"] = variable.value_range[0]
+
+            if variable.units is not None:
+                pvdb[variable.name]["unit"] = variable.units
 
     return pvdb
 
