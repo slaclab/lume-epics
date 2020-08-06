@@ -59,7 +59,7 @@ class ValueTable:
             self.output_values[variable.name] = v
 
             # check if units assigned
-            if "units" in variable.__fields_set__:
+            if "units" in variable.__fields_set__ and variable.units:
                 self.labels[variable.name] = variable.name + f" ({variable.units})"
 
             else:
