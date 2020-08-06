@@ -23,7 +23,7 @@ class ValueTable:
 
         output_values (dict): Dict mapping process variable name to current value.
 
-        unit_map (dict): Dict mapping process variable name to units.
+        labels (dict): Dict mapping process variable name to labels.
 
         source (ColumnDataSource): Data source for populating bokeh table.
 
@@ -41,12 +41,13 @@ class ValueTable:
 
             controller (Controller): Controller object for accessing process variables.
 
-            prefix (str): Prifix used in setting up the server.
+            prefix (str): Prefix used in setting up the server.
 
         """
         # only creating pvs for non-image pvs
         self.pv_monitors = {}
         self.output_values = {}
+        self.labels = {}
 
         # be sure to surface units in the table
         self.unit_map = {}
@@ -59,10 +60,10 @@ class ValueTable:
 
             # check if units assigned
             if "units" in variable.__fields_set__:
-                self.unit_map[variable.name] = variable.units
+                self.labels[variable.name] = variable.name + f" ({variable.units})"
 
             else:
-                self.unit_map[variable.name] = ""
+                self.labels[variable.name] = variable.name
 
         self.create_table()
 
@@ -70,7 +71,10 @@ class ValueTable:
         """
         Creates the bokeh table and populates variable data.
         """
-        table_data = dict(x=list(self.output_values.keys()), y=list(self.output_values.values()))
+        x_vals = [self.labels[var] for var in self.output_values.keys()]
+        y_vals = list(self.output_values.values())
+        
+        table_data = dict(x=x_vals, y=y_vals)
         self.source = ColumnDataSource(table_data)
         columns = [
             TableColumn(
@@ -91,4 +95,6 @@ class ValueTable:
             v = self.pv_monitors[variable].poll()
             self.output_values[variable] = v
 
-        self.source.data = dict(x=list(self.output_values.keys()), y=list(self.output_values.values()))
+        x_vals = [self.labels[var] for var in self.output_values.keys()]
+        y_vals = list(self.output_values.values())
+        self.source.data = dict(x=x_vals, y=y_vals)
