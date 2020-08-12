@@ -24,7 +24,7 @@ input_variables = list(input_variables.values())
 output_variables = [output_variables["output1"]]
 
 # set up controller
-controller = Controller("pva") # can also use channel access
+controller = Controller("ca") # can also use channel access
 
 # build sliders
 sliders = build_sliders(input_variables, controller, prefix)
