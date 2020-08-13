@@ -4,7 +4,7 @@ sudo: required
 branches:
   only:
   - master
-  - build_cleanup
+  - dev
 
 matrix:
   include:
