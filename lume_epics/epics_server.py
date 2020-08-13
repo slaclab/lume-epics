@@ -156,17 +156,18 @@ class Server:
                             [self.input_variables[data["pvname"]]]
                         }
                     )
-                # update output variable state
 
-                # UPDATE COMPLEMENTARY INPUT
+                # update output variable state
                 predicted_output = model.evaluate(self.input_variables)
-                for _, queue in out_queues.items():
+                for protocol, queue in out_queues.items():
                     queue.put({"output_variables": predicted_output},
                               timeout=0.1)
             except Empty:
                 continue
             except Full:
-                print(f"Queue is Full -> CA or PVA")
+                logger.error(f"{protocol} queue is full.")
+
+        logger.info("Stopping comm thread")
 
     def start(self, monitor: bool = True) -> None:
         """Starts server using set server protocol(s).
@@ -185,19 +186,25 @@ class Server:
         if "pva" in self.protocols:
             self.pva_process.start()
 
+        try:
+            while True:
+                time.sleep(0.1)
+
+        except KeyboardInterrupt:
+            self.stop()
+
     def stop(self) -> None:
         """Stops the server.
 
         """
         logger.info("Stopping server.")
         self.exit_event.set()
+        self.comm_thread.join()
 
-        # TODO: Better cleanup of processes.
         if "ca" in self.protocols:
-            self.ca_process.terminate()
-        #     self.ca_driver.exit_event.set()
-
+            self.ca_process.shutdown()
+            
         if "pva" in self.protocols:
-            self.pva_process.terminate()
-            # self.pva_server.stop()
+            self.pva_process.shutdown()
 
+        logger.info("Server is stopped.")

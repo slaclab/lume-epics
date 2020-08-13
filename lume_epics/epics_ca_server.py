@@ -2,6 +2,7 @@ import copy
 import logging
 import multiprocessing
 import time
+import signal 
 
 from lume_model.variables import Variable, InputVariable, OutputVariable
 import numpy as np
@@ -34,6 +35,7 @@ class CAServer(multiprocessing.Process):
         self.ca_server = None
         self.ca_driver = None
         self.server_thread = None
+        self.exit_event = multiprocessing.Event()
 
     def update_pv(self, pvname, value):
         val = value
@@ -43,6 +45,8 @@ class CAServer(multiprocessing.Process):
         )
 
     def setup_server(self) -> None:
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+
         logger.info("Initializing CA server")
 
         # initialize channel access server
@@ -70,7 +74,7 @@ class CAServer(multiprocessing.Process):
 
     def run(self):
         self.setup_server()
-        while True:
+        while not self.exit_event.is_set():
             try:
                 data = self._out_queue.get_nowait()
                 inputs = data.get('input_variables', [])
@@ -79,6 +83,12 @@ class CAServer(multiprocessing.Process):
             except Empty:
                 time.sleep(0.01)
                 logger.debug("out queue empty")
+
+        self.server_thread.stop()
+        logger.info("Channel access server stopped.")
+
+    def shutdown(self):
+        self.exit_event.set()
 
 
 def build_pvdb(input_variables: List[Variable],
