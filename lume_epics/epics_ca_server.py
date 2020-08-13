@@ -3,12 +3,13 @@ import logging
 import multiprocessing
 import time
 import signal 
+from typing import Dict
 
 from lume_model.variables import Variable, InputVariable, OutputVariable
 import numpy as np
 from pcaspy import Driver, SimpleServer
 from pcaspy.tools import ServerThread
-from queue import Full, Empty
+from queue import Full, Empty, Queue
 
 from typing import Dict, Mapping, Union, List
 
@@ -19,12 +20,40 @@ logger = logging.getLogger(__name__)
 
 
 class CAServer(multiprocessing.Process):
+    """Process-based implementation of Channel Access server.
+
+    Attributes:
+        ca_server (SimpleServer): pcaspy SimpleServer instance
+
+        ca_driver (Driver): pcaspy Driver instance
+
+        server_thread (ServerThread): Thread for running the server
+
+        exit_event (multiprocessing.Event): Event indicating shutdown
+
+    """
     protocol = "ca"
 
     def __init__(self,
-                 prefix,
-                 input_variables, output_variables,
-                 in_queue, out_queue, *args, **kwargs):
+                 prefix: str,
+                 input_variables: Dict[str, InputVariable], 
+                 output_variables: Dict[str, OutputVariable],
+                 in_queue: multiprocessing.Queue, 
+                 out_queue: multiprocessing.Queue, *args, **kwargs) -> None:
+        """Initialize server process.
+
+        Arguments:
+            prefix (str): EPICS prefix for serving process variables
+
+            input_variables (Dict[str, InputVariable]): Dictionary mapping pvname to lume-model input variable.
+
+            output_variables (Dict[str, OutputVariable]):Dictionary mapping pvname to lume-model output variable.
+
+            in_queue (multiprocessing.Queue): Queue for tracking updates to input variables
+
+            out_queue (multiprocessing.Queue): Queue for tracking updates to output variables
+
+        """
         super().__init__(*args, **kwargs)
         self._prefix = prefix
         self._input_variables = input_variables
@@ -37,7 +66,15 @@ class CAServer(multiprocessing.Process):
         self.server_thread = None
         self.exit_event = multiprocessing.Event()
 
-    def update_pv(self, pvname, value):
+    def update_pv(self, pvname, value) -> None:
+        """Adds update to input process variable to the input queue.
+
+        Arguments:
+            pvname (str): Name of process variable
+
+            value (Union[np.ndarray, float]): Value to set 
+
+        """
         val = value
         pvname = pvname.replace(f"{self._prefix}:", "")
         self._in_queue.put(
@@ -45,6 +82,10 @@ class CAServer(multiprocessing.Process):
         )
 
     def setup_server(self) -> None:
+        """Configure and start server.
+
+        """
+        # ignore interrupt in subprocess
         signal.signal(signal.SIGINT, signal.SIG_IGN)
 
         logger.info("Initializing CA server")
@@ -60,19 +101,28 @@ class CAServer(multiprocessing.Process):
         # set up driver for handing read and write requests to process variables
         self.ca_driver = CADriver(server=self)
 
+        # start the server thread
         self.server_thread = ServerThread(self.ca_server)
         self.server_thread.start()
 
         logger.info("CA server started")
 
-    def update_pvs(self, input_variables, output_variables):
-        """
-        Function for updating inputs and outputs over pva
+    def update_pvs(self, input_variables: List[InputVariable], output_variables: List[OutputVariable]):
+        """Update process variables over Channel Access.
+
+        Arguments:
+            input_variables (List[InputVariable]): List of lume-epics output variables.
+
+            output_variables (List[OutputVariable]): List of lume-model output variables.
+
         """
         variables = input_variables + output_variables
         self.ca_driver.update_pvs(variables)
 
-    def run(self):
+    def run(self) -> None:
+        """Start server process.
+
+        """
         self.setup_server()
         while not self.exit_event.is_set():
             try:
@@ -88,19 +138,22 @@ class CAServer(multiprocessing.Process):
         logger.info("Channel access server stopped.")
 
     def shutdown(self):
+        """Safely shutdown the server process. 
+
+        """
         self.exit_event.set()
 
 
-def build_pvdb(input_variables: List[Variable],
-               output_variables: List[Variable]) -> dict:
+def build_pvdb(input_variables: List[InputVariable],
+               output_variables: List[OutputVariable]) -> dict:
     """Utility function for building dictionary (pvdb) used to initialize the channel
     access server.
 
     Args:
-        input_variables (List[Variable]): List of lume_model variables to be served with
+        input_variables (List[InputVariable]): List of lume_model input variables to be served with
             channel access server.
 
-        output_variables (List[Variable]): List of lume_model variables to be served with
+        output_variables (List[OutputVariable]): List of lume_model output variables to be served with
             channel access server.
 
     """
