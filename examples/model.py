@@ -38,7 +38,6 @@ if __name__ == "__main__":
             name="output1", 
             axis_labels=["value_1", "value_2"], 
             axis_units=["mm", "mm"], 
-            default = np.zeros((50,50)),
             x_min=0, 
             x_max=50, 
             y_min=0, 
