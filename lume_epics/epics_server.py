@@ -140,8 +140,21 @@ class Server:
             out_queue=self.out_queues["pva"]
         )
 
-    def run_comm_thread(self, model_class, model_kwargs={}, in_queue=None,
-                        out_queues=None):
+    def run_comm_thread(self, model_class, model_kwargs={}, in_queue: multiprocessing, Queue=None,
+                        out_queues: Dict[str: multiprocessing.Queue]=None):
+        """Handles communications between pvAccess server, Channel Access server, and model.
+        
+        Arguments:
+            model_class: Model class to be executed.
+
+            model_kwargs (dict): Dictionary of model keyword arguments.
+
+            in_queue (multiprocessing.Queue): 
+
+            out_queues (Dict[str: multiprocessing.Queue]): Maps protocol to output assignment queue.
+
+
+        """
         model = model_class(**model_kwargs)
 
         while not self.exit_event.is_set():
@@ -158,6 +171,7 @@ class Server:
                     )
 
                 # update output variable state
+                model_input = list(self.input_variables.values())
                 predicted_output = model.evaluate(self.input_variables)
                 for protocol, queue in out_queues.items():
                     queue.put({"output_variables": predicted_output},
@@ -186,12 +200,13 @@ class Server:
         if "pva" in self.protocols:
             self.pva_process.start()
 
-        try:
-            while True:
-                time.sleep(0.1)
+        if monitor:
+            try:
+                while True:
+                    time.sleep(0.1)
 
-        except KeyboardInterrupt:
-            self.stop()
+            except KeyboardInterrupt:
+                self.stop()
 
     def stop(self) -> None:
         """Stops the server.
