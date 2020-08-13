@@ -32,12 +32,6 @@ class PVAServer(multiprocessing.Process):
         self._providers = {}
         self.pva_server = None
 
-    def variable_by_pvname(self, pvname):
-        try:
-            return self._input_variables[pvname]
-        except KeyError:
-            return self._output_variables[pvname]
-
     def update_pv(self, pvname, value):
         # Hack for now to get the pickable value
         val = value.raw.value
@@ -46,7 +40,7 @@ class PVAServer(multiprocessing.Process):
             {"protocol": self.protocol, "pvname": pvname, "value": val}
         )
 
-    def setup_pva_server(self) -> None:
+    def setup_server(self) -> None:
         logger.info("Initializing pvAccess server")
         # initialize global inputs
         for variable in self._input_variables.values():
@@ -142,11 +136,10 @@ class PVAServer(multiprocessing.Process):
             output_provider.post(value)
 
     def run(self):
-        self.setup_pva_server()
+        self.setup_server()
         while True:
             try:
                 data = self._out_queue.get_nowait()
-                print('PVA Server got data: ', data)
                 inputs = data.get('input_variables', [])
                 outputs = data.get('output_variables', [])
                 self.update_pvs(inputs, outputs)

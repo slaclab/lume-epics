@@ -10,34 +10,17 @@ import time
 import logging
 import threading
 import multiprocessing
+from typing import Dict, Mapping, Union, List
 
 from threading import Thread, Event, local
-from typing import Dict, Mapping, Union, List
 from queue import Full, Empty
 
 from lume_model.variables import Variable, InputVariable, OutputVariable
 from lume_model.models import SurrogateModel
 from .epics_pva_server import PVAServer
+from .epics_ca_server import CAServer
 
 logger = logging.getLogger(__name__)
-
-
-# def add_to_comm_queue(put_data):
-#     # check if queue full
-#     if comm_queue.full():
-#         print('********** COMM QUEUE IS FULL **********')
-#         logger.debug("Clearing queue")
-#         for i in range(comm_queue.maxsize):
-#             try:
-#                 oldest_data = comm_queue.get_nowait()
-#                 comm_queue.task_done()
-#             except Empty:
-#                 pass
-#
-#     try:
-#         comm_queue.put(put_data, timeout=0.1)
-#     except Full:
-#         logger.error("Communication queue is still full.")
 
 
 class Server:
@@ -73,7 +56,7 @@ class Server:
         input_variables: List[InputVariable],
         output_variables: List[OutputVariable],
         prefix: str,
-        protocols: List[str] = ["pva"],
+        protocols: List[str] = ["pva", "ca"],
         model_kwargs: dict = {},
     ) -> None:
         """Create OnlineSurrogateModel instance in the main thread and
@@ -142,7 +125,13 @@ class Server:
             }
         )
 
-        # self.ca_thread = threading.Thread(target=self.run_ca_server)
+        self.ca_process = CAServer(
+            prefix=self.prefix,
+            input_variables=self.input_variables,
+            output_variables=self.output_variables,
+            in_queue=self.in_queue,
+            out_queue=self.out_queues["ca"]
+        )
         self.pva_process = PVAServer(
             prefix=self.prefix,
             input_variables=self.input_variables,
@@ -162,7 +151,6 @@ class Server:
                 for protocol, queue in out_queues.items():
                     if protocol == data["protocol"]:
                         continue
-                    print('Server is updating out queue for: ', protocol, ' with: ', data["pvname"])
                     queue.put(
                         {"input_variables":
                             [self.input_variables[data["pvname"]]]
@@ -171,11 +159,7 @@ class Server:
                 # update output variable state
 
                 # UPDATE COMPLEMENTARY INPUT
-                print('Model evaluate called')
                 predicted_output = model.evaluate(self.input_variables)
-                print('Model evaluate finished')
-                print('Predicted Output: ', predicted_output)
-                # in_queue.task_done()
                 for _, queue in out_queues.items():
                     queue.put({"output_variables": predicted_output},
                               timeout=0.1)
@@ -183,32 +167,6 @@ class Server:
                 continue
             except Full:
                 print(f"Queue is Full -> CA or PVA")
-    #
-    # def run_ca_server(self) -> None:
-    #     """Initialize the Channel Access server and driver. Sets the initial
-    #     output variable values.
-    #     """
-    #     # initialize channel access server
-    #     self.ca_server = SimpleServer()
-    #
-    #     # create all process variables using the process variables stored in pvdb
-    #     # with the given prefix
-    #     pvdb = build_pvdb(self.input_variables, self.output_variables)
-    #     self.ca_server.createPV(self.prefix + ":", pvdb)
-    #
-    #     # set up driver for handing read and write requests to process variables
-    #     self.ca_driver = CADriver(self.input_variables, self.output_variables)
-    #     self.ca_driver.set_output_pvs(list(self.output_variables.values()))
-    #
-    #     while True:
-    #         self.ca_server.process(0.1)
-    #         try:
-    #             data = ca_queue.get(False)
-    #             self.ca_driver.set_output_pvs(data)
-    #             ca_queue.task_done()
-    #         except Empty:
-    #             time.sleep(0.01)
-    #             pass
 
     def start(self, monitor: bool = True) -> None:
         """Starts server using set server protocol(s).
@@ -221,8 +179,8 @@ class Server:
         """
         self.comm_thread.start()
 
-        # if "ca" in self.protocols:
-        #     self.ca_process.start()
+        if "ca" in self.protocols:
+            self.ca_process.start()
 
         if "pva" in self.protocols:
             self.pva_process.start()
@@ -234,7 +192,9 @@ class Server:
         logger.info("Stopping server.")
         self.exit_event.set()
 
-        # if "ca" in self.protocols:
+        # TODO: Better cleanup of processes.
+        if "ca" in self.protocols:
+            self.ca_process.terminate()
         #     self.ca_driver.exit_event.set()
 
         if "pva" in self.protocols:
