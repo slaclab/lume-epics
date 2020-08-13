@@ -63,7 +63,6 @@ script:
     fi
 
 after_success:
-  - codecov
   - |
     if [[ $TRAVIS_BRANCH == $TRAVIS_TAG  && $TRAVIS_TAG != '' && $LUME_EPICS_REPO == 'slaclab' && "{$CONDA_UPLOAD:=0}" == '1' ]]; then
         echo "Uploading to jrgarrahan channel"
