@@ -1,7 +1,8 @@
+{% set data = load_setup_py_data(setup_file='../setup.py', from_recipe_dir=True) %}
+
 package:
   name: "lume-epics"
-  version: "0.2"
-
+  version: {{ data.get('version') }}
 build:
   noarch: python
   number: 0
