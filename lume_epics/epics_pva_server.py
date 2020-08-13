@@ -4,7 +4,9 @@ from queue import Full, Empty
 import numpy as np
 import time
 import signal
+from typing import List, Union
 
+from lume_model.variables import InputVariable, OutputVariable
 from p4p.nt import NTScalar, NTNDArray
 from p4p.server.thread import SharedPV
 from p4p.server import Server as P4PServer
@@ -19,11 +21,35 @@ logger = logging.getLogger(__name__)
 
 
 class PVAServer(multiprocessing.Process):
+    """Process-based implementation of Channel Access server.
+
+    Attributes:
+        pva_server (P4PServer): p4p server instance
+
+        exit_event (multiprocessing.Event): Event indicating shutdown
+
+    """
+
     protocol = "pva"
     def __init__(self,
-                 prefix,
-                 input_variables, output_variables,
-                 in_queue, out_queue, *args, **kwargs):
+                 prefix: str,
+                 input_variables: List[InputVariable], output_variables: List[OutputVariable],
+                 in_queue: multiprocessing.Queue, out_queue: multiprocessing.Queue, *args, **kwargs) -> None:
+        """Initialize server process.
+
+        Arguments:
+            prefix (str): EPICS prefix for serving process variables
+
+            input_variables (Dict[str, InputVariable]): Dictionary mapping pvname to lume-model input variable.
+
+            output_variables (Dict[str, OutputVariable]):Dictionary mapping pvname to lume-model output variable.
+
+            in_queue (multiprocessing.Queue): Queue for tracking updates to input variables
+
+            out_queue (multiprocessing.Queue): Queue for tracking updates to output variables
+
+        """
+        
         super().__init__(*args, **kwargs)
         self._prefix = prefix
         self._input_variables = input_variables
@@ -34,7 +60,15 @@ class PVAServer(multiprocessing.Process):
         self.pva_server = None
         self.exit_event = multiprocessing.Event()
 
-    def update_pv(self, pvname, value):
+    def update_pv(self, pvname: str, value: Union[np.ndarray, float]) -> None:
+        """Adds update to input process variable to the input queue.
+
+        Arguments:
+            pvname (str): Name of process variable
+
+            value (Union[np.ndarray, float]): Value to set 
+
+        """
         # Hack for now to get the pickable value
         val = value.raw.value
         pvname = pvname.replace(f"{self._prefix}:", "")
@@ -43,6 +77,10 @@ class PVAServer(multiprocessing.Process):
         )
 
     def setup_server(self) -> None:
+        """Configure and start server.
+
+        """
+        # ignore interrupt in subprocess
         signal.signal(signal.SIGINT, signal.SIG_IGN)
 
         logger.info("Initializing pvAccess server")
@@ -110,9 +148,14 @@ class PVAServer(multiprocessing.Process):
         self.pva_server = P4PServer(providers=[self._providers])
         logger.info("pvAccess server started")
 
-    def update_pvs(self, input_variables, output_variables):
-        """
-        Function for updating inputs and outputs over pva
+    def update_pvs(self, input_variables: List[InputVariable], output_variables: List[OutputVariable]) -> None:
+        """Update process variables over pvAccess.
+
+        Arguments:
+            input_variables (List[InputVariable]): List of lume-epics output variables.
+
+            output_variables (List[OutputVariable]): List of lume-model output variables.
+
         """
         variables = input_variables+output_variables
         for variable in variables:
@@ -139,7 +182,10 @@ class PVAServer(multiprocessing.Process):
             output_provider = self._providers[pvname]
             output_provider.post(value)
 
-    def run(self):
+    def run(self) -> None:
+        """Start server process.
+
+        """
         self.setup_server()
         while not self.exit_event.is_set():
             try:
@@ -155,6 +201,9 @@ class PVAServer(multiprocessing.Process):
         logger.info("pvAccess server stopped.")
 
     def shutdown(self):
+        """Safely shutdown the server process. 
+
+        """
         self.exit_event.set()
 
 
@@ -163,7 +212,7 @@ class PVAccessInputHandler:
     process variables.
     """
 
-    def __init__(self, pvname, server):
+    def __init__(self, pvname: str, server: PVAServer):
         """
         Initialize the handler with prefix and image pv attributes
 
