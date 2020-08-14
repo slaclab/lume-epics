@@ -69,13 +69,13 @@ after_success:
   - echo $LUME_EPICS_REPO
   - echo $CONDA_UPLOAD
   - |
-    if [[ $TRAVIS_BRANCH == $TRAVIS_TAG  && $TRAVIS_TAG != '' && $LUME_EPICS_REPO == 'slaclab' && "{$CONDA_UPLOAD:=0}" == '1' ]]; then
+    if [[ $TRAVIS_BRANCH == $TRAVIS_TAG  && $TRAVIS_TAG != '' && $LUME_EPICS_REPO == 'slaclab' && "${CONDA_UPLOAD:=0}" == '1' ]]; then
         echo "Uploading to jrgarrahan channel"
         export ANACONDA_API_TOKEN=$CONDA_UPLOAD_TOKEN
         anaconda upload bld-dir/noarch/*.tar.bz2
     fi
   - |
-    if [[ $LUME_EPICS_REPO == 'dev' && "{$CONDA_UPLOAD:=0}" == '1' ]]; then
+    if [[ $LUME_EPICS_REPO == 'dev' && "${CONDA_UPLOAD:=0}" == '1' ]]; then
         echo "Uploading to jrgarrahan channel"
         export ANACONDA_API_TOKEN=$CONDA_UPLOAD_TOKEN
         anaconda upload bld-dir/noarch/*.tar.bz2 --label dev
