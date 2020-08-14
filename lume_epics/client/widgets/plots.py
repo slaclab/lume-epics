@@ -197,8 +197,8 @@ class Striptool:
 
         self.live_variable = list(self.pv_monitors.keys())[0]
         #ts, ys = self.pv_monitors[self.live_variable].poll()
-        ts = 0
-        ys = DEFAULT_SCALAR_VALUE
+        ts = [0]
+        ys = [DEFAULT_SCALAR_VALUE]
         self.source = ColumnDataSource(dict(x=ts, y=ys))
 
     def build_plot(self) -> None:
