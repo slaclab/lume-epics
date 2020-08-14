@@ -1,12 +1,1 @@
-pre-commit
-black
-mkdocs
-pytest
-pcaspy
-pyepics
-p4p
-numpy
-bokeh
-lume-model
-mkdocs
 mkdocstrings
