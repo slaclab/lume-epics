@@ -40,10 +40,6 @@ image_plot.build_plot(color_mapper=color_mapper)
 # Set up image update callback
 def image_update_callback():
     image_plot.update()
-
-def slider_update_callback(slider):
-    slider.value = controller.get_value()
-
     
 
 # render
