@@ -66,6 +66,8 @@ script:
 
 after_success:
   - echo $TRAVIS_TAG
+  - echo $LUME_EPICS_REPO
+  - echo $CONDA_UPLOAD
   - |
     if [[ $TRAVIS_BRANCH == $TRAVIS_TAG  && $TRAVIS_TAG != '' && $LUME_EPICS_REPO == 'slaclab' && "{$CONDA_UPLOAD:=0}" == '1' ]]; then
         echo "Uploading to jrgarrahan channel"
