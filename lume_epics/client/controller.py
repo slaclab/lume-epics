@@ -175,7 +175,7 @@ class Controller:
             caput(pvname, value)
 
         elif self.protocol == "pva":
-            self.context.put(pvname, value)
+            self.context.put(pvname, value, throw=False)
 
     def close(self):
         if self.protocol == "pva":
