@@ -11,7 +11,7 @@ from bokeh.plotting import figure
 from bokeh.models import ColumnDataSource, ColorMapper
 
 from lume_model.variables import Variable, ImageVariable, ScalarVariable
-from lume_epics.client.controller import Controller
+from lume_epics.client.controller import Controller, DEFAULT_IMAGE_DATA, DEFAULT_SCALAR_VALUE
 from lume_epics.client.monitors import PVImage, PVTimeSeries
 
 logger = logging.getLogger(__name__)
@@ -68,7 +68,8 @@ class ImagePlot:
             self.pv_monitors[variable.name] = PVImage(prefix, variable, controller)
 
         self.live_variable = list(self.pv_monitors.keys())[0]
-        image_data = self.pv_monitors[self.live_variable].poll()
+        #image_data = self.pv_monitors[self.live_variable].poll()
+        image_data = DEFAULT_IMAGE_DATA
 
         self.source = ColumnDataSource(image_data)
 
@@ -88,8 +89,6 @@ class ImagePlot:
         # create plot
         self.plot = figure(
             tooltips=[("x", "$x"), ("y", "$y"), ("value", "@image")],
-            #    height=400,
-            #    width=400,
         )
         self.plot.x_range.range_padding = self.plot.y_range.range_padding = 0
 
@@ -197,7 +196,9 @@ class Striptool:
             self.pv_monitors[variable.name] = PVTimeSeries(prefix, variable, controller)
 
         self.live_variable = list(self.pv_monitors.keys())[0]
-        ts, ys = self.pv_monitors[self.live_variable].poll()
+        #ts, ys = self.pv_monitors[self.live_variable].poll()
+        ts = [0]
+        ys = [DEFAULT_SCALAR_VALUE]
         self.source = ColumnDataSource(dict(x=ts, y=ys))
 
     def build_plot(self) -> None:

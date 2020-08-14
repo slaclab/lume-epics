@@ -60,6 +60,7 @@ script:
   - |
     if [[ "${BUILD_DOCS:=0}" == '1' && $LUME_EPICS_REPO == 'slaclab' ]]; then
         pip install -r docs-requirements.txt
+
         mkdocs build -c -d site
         # Publish docs.
         doctr deploy . --deploy-branch-name gh-pages
