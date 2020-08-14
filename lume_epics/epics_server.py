@@ -140,8 +140,8 @@ class Server:
             out_queue=self.out_queues["pva"]
         )
 
-    def run_comm_thread(self, model_class, model_kwargs={}, in_queue: multiprocessing, Queue=None,
-                        out_queues: Dict[str: multiprocessing.Queue]=None):
+    def run_comm_thread(self, model_class, model_kwargs={}, in_queue: multiprocessing.Queue=None,
+                        out_queues: Dict[str, multiprocessing.Queue]=None):
         """Handles communications between pvAccess server, Channel Access server, and model.
         
         Arguments:
