@@ -58,12 +58,11 @@ script:
   # Build docs.
   - set -e
   - |
-    if [[ "${BUILD_DOCS:=0}" == '1' && $LUME_EPICS_REPO == 'slaclab' ]]; then
+    if [[ -n "$DOCTR_DEPLOY_ENCRYPTION_KEY_SLACLAB_LUME_EPICS" && "${BUILD_DOCS:=0}" == '1' && $LUME_EPICS_REPO == 'slaclab' ]]; then
         pip install -r docs-requirements.txt
-
         mkdocs build -c -d site
         # Publish docs.
-        doctr deploy . --deploy-branch-name gh-pages
+        doctr deploy . --built-docs site --deploy-branch-name gh-pages
     fi
 
 after_success:
