@@ -103,7 +103,8 @@ class Server:
                 variable.value = variable.default
 
         model = model_class(**model_kwargs)
-        self.output_variables = model.evaluate(self.input_variables)
+        model_input = list(self.input_variables.values())
+        self.output_variables = model.evaluate(model_input)
         self.output_variables = {
             variable.name: variable for variable in self.output_variables
         }
