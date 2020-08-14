@@ -16,6 +16,9 @@ from lume_epics.client.controller import Controller
 logger = logging.getLogger(__name__)
 
 class EpicsSlider:
+    """EPICS based Slider used for building bokeh sliders and synchronizing process variable values.
+
+    """
 
     def __init__(self, prefix: str, variable: ScalarInputVariable, controller: Controller):
         self.prefix = prefix
@@ -59,6 +62,10 @@ class EpicsSlider:
         )
 
     def update(self):
+        """
+        Updates bokeh slider with the process variable value.
+
+        """
         self.bokeh_slider.value = self.controller.get_value(self.pvname)
 
 
