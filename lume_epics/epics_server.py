@@ -173,7 +173,7 @@ class Server:
 
                 # update output variable state
                 model_input = list(self.input_variables.values())
-                predicted_output = model.evaluate(self.input_variables)
+                predicted_output = model.evaluate(model_input)
                 for protocol, queue in out_queues.items():
                     queue.put({"output_variables": predicted_output},
                               timeout=0.1)
