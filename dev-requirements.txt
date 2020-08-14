@@ -2,7 +2,6 @@ pre-commit
 doctr
 black
 mkdocs
-mkdocstrings
 pytest
 pcaspy
 pyepics
