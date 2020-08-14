@@ -41,13 +41,20 @@ image_plot.build_plot(color_mapper=color_mapper)
 def image_update_callback():
     image_plot.update()
 
+def slider_update_callback(slider):
+    slider.value = controller.get_value()
+
+    
+
 # render
 curdoc().title = "Demo App"
 curdoc().add_root(
             row(
-                column(sliders, width=350), column(image_plot.plot)
+                column([slider.bokeh_slider for slider in sliders], width=350), column(image_plot.plot)
                 ) 
     )
 
 
 curdoc().add_periodic_callback(image_update_callback, 250)
+for slider in sliders:
+    curdoc().add_periodic_callback(slider.update, 250)
