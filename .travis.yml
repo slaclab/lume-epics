@@ -8,6 +8,10 @@ branches:
   - build_cleanup
   - /^v\d*\.?\d*$/
 
+env:
+  global:
+    - secure: "lmHnvnDEb44KnAu9T1qlbd9ahSNTY873TpmbI0tio/sSzHxN3P4hzjNB2+KOtOo9qBhuXNWBfUcJIG1xQ37KIYpWx/5ptHFP8cVR7GPdKkOdY8C6tRvOuNSEdlv6cWN4p7P9obIkFcXGr2FfxIDZYO/0ipjlYf6uOzRlUWmrq3OKvNyUL/i6XFPSNXf+M+Lgt/AMeVTvGXXJpvhfxl1r5ld2W97XsTiyHb/AMuMkXs6RiE60UPwxpjyOANowZw1rdcFu/tObjCk3qi8D1VJp8vmNhF5eKzbSBGvBQU/TUkJhGitA3mi9MvoBlvdRhYCelyfSrwQ4EuyX2Pj1gvCH2JjNT3vPA48/yi3EgKIle1U1gUqHrB6PT+aSkn35x8FG0VzecX5hhfRZ5cb/2vPhVMFZwSrlRH/Yd88S+L/faly+qilEDXxnuyrWz1eXX2Fa3ga8Oqxtnzm8l9gAesN3w8jiddbF5tcpftG4Eu9/JSQJ+W+KAsnda6PllF94qL4VTV9spdSgZFugp5UztLLiLe0bpqPrtiswfRKHyzY7RRm7pHUcMpMlyzrQfkFZexB9ttnE+OUBvOGAsiaczAN2XEYcJA4gaMaD2WEpIniW0zzTxZUbZo8EFFctc5yrqnV8kyLXgjBtwO1VeQfnZU9sqMiG5RjS6Pf5tNYLcTdOAe4="
+
 matrix:
   include:
     - os: osx
