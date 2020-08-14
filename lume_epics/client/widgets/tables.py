@@ -10,7 +10,7 @@ import logging
 from bokeh.models import ColumnDataSource, DataTable, TableColumn, StringFormatter
 
 from lume_model.variables import ScalarVariable
-from lume_epics.client.controller import Controller
+from lume_epics.client.controller import Controller, DEFAULT_SCALAR_VALUE
 from lume_epics.client.monitors import PVScalar
 
 
@@ -54,7 +54,8 @@ class ValueTable:
 
         for variable in variables:
             self.pv_monitors[variable.name] = PVScalar(prefix, variable, controller)
-            v = self.pv_monitors[variable.name].poll()
+        #    v = self.pv_monitors[variable.name].poll()
+            v = DEFAULT_SCALAR_VALUE
 
             self.output_values[variable.name] = v
 
