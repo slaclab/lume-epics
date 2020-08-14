@@ -89,8 +89,6 @@ class ImagePlot:
         # create plot
         self.plot = figure(
             tooltips=[("x", "$x"), ("y", "$y"), ("value", "@image")],
-            #    height=400,
-            #    width=400,
         )
         self.plot.x_range.range_padding = self.plot.y_range.range_padding = 0
 

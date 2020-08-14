@@ -15,74 +15,51 @@ from lume_epics.client.controller import Controller
 
 logger = logging.getLogger(__name__)
 
-def set_pv_from_slider(
-    attr: str,
-    old: float,
-    new: float,
-    pvname: str,
-    controller: Controller,
-) -> None:
-    """
-    Callback function for updating process variables on slider change.
+class EpicsSlider:
 
-    Args:
-        attr (str): Attribute to update.
+    def __init__(self, prefix: str, variable: ScalarInputVariable, controller: Controller):
+        self.prefix = prefix
+        self.controller = controller
+        self.variable = variable
+        self.build_slider()
 
-        old (float): Prior slider value.
+    def build_slider(self):
+        """
+        Utility function for building a slider.
 
-        new (float): New value assigned by slider.
+        Args:
+            prefix (str): Prefix used for serving process variables.
 
-        pvname (str): Name of the process variable.
+            variable (ScalarInputVariable): Variable associated with the slider.
 
-        controller (Controller): Controller object for interacting with process 
-            variable values.
+            controller (Controller): Controller object for getting process variable values.
 
-    """
-    controller.put(pvname, new)
+        """
+        title = self.variable.name
+        if "units" in self.variable.__fields_set__:
+            title += " (" + self.variable.units + ")"
 
+        self.pvname = self.prefix + ":" + self.variable.name
+        step = (self.variable.value_range[1] - self.variable.value_range[0]) / 100.0
 
-def build_slider(
-    prefix: str, variable: ScalarInputVariable, controller: Controller
-) -> Slider:
-    """
-    Utility function for building a slider.
+        # construct slider
+        self.bokeh_slider = Slider(
+            title=title,
+            value= self.variable.value_range[0],
+            start=self.variable.value_range[0],
+            end=self.variable.value_range[1],
+            step=step,
+            format = "0[.]0000"
+        )
 
-    Args:
-        prefix (str): Prefix used for serving process variables.
+        # set up callback
+        self.bokeh_slider.on_change(
+            "value",
+            partial(set_pv_from_slider, pvname=self.pvname, controller=self.controller),
+        )
 
-        variable (ScalarInputVariable): Variable associated with the slider.
-
-        controller (Controller): Controller object for getting process variable values.
-
-    """
-    title = variable.name
-    if "units" in variable.__fields_set__:
-        title += " (" + variable.units + ")"
-
-    pvname = prefix + ":" + variable.name
-    step = (variable.value_range[1] - variable.value_range[0]) / 100.0
-
-
-    # initialize value
-    start_val = controller.get_value(pvname)
-
-    # construct slider
-    slider = Slider(
-        title=title,
-        value= start_val,
-        start=variable.value_range[0],
-        end=variable.value_range[1],
-        step=step,
-        format = "0[.]0000"
-    )
-
-    # set up callback
-    slider.on_change(
-        "value",
-        partial(set_pv_from_slider, pvname=pvname, controller=controller),
-    )
-
-    return slider
+    def update(self):
+        self.bokeh_slider.value = self.controller.get_value(self.pvname)
 
 
 def build_sliders(
@@ -102,7 +79,31 @@ def build_sliders(
     sliders = []
 
     for variable in variables:
-        slider = build_slider(prefix, variable, controller,)
+        slider = EpicsSlider(prefix, variable, controller,)
         sliders.append(slider)
 
     return sliders
+
+def set_pv_from_slider(
+    attr: str,
+    old: float,
+    new: float,
+    pvname: str,
+    controller: Controller,) -> None:
+    """
+    Callback function for updating process variables on slider change.
+
+    Args:
+        attr (str): Attribute to update.
+
+        old (float): Prior slider value.
+
+        new (float): New value assigned by slider.
+
+        pvname (str): Name of the process variable.
+
+        controller (Controller): Controller object for interacting with process 
+            variable values.
+
+    """
+    controller.put(pvname, new)
