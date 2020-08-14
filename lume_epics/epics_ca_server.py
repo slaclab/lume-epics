@@ -20,7 +20,8 @@ logger = logging.getLogger(__name__)
 
 
 class CAServer(multiprocessing.Process):
-    """Process-based implementation of Channel Access server.
+    """
+    Process-based implementation of Channel Access server.
 
     Attributes:
         ca_server (SimpleServer): pcaspy SimpleServer instance
@@ -42,7 +43,7 @@ class CAServer(multiprocessing.Process):
                  out_queue: multiprocessing.Queue, *args, **kwargs) -> None:
         """Initialize server process.
 
-        Arguments:
+        Args:
             prefix (str): EPICS prefix for serving process variables
 
             input_variables (Dict[str, InputVariable]): Dictionary mapping pvname to lume-model input variable.
@@ -69,7 +70,7 @@ class CAServer(multiprocessing.Process):
     def update_pv(self, pvname, value) -> None:
         """Adds update to input process variable to the input queue.
 
-        Arguments:
+        Args:
             pvname (str): Name of process variable
 
             value (Union[np.ndarray, float]): Value to set 
@@ -110,7 +111,7 @@ class CAServer(multiprocessing.Process):
     def update_pvs(self, input_variables: List[InputVariable], output_variables: List[OutputVariable]):
         """Update process variables over Channel Access.
 
-        Arguments:
+        Args:
             input_variables (List[InputVariable]): List of lume-epics output variables.
 
             output_variables (List[OutputVariable]): List of lume-model output variables.

@@ -145,15 +145,21 @@ To serve the widgets using bokeh, you must include the bokeh items in the docume
 from bokeh.io import curdoc
 from bokeh.layouts import column, row
 
+# collect bokeh sliders from sliders
+bokeh_sliders = [slider.bokeh_slider for slider in sliders]
+
 # render
 curdoc().title = "Demo App"
 curdoc().add_root(
             row(
-                column(sliders, width=350), column(value_table.table)
+                column(bokeh_sliders, width=350), column(value_table.table)
                 ) 
     )
 
 curdoc().add_periodic_callback(value_table.update, 250)
+# add callback for updating slider variable to reflect live variable value
+for slider in sliders:
+    curdoc().add_periodic_callback(slider.update, 250)
 ```
 
 ### Running the application
