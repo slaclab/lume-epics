@@ -54,7 +54,7 @@ class Controller:
 
     """
 
-    def __init__(self, protocol: str, set_pva: bool = True, set_ca: bool = True):
+    def __init__(self, protocol: str):
         """
         Initializes controller. Stores protocol and creates context attribute if 
         using pvAccess.
@@ -63,20 +63,14 @@ class Controller:
             protocol (str): Protocol for getting values from variables ("pva" for pvAccess, "ca" for
             Channel Access)
 
-            set_ca (bool): Update Channel Access variable on put.
-
-            set_pva (bool): Upddate pvAccess variable on put.
-
         """
         self.protocol = protocol
-        self.set_pva = set_pva
-        self.set_ca = set_ca
 
 
 
         # initalize context for pva
         self.context = None
-        if set_pva:
+        if self.protocol == "pva":
             self.context = Context("pva")
 
     def get(self, pvname: str) -> np.ndarray:
@@ -177,12 +171,12 @@ class Controller:
             value (Union[np.ndarray, float]): Value to assing to process variable.
 
         """
-        if self.set_ca:
+        if self.protocol == "ca":
             caput(pvname, value)
 
-        if self.set_pva:
+        elif self.protocol == "pva":
             self.context.put(pvname, value)
 
     def close(self):
-        if self.set_pva:
+        if self.protocol == "pva":
             self.context.close()
