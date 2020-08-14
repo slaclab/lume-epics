@@ -21,7 +21,8 @@ logger = logging.getLogger(__name__)
 
 
 class PVAServer(multiprocessing.Process):
-    """Process-based implementation of Channel Access server.
+    """
+    Process-based implementation of Channel Access server.
 
     Attributes:
         pva_server (P4PServer): p4p server instance
@@ -37,7 +38,7 @@ class PVAServer(multiprocessing.Process):
                  in_queue: multiprocessing.Queue, out_queue: multiprocessing.Queue, *args, **kwargs) -> None:
         """Initialize server process.
 
-        Arguments:
+        Args:
             prefix (str): EPICS prefix for serving process variables
 
             input_variables (Dict[str, InputVariable]): Dictionary mapping pvname to lume-model input variable.
@@ -63,7 +64,7 @@ class PVAServer(multiprocessing.Process):
     def update_pv(self, pvname: str, value: Union[np.ndarray, float]) -> None:
         """Adds update to input process variable to the input queue.
 
-        Arguments:
+        Args:
             pvname (str): Name of process variable
 
             value (Union[np.ndarray, float]): Value to set 
@@ -151,7 +152,7 @@ class PVAServer(multiprocessing.Process):
     def update_pvs(self, input_variables: List[InputVariable], output_variables: List[OutputVariable]) -> None:
         """Update process variables over pvAccess.
 
-        Arguments:
+        Args:
             input_variables (List[InputVariable]): List of lume-epics output variables.
 
             output_variables (List[OutputVariable]): List of lume-model output variables.
@@ -208,7 +209,8 @@ class PVAServer(multiprocessing.Process):
 
 
 class PVAccessInputHandler:
-    """Handler object that defines the callbacks to execute on put operations to input
+    """
+    Handler object that defines the callbacks to execute on put operations to input 
     process variables.
     """
 
