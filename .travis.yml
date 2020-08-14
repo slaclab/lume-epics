@@ -58,7 +58,7 @@ script:
   # Build docs.
   - set -e
   - |
-    if [[ "${BUILD_DOCS:=0}" == '1' && "{$LUME_EPICS_REPO:=dev}" == 'slaclab' ]]; then
+    if [[ "${BUILD_DOCS:=0}" == '1' && $LUME_EPICS_REPO == 'slaclab' ]]; then
         mkdocs build -c -d site
         # Publish docs.
         doctr deploy . --deploy-branch-name gh-pages
