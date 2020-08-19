@@ -117,16 +117,18 @@ class Controller:
             return
 
         if self.protocol == "ca":
-         #   conn_cb = partial(self.ca_connection_callback, pvname)
+            # add to registry
+            self.pv_registry[pvname] = {"pv": None, "value": None}
+
             pv_obj = PV(pvname, callback=self.ca_value_callback, connection_callback=self.ca_connection_callback)
 
             # update registry
-            self.pv_registry[pvname] = {'pv': pv_obj, 'value': None}
+            self.pv_registry[pvname]["pv"] = pv_obj
 
         elif self.protocol == "pva":
             cb = partial(self.pva_value_callback, pvname)
             # populate registry s.t. initially disconnected will populate
-            self.pv_registry[pvname] = {'pv': None, 'value': None}
+            self.pv_registry[pvname] = {"pv": None, "value": None}
 
             mon_obj = self.context.monitor(pvname, cb, notify_disconnect=True)
             
