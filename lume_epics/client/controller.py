@@ -7,8 +7,10 @@ import numpy as np
 import copy
 import logging
 from collections import defaultdict
+from functools import partial 
 from epics import caget, caput, PV
-from p4p.client.thread import Context
+
+from p4p.client.thread import Context, Disconnected
 
 logger = logging.getLogger(__name__)
 
@@ -72,25 +74,64 @@ class Controller:
         if self.protocol == "pva":
             self.context = Context("pva")
 
-
     def ca_value_callback(self, pvname, value, *args, **kwargs):
+        """Callback executed by Channel Access monitor.
+
+        Args:
+            pvname (str): Process variable name
+
+            value (Union[np.ndarray, float]): Value to assign to process variable.
+        """
         self.pv_registry[pvname]["value"] = value
+
+
+    def ca_connection_callback(self, *, pvname, conn, pv):
+        """Callback used for monitoring connection and setting values to None on disconnect.
+        """
+        # if disconnected, set value to None
+        if not conn:
+            self.pv_registry[pvname]["value"] = None
+
 
     def pva_value_callback(self, pvname, value):
-        self.pv_registry[pvname]["value"] = value
+        """Callback executed by pvAccess monitor.
+
+        Args:
+            pvname (str): Process variable name
+
+            value (Union[np.ndarray, float]): Value to assign to process variable.
+        """
+        if isinstance(value, Disconnected):
+            self.pv_registry[pvname]["value"] = None
+        else:
+            self.pv_registry[pvname]["value"] = value
 
     def setup_pv_monitor(self, pvname):
+        """Set up process variable monitor.
+
+        Args:
+            pvname (str): Process variable name
+
+        """
         if pvname in self.pv_registry:
             return
 
         if self.protocol == "ca":
-            pv_obj = PV(pvname, callback=self.ca_value_callback)
+         #   conn_cb = partial(self.ca_connection_callback, pvname)
+            pv_obj = PV(pvname, callback=self.ca_value_callback, connection_callback=self.ca_connection_callback)
+
+            # update registry
             self.pv_registry[pvname] = {'pv': pv_obj, 'value': None}
 
         elif self.protocol == "pva":
-            cb = functools.partial(self.pva_value_callback, pvname)
-            mon_obj = self.context.monitor(pvname, cb)
-            self.pv_registry[pvname] = {'pv': mon_obj, 'value': None}
+            cb = partial(self.pva_value_callback, pvname)
+            # populate registry s.t. initially disconnected will populate
+            self.pv_registry[pvname] = {'pv': None, 'value': None}
+
+            mon_obj = self.context.monitor(pvname, cb, notify_disconnect=True)
+            
+            # update registry with the monitor
+            self.pv_registry[pvname]["pv"] = mon_obj
 
     def get(self, pvname: str) -> np.ndarray:
         """
@@ -127,24 +168,26 @@ class Controller:
             pvname (str): Image process variable name
 
         """
-
+        image = None
         if self.protocol == "ca":
-            image = self.get(f"{pvname}:ArrayData_RBV")
+            image_flat = self.get(f"{pvname}:ArrayData_RBV")
+            nx = self.get(f"{pvname}:ArraySizeX_RBV")
+            ny = self.get(f"{pvname}:ArraySizeY_RBV")
+            x = self.get(f"{pvname}:MinX_RBV")
+            y = self.get(f"{pvname}:MinY_RBV")
+            x_max = self.get(f"{pvname}:MaxX_RBV")
+            y_max = self.get(f"{pvname}:MaxY_RBV")
 
-            if image is not None:
-                pvbase = pvname.replace(":ArrayData_RBV", "")
-                nx = self.get(f"{pvbase}:ArraySizeX_RBV")
-                ny = self.get(f"{pvbase}:ArraySizeY_RBV")
-                x = self.get(f"{pvbase}:MinX_RBV")
-                y = self.get(f"{pvbase}:MinY_RBV")
-                dw = self.get(f"{pvbase}:MaxX_RBV") - x
-                dh = self.get(f"{pvbase}:MaxY_RBV") - y
+            if all([image_def is not None for image_def in [image_flat, nx, ny, x, y, x_max, y_max]]):
+                dw = x_max - x
+                dh = y_max - y
 
-                image = image.reshape(int(nx), int(ny))
+                image = image_flat.reshape(int(nx), int(ny))
 
         elif self.protocol == "pva":
             # context returns numpy array with WRITEABLE=False
             # copy to manipulate array below
+
             image = self.get(pvname)
 
             if image is not None:
