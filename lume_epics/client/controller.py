@@ -6,8 +6,8 @@ from typing import Union
 import numpy as np
 import copy
 import logging
-
-from epics import caget, caput
+from collections import defaultdict
+from epics import caget, caput, PV
 from p4p.client.thread import Context
 
 logger = logging.getLogger(__name__)
@@ -65,13 +65,32 @@ class Controller:
 
         """
         self.protocol = protocol
-
-
+        self.pv_registry = defaultdict()
 
         # initalize context for pva
         self.context = None
         if self.protocol == "pva":
             self.context = Context("pva")
+
+
+    def ca_value_callback(self, pvname, value, *args, **kwargs):
+        self.pv_registry[pvname]["value"] = value
+
+    def pva_value_callback(self, pvname, value):
+        self.pv_registry[pvname]["value"] = value
+
+    def setup_pv_monitor(self, pvname):
+        if pvname in self.pv_registry:
+            return
+
+        if self.protocol == "ca":
+            pv_obj = PV(pvname, callback=self.ca_value_callback)
+            self.pv_registry[pvname] = {'pv': pv_obj, 'value': None}
+
+        elif self.protocol == "pva":
+            cb = functools.partial(self.pva_value_callback, pvname)
+            mon_obj = self.context.monitor(pvname, cb)
+            self.pv_registry[pvname] = {'pv': mon_obj, 'value': None}
 
     def get(self, pvname: str) -> np.ndarray:
         """
@@ -79,26 +98,13 @@ class Controller:
 
         Args:
             pvname (str): Process variable name
-
         """
-        try:
-            if self.protocol == "ca":
-                value = caget(pvname)
+        self.setup_pv_monitor(pvname)
+        pv = self.pv_registry.get(pvname, None)
+        if pv:
+            return pv.get('value', None)
+        return None
 
-            elif self.protocol == "pva":
-                value = self.context.get(pvname, throw=False)
-
-                # p4p returns exception on failure
-                if isinstance(value, (Exception)):
-                    value = None
-                    raise TimeoutError
-
-
-        except TimeoutError:
-            logger.error("Unable to connect to process variable %s using protocol %s", pvname, self.protocol)
-            value = None
-
-        return value
 
     def get_value(self, pvname):
         """Gets scalar value of a process variable.
