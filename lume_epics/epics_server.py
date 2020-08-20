@@ -1,11 +1,3 @@
-"""
-This module contains the EPICS server class along with the associated pvAccess and 
-Channel Acccess infrastructure. Included is the Channel Access driver, handlers for 
-pvAccess callbacks, and associated utilities. The Server may be optionally initialized
-to use only one protocol, using both by default.
-
-"""
-
 import time
 import logging
 import threading
@@ -29,8 +21,7 @@ class Server:
     pvAccess or Channel Access protocols; but, defaults to serving over both. 
 
     Attributes:
-        model (OnlineSurrogateModel): OnlineSurrogateModel instance used for getting
-            predictions.
+        model (SurrogateModel): SurrogateModel class to be served
 
         input_variables (List[Variable]): List of lume-model variables passed to model.
 
