@@ -8,11 +8,9 @@ import copy
 import logging
 from collections import defaultdict
 from functools import partial 
-from epics import caput, PV, ca
-from epics import pv as epics_pv
+from epics import PV
 import threading
 import sys
-from types import ModuleType
 from p4p.client.thread import Context, Disconnected
 
 
