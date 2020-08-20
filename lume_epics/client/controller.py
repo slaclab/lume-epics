@@ -8,9 +8,13 @@ import copy
 import logging
 from collections import defaultdict
 from functools import partial 
-from epics import caget, caput, PV
-
+from epics import caput, PV, ca
+from epics import pv as epics_pv
+import threading
+import sys
+from types import ModuleType
 from p4p.client.thread import Context, Disconnected
+
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +44,9 @@ class Controller:
 
         set_ca (bool): Update Channel Access variable on put.
 
-        set_pva (bool): Upddate pvAccess variable on put.
+        set_pva (bool): Update pvAccess variable on put.
+
+        pv_registry (dict): Registry mapping pvname to dict of value and pv monitor
 
     Example:
         ```
@@ -74,6 +80,7 @@ class Controller:
         if self.protocol == "pva":
             self.context = Context("pva")
 
+
     def ca_value_callback(self, pvname, value, *args, **kwargs):
         """Callback executed by Channel Access monitor.
 
@@ -106,6 +113,7 @@ class Controller:
         else:
             self.pv_registry[pvname]["value"] = value
 
+
     def setup_pv_monitor(self, pvname):
         """Set up process variable monitor.
 
@@ -117,9 +125,10 @@ class Controller:
             return
 
         if self.protocol == "ca":
-            # add to registry
+            # add to registry (must exist for connection callback)
             self.pv_registry[pvname] = {"pv": None, "value": None}
 
+            # create the pv
             pv_obj = PV(pvname, callback=self.ca_value_callback, connection_callback=self.ca_connection_callback)
 
             # update registry
@@ -130,10 +139,12 @@ class Controller:
             # populate registry s.t. initially disconnected will populate
             self.pv_registry[pvname] = {"pv": None, "value": None}
 
+            # create the monitor obj
             mon_obj = self.context.monitor(pvname, cb, notify_disconnect=True)
             
             # update registry with the monitor
             self.pv_registry[pvname]["pv"] = mon_obj
+
 
     def get(self, pvname: str) -> np.ndarray:
         """
@@ -141,11 +152,13 @@ class Controller:
 
         Args:
             pvname (str): Process variable name
+
         """
         self.setup_pv_monitor(pvname)
         pv = self.pv_registry.get(pvname, None)
         if pv:
-            return pv.get('value', None)
+            #return pv.get("value", None)
+            return pv["value"]
         return None
 
 
@@ -162,6 +175,7 @@ class Controller:
             value = DEFAULT_SCALAR_VALUE
 
         return value
+
 
     def get_image(self, pvname) -> dict:
         """Gets image data via controller protocol.
@@ -222,8 +236,9 @@ class Controller:
             value (Union[np.ndarray, float]): Value to assing to process variable.
 
         """
+        self.setup_pv_monitor(pvname)
         if self.protocol == "ca":
-            caput(pvname, value)
+            self.pv_registry[pvname]["pv"].put(value, timeout=0.5)
 
         elif self.protocol == "pva":
             self.context.put(pvname, value, throw=False)
