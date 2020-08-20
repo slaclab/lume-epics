@@ -227,7 +227,7 @@ class Controller:
             return DEFAULT_IMAGE_DATA
 
 
-    def put(self, pvname, value: Union[np.ndarray, float]) -> None:
+    def put(self, pvname, value: Union[np.ndarray, float], timeout=1.0) -> None:
         """Assign the value of a process variable.
 
         Args:
@@ -235,13 +235,15 @@ class Controller:
 
             value (Union[np.ndarray, float]): Value to assing to process variable.
 
+            timeout (float): Operation timeout in seconds
+
         """
         self.setup_pv_monitor(pvname)
         if self.protocol == "ca":
-            self.pv_registry[pvname]["pv"].put(value, timeout=0.5)
+            self.pv_registry[pvname]["pv"].put(value, timeout=timeout)
 
         elif self.protocol == "pva":
-            self.context.put(pvname, value, throw=False)
+            self.context.put(pvname, value, throw=False, timeout=timeout)
 
     def close(self):
         if self.protocol == "pva":
