@@ -60,7 +60,7 @@ class Controller:
 
     """
 
-    def __init__(self, protocol: str):
+    def __init__(self, protocol: str, return_default: bool = False):
         """
         Initializes controller. Stores protocol and creates context attribute if 
         using pvAccess.
@@ -69,9 +69,13 @@ class Controller:
             protocol (str): Protocol for getting values from variables ("pva" for pvAccess, "ca" for
             Channel Access)
 
+            return_default (bool): Whether to return available variable default rather than default. Will use
+            global default if the variable default is not found.
+
         """
         self.protocol = protocol
         self.pv_registry = defaultdict()
+        self._return_default = return_default
 
         # initalize context for pva
         self.context = None
@@ -237,11 +241,17 @@ class Controller:
 
         """
         self.setup_pv_monitor(pvname)
-        if self.protocol == "ca":
-            self.pv_registry[pvname]["pv"].put(value, timeout=timeout)
+        
+        # allow no puts before a value has been collected
+        registered = self.get(pvname)
 
-        elif self.protocol == "pva":
-            self.context.put(pvname, value, throw=False, timeout=timeout)
+        # if the value is registered
+        if registered is not None:
+            if self.protocol == "ca":
+                self.pv_registry[pvname]["pv"].put(value, timeout=timeout)
+
+            elif self.protocol == "pva":
+                self.context.put(pvname, value, throw=False, timeout=timeout)
 
     def close(self):
         if self.protocol == "pva":
