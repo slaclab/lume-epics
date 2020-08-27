@@ -238,6 +238,9 @@ class Controller:
         """
         self.setup_pv_monitor(pvname)
 
+        # allow no puts before a value has been collected
+        registered = self.get(pvname)
+
         # if the value is registered
         if registered is not None:
             if self.protocol == "ca":
