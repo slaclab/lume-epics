@@ -237,11 +237,17 @@ class Controller:
 
         """
         self.setup_pv_monitor(pvname)
-        if self.protocol == "ca":
-            self.pv_registry[pvname]["pv"].put(value, timeout=timeout)
 
-        elif self.protocol == "pva":
-            self.context.put(pvname, value, throw=False, timeout=timeout)
+        # if the value is registered
+        if registered is not None:
+            if self.protocol == "ca":
+                self.pv_registry[pvname]["pv"].put(value, timeout=timeout)
+
+            elif self.protocol == "pva":
+                self.context.put(pvname, value, throw=False, timeout=timeout)
+
+        else:
+            logger.debug(f"No initial value set for {pvname}.")
 
     def close(self):
         if self.protocol == "pva":
