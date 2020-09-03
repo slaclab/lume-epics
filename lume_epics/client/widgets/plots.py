@@ -9,6 +9,7 @@ import logging
 
 from bokeh.plotting import figure
 from bokeh.models import ColumnDataSource, ColorMapper
+from bokeh.models import Button
 
 from lume_model.variables import Variable, ImageVariable, ScalarVariable
 from lume_epics.client.controller import Controller, DEFAULT_IMAGE_DATA, DEFAULT_SCALAR_VALUE
@@ -200,6 +201,8 @@ class Striptool:
         ts = [0]
         ys = [DEFAULT_SCALAR_VALUE]
         self.source = ColumnDataSource(dict(x=ts, y=ys))
+        self.reset_button = Button(label="Reset")
+        self.reset_button.on_click(self._reset_values)
 
     def build_plot(self) -> None:
         """
@@ -237,3 +240,10 @@ class Striptool:
             self.plot.yaxis.axis_label += (
                 f" ({self.pv_monitors[self.live_variable].units})"
             )
+
+    def _reset_values(self) -> None:
+        """
+        Reset values
+
+        """
+        self.pv_monitors[self.live_variable].reset()
