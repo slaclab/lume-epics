@@ -8,8 +8,11 @@ from functools import partial
 from typing import Union, List
 import logging
 
-from bokeh.models import Slider, ColumnDataSource, DataTable, TableColumn, StringFormatter, StringEditor, Button
-from bokeh.events import Tap
+from bokeh.models import Slider, ColumnDataSource, DataTable, TableColumn, StringFormatter, TextInput, StringEditor, Button, TextEditor, HTMLTemplateFormatter, Paragraph
+from bokeh.events import Tap, MouseLeave, ButtonClick
+from bokeh.models.callbacks import CustomJS
+from bokeh import document
+from bokeh.layouts import column, row
 
 from lume_model.variables import ScalarInputVariable
 from lume_epics.client.controller import Controller
@@ -134,7 +137,7 @@ class EntryTable:
 
     """
     def __init__(
-        self, variables: List[ScalarInputVariable], controller: Controller, prefix: str,
+        self, variables: List[ScalarInputVariable], controller: Controller, prefix: str, row_height: int=50
     ) -> None:
         """
         Initialize table.
@@ -146,79 +149,59 @@ class EntryTable:
 
             prefix (str): Prefix used in setting up the server.
 
+            row_height (int): Height to render row
+
         """
-        self.output_values = {}
-        self.labels = {}
         self.prefix = prefix
         self.controller = controller
 
         # be sure to surface units in the table
         self.unit_map = {}
+        self.text_inputs = {}
+
+        title_column = []
+        input_column = []
 
         for variable in variables:
-            self.output_values[variable.name] = ""
 
             # check if units assigned
             if "units" in variable.__fields_set__ and variable.units:
-                self.labels[variable.name] = variable.name + f" ({variable.units})"
+                label = variable.name + f" ({variable.units})"
 
             else:
-                self.labels[variable.name] = variable.name
+                label = variable.name
+
+            entry_title = Paragraph(text=variable.name, align='center')
+            self.text_inputs[variable.name] = TextInput(name=label)
+
+            # create columns
+            title_column.append(row(entry_title, height=row_height))
+            input_column.append(row(self.text_inputs[variable.name], height=row_height))
 
 
+        # set up table
+        self.table = row(column(*title_column), column(*input_column))
+
+        # Set up buttons
         self.clear_button = Button(label="Clear")
         self.clear_button.on_click(self.clear)
         self.submit_button = Button(label="Submit")
         self.submit_button.on_click(self.submit)
-        self.create_table()
-
-    def create_table(self) -> None:
-        """
-        Creates the bokeh table and populates variable data.
-        """
-        x_vals = [self.labels[var] for var in self.output_values.keys()]
-        y_vals = list(self.output_values.values())
-        table_data = dict(x=x_vals, values =y_vals)
-
-        columns = [
-            TableColumn(
-                field="x", title="Outputs", formatter=StringFormatter(font_style="bold")
-            ),
-            TableColumn(field = "values", title = "Value", editor = StringEditor())
-        ]
-
-        self.source = ColumnDataSource(table_data)
-        self.source.on_change('data', self.update_values)
-
-        self.table = DataTable(
-            source=self.source, columns=columns, editable=True, selectable=True, sortable=False, index_position=None, auto_edit=True
-        )
+    
 
     def submit(self) -> None:
         """
         Function to submit values entered into table
         """
-        print("putting...")
-
-        for variable in self.output_values:
-            if self.output_values[variable] != "":
+        for variable, text_input in self.text_inputs.items():
+            if text_input.value_input  != "":
                 pvname = f"{self.prefix}:{variable}"
-                self.controller.put(pvname, self.output_values[variable])
+                self.controller.put(pvname, text_input.value_input)
+
 
     def clear(self) -> None:
         """
         Function to clear all entered values
         """
-        for variable in self.output_values:
-            self.output_values[variable] = ""
-
-        x_vals = [self.labels[var] for var in self.output_values.keys()]
-        y_vals = list(self.output_values.values())
-
-        self.source.data = dict(x=x_vals, values=y_vals)
-
-
-    def update_values(self, attr, new, old):
-
-        for i, label in enumerate(new["x"]):
-            self.output_values[label] = new["values"][i]
+        for variable, text_input in self.text_inputs.items():
+            text_input.value_input = ""
