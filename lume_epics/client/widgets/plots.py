@@ -197,7 +197,7 @@ class Striptool:
             self.pv_monitors[variable.name] = PVTimeSeries(prefix, variable, controller)
 
         self.live_variable = list(self.pv_monitors.keys())[0]
-        #ts, ys = self.pv_monitors[self.live_variable].poll()
+
         ts = [0]
         ys = [DEFAULT_SCALAR_VALUE]
         self.source = ColumnDataSource(dict(x=ts, y=ys))
@@ -246,12 +246,15 @@ class Striptool:
             )
 
     def update_selection(self, attr, old, new):
+        """
+        Bokeh callback for assigning new live process variable.
+        """
         self.live_variable = new
         
 
     def _reset_values(self) -> None:
         """
-        Reset values
+        Callback for resetting values on reset button push.
 
         """
         self.pv_monitors[self.live_variable].reset()
