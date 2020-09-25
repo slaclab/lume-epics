@@ -8,8 +8,8 @@ from typing import List
 import logging
 
 from bokeh.plotting import figure
-from bokeh.models import ColumnDataSource, ColorMapper
-from bokeh.models import Button
+from bokeh.models import ColumnDataSource, ColorMapper, Button
+from bokeh.models.widgets import Select
 
 from lume_model.variables import Variable, ImageVariable, ScalarVariable
 from lume_epics.client.controller import Controller, DEFAULT_IMAGE_DATA, DEFAULT_SCALAR_VALUE
@@ -203,6 +203,13 @@ class Striptool:
         self.source = ColumnDataSource(dict(x=ts, y=ys))
         self.reset_button = Button(label="Reset")
         self.reset_button.on_click(self._reset_values)
+        self.selection =  Select(
+            title="Variable to plot:",
+            value=self.live_variable,
+            options=list(self.pv_monitors.keys()),
+        )
+        self.selection.on_change("value", self.update_selection)
+        self.build_plot()
 
     def build_plot(self) -> None:
         """
@@ -220,16 +227,13 @@ class Striptool:
 
         self.plot.xaxis.axis_label = "time (sec)"
 
-    def update(self, live_variable: str = None) -> None:
+    def update(self) -> None:
         """
         Callback to update the plot to reflect updated process variable values or to 
         display a new process variable.
 
-        Args:
-            live_variable (Optional[str]): Variable to display.
+
         """
-        if live_variable:
-            self.live_variable = live_variable
 
         ts, ys = self.pv_monitors[self.live_variable].poll()
         self.source.data = dict(x=ts, y=ys)
@@ -240,6 +244,10 @@ class Striptool:
             self.plot.yaxis.axis_label += (
                 f" ({self.pv_monitors[self.live_variable].units})"
             )
+
+    def update_selection(self, attr, old, new):
+        self.live_variable = new
+        
 
     def _reset_values(self) -> None:
         """
