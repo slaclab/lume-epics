@@ -1,5 +1,5 @@
 import numpy as np
-from lume_model.variables import ScalarInputVariable, ImageOutputVariable
+from lume_model.variables import ScalarInputVariable, ImageOutputVariable, ScalarOutputVariable
 from lume_model.models import SurrogateModel
 from lume_model.utils import save_variables
 
@@ -9,11 +9,14 @@ class DemoModel(SurrogateModel):
         self.output_variables = output_variables
 
     def evaluate(self, input_variables):
+        input_variables = {input_var.name: input_var for input_var in input_variables}
         self.output_variables["output1"].value = np.random.uniform(
-            self.input_variables["input1"].value, # lower dist bound
-            self.input_variables["input2"].value, # upper dist bound
+            input_variables["input1"].value, # lower dist bound
+            input_variables["input2"].value, # upper dist bound
             (50,50)
         )
+        self.output_variables["output2"].value = input_variables["input1"].value
+        self.output_variables["output3"].value = input_variables["input2"].value
 
         return list(self.output_variables.values())
 
@@ -42,6 +45,12 @@ if __name__ == "__main__":
             x_max=50, 
             y_min=0, 
             y_max=50
+        ),
+        "output2": ScalarOutputVariable(
+            name="output2"
+        ),
+        "output3": ScalarOutputVariable(
+            name="output3"
         )
     }
 

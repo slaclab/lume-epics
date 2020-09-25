@@ -6,7 +6,7 @@ from bokeh.models import LinearColorMapper
 from lume_epics.client.controller import Controller
 from lume_model.utils import load_variables
 
-from lume_epics.client.widgets.plots import ImagePlot
+from lume_epics.client.widgets.plots import ImagePlot, Striptool
 from lume_epics.client.widgets.controls import build_sliders
 from lume_epics.client.controller import Controller
 
@@ -21,7 +21,7 @@ input_variables, output_variables = load_variables(variable_filename)
 input_variables = list(input_variables.values())
 
 # select our image output variable to render
-output_variables = [output_variables["output1"]]
+image_output = [output_variables["output1"]]
 
 # set up controller
 controller = Controller("ca") # can also use channel access
@@ -30,27 +30,27 @@ controller = Controller("ca") # can also use channel access
 sliders = build_sliders(input_variables, controller, prefix)
 
 # create image plot
-image_plot = ImagePlot(output_variables, controller, prefix)
+image_plot = ImagePlot(image_output, controller, prefix)
 
 pal = palettes.viridis(256)
 color_mapper = LinearColorMapper(palette=pal, low=0, high=256)
-
 image_plot.build_plot(color_mapper=color_mapper)
 
-# Set up image update callback
-def image_update_callback():
-    image_plot.update()
-    
+striptool = Striptool([output_variables["output2"], output_variables["output3"]], controller, prefix)
 
 # render
 curdoc().title = "Demo App"
 curdoc().add_root(
-            row(
+            column(
+                row(
                 column([slider.bokeh_slider for slider in sliders], width=350), column(image_plot.plot)
-                ) 
+                ),
+            row(striptool.plot,  striptool.selection, striptool.reset_button)
+            )
     )
 
 
-curdoc().add_periodic_callback(image_update_callback, 250)
+curdoc().add_periodic_callback(image_plot.update, 250)
 for slider in sliders:
     curdoc().add_periodic_callback(slider.update, 250)
+curdoc().add_periodic_callback(striptool.update, 250)

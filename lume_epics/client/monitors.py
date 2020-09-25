@@ -124,6 +124,10 @@ class PVTimeSeries:
         self.data = np.append(self.data, v)
         return self.time - self.tstart, self.data
 
+    def reset(self) -> None:
+        self.time = np.array([])
+        self.data = np.array([])
+
 
 class PVScalar:
     """
