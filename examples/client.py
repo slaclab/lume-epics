@@ -34,21 +34,9 @@ image_plot = ImagePlot(image_output, controller, prefix)
 
 pal = palettes.viridis(256)
 color_mapper = LinearColorMapper(palette=pal, low=0, high=256)
-
 image_plot.build_plot(color_mapper=color_mapper)
 
-# Set up image update callback
-def image_update_callback():
-    image_plot.update()
-
 striptool = Striptool([output_variables["output2"], output_variables["output3"]], controller, prefix)
-striptool.build_plot()
-
-# Set up striptool update callback
-def striptool_update_callback():
-    striptool.update()
-
-
 
 # render
 curdoc().title = "Demo App"
@@ -57,12 +45,12 @@ curdoc().add_root(
                 row(
                 column([slider.bokeh_slider for slider in sliders], width=350), column(image_plot.plot)
                 ),
-            row(striptool.plot,  striptool.reset_button)
+            row(striptool.plot,  striptool.selection, striptool.reset_button)
             )
     )
 
 
-curdoc().add_periodic_callback(image_update_callback, 250)
+curdoc().add_periodic_callback(image_plot.update, 250)
 for slider in sliders:
     curdoc().add_periodic_callback(slider.update, 250)
-curdoc().add_periodic_callback(striptool_update_callback, 250)
+curdoc().add_periodic_callback(striptool.update, 250)
