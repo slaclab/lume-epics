@@ -8,7 +8,19 @@ from functools import partial
 from typing import Union, List
 import logging
 
-from bokeh.models import Slider, ColumnDataSource, DataTable, TableColumn, StringFormatter, TextInput, StringEditor, Button, TextEditor, HTMLTemplateFormatter, Paragraph
+from bokeh.models import (
+    Slider,
+    ColumnDataSource,
+    DataTable,
+    TableColumn,
+    StringFormatter,
+    TextInput,
+    StringEditor,
+    Button,
+    TextEditor,
+    HTMLTemplateFormatter,
+    Paragraph,
+)
 from bokeh.events import Tap, MouseLeave, ButtonClick
 from bokeh.models.callbacks import CustomJS
 from bokeh import document
@@ -19,12 +31,15 @@ from lume_epics.client.controller import Controller
 
 logger = logging.getLogger(__name__)
 
+
 class EpicsSlider:
     """EPICS based Slider used for building bokeh sliders and synchronizing process variable values.
 
     """
 
-    def __init__(self, prefix: str, variable: ScalarInputVariable, controller: Controller):
+    def __init__(
+        self, prefix: str, variable: ScalarInputVariable, controller: Controller
+    ):
         self.prefix = prefix
         self.controller = controller
         self.variable = variable
@@ -52,11 +67,11 @@ class EpicsSlider:
         # construct slider
         self.bokeh_slider = Slider(
             title=title,
-            value= self.variable.value_range[0],
+            value=self.variable.value_range[0],
             start=self.variable.value_range[0],
             end=self.variable.value_range[1],
             step=step,
-            format = "0[.]0000"
+            format="0[.]0000",
         )
 
         # set up callback
@@ -95,12 +110,10 @@ def build_sliders(
 
     return sliders
 
+
 def set_pv_from_slider(
-    attr: str,
-    old: float,
-    new: float,
-    pvname: str,
-    controller: Controller,) -> None:
+    attr: str, old: float, new: float, pvname: str, controller: Controller,
+) -> None:
     """
     Callback function for updating process variables on slider change.
 
@@ -136,8 +149,13 @@ class EntryTable:
 
 
     """
+
     def __init__(
-        self, variables: List[ScalarInputVariable], controller: Controller, prefix: str, row_height: int=50
+        self,
+        variables: List[ScalarInputVariable],
+        controller: Controller,
+        prefix: str,
+        row_height: int = 50,
     ) -> None:
         """
         Initialize table.
@@ -171,13 +189,12 @@ class EntryTable:
             else:
                 label = variable.name
 
-            entry_title = Paragraph(text=variable.name, align='center')
+            entry_title = Paragraph(text=variable.name, align="center")
             self.text_inputs[variable.name] = TextInput(name=label)
 
             # create columns
             title_column.append(row(entry_title, height=row_height))
             input_column.append(row(self.text_inputs[variable.name], height=row_height))
-
 
         # set up table
         self.table = row(column(*title_column), column(*input_column))
@@ -187,17 +204,15 @@ class EntryTable:
         self.clear_button.on_click(self.clear)
         self.submit_button = Button(label="Submit")
         self.submit_button.on_click(self.submit)
-    
 
     def submit(self) -> None:
         """
         Function to submit values entered into table
         """
         for variable, text_input in self.text_inputs.items():
-            if text_input.value_input  != "":
+            if text_input.value_input != "":
                 pvname = f"{self.prefix}:{variable}"
                 self.controller.put(pvname, text_input.value_input)
-
 
     def clear(self) -> None:
         """
