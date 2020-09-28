@@ -32,6 +32,7 @@ controller = Controller("ca")
 
 # load variables
 input_variables, output_variables = load_variables(variable_filename)
+input_variables = list(input_variable.values())
 
 # build sliders
 sliders = build_sliders(input_variables, controller, prefix)
@@ -46,6 +47,39 @@ for slider in sliders:
     curdoc().add_periodic_callback(slider.update, 250)
 ```
 ### Entry table
+
+The entry table is used for single value updates to process variables. Bulk modification can also be submitted using the entry table. The table is composed of labels and entry fields. The entry table is also packaged with a clear button, for clearing the entered values from the fields, and a submit button for sending the values to the process variables. 
+
+
+```python
+from bokeh.io import curdoc
+from bokeh import palettes
+from bokeh.layouts import column, row
+
+from lume_epics.client.controller import Controller
+from lume_model.utils import load_variables
+from lume_epics.client.widgets.controls import EntryTable
+
+# use example variables packaged with lume-epics
+prefix = "test"
+variable_filename = "examples/variables.pickle"
+
+# set up controller
+controller = Controller("ca")
+
+# load variables
+input_variables, output_variables = load_variables(variable_filename)
+input_variables = list(input_variable.values())
+
+# build entry table
+entry_table = EntryTable(input_variables, controller, prefix)
+
+# render
+curdoc().title = "Demo App"
+curdoc().add_root(
+            row(entry_table.table, column(entry_table.submit, entry_table.clear))
+        )
+```
 
 ## Display widgets
 
