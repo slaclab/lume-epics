@@ -316,22 +316,23 @@ class CADriver(Driver):
             variables (List[Variable]): List of variables.
         """
         for variable in variables:
-            if variable.variable_type == "image":
-                logger.debug(
-                    "Channel Access image process variable %s updated.",
-                    variable.name)
-                self.setParam(
-                    variable.name + ":ArrayData_RBV", variable.value.flatten()
-                )
-                self.setParam(variable.name + ":MinX_RBV", variable.x_min)
-                self.setParam(variable.name + ":MinY_RBV", variable.y_min)
-                self.setParam(variable.name + ":MaxX_RBV", variable.x_max)
-                self.setParam(variable.name + ":MaxY_RBV", variable.y_max)
+            if not variable.is_constant:
+                if variable.variable_type == "image":
+                    logger.debug(
+                        "Channel Access image process variable %s updated.",
+                        variable.name)
+                    self.setParam(
+                        variable.name + ":ArrayData_RBV", variable.value.flatten()
+                    )
+                    self.setParam(variable.name + ":MinX_RBV", variable.x_min)
+                    self.setParam(variable.name + ":MinY_RBV", variable.y_min)
+                    self.setParam(variable.name + ":MaxX_RBV", variable.x_max)
+                    self.setParam(variable.name + ":MaxY_RBV", variable.y_max)
 
-            else:
-                logger.debug(
-                    "Channel Access process variable %s updated wth value %s.",
-                    variable.name, variable.value)
-                self.setParam(variable.name, variable.value)
+                else:
+                    logger.debug(
+                        "Channel Access process variable %s updated wth value %s.",
+                        variable.name, variable.value)
+                    self.setParam(variable.name, variable.value)
 
         self.updatePVs()
