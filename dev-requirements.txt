@@ -8,4 +8,4 @@ pyepics
 p4p
 numpy
 bokeh
-lume-model
+lume-model>=0.5
