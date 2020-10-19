@@ -4,17 +4,17 @@ from bokeh.layouts import column, row
 from bokeh.models import LinearColorMapper
 
 from lume_epics.client.controller import Controller
-from lume_model.utils import load_variables
+from lume_model.utils import variables_from_yaml
 
 from lume_epics.client.widgets.plots import ImagePlot, Striptool
 from lume_epics.client.widgets.controls import build_sliders, EntryTable
 from lume_epics.client.controller import Controller
 
 prefix = "test"
-variable_filename = "examples/variables.pickle"
 
 # load variables
-input_variables, output_variables = load_variables(variable_filename)
+with open("examples/files/demo_config.yaml", "r") as f:
+    input_variables, output_variables = variables_from_yaml(f)
 
 # use all input variables for slider
 # prepare as list for rendering
