@@ -62,7 +62,7 @@ class ExampleModel(SurrogateModel):
 
 ### Setting up the server
 
-We can now use the EPICS server to serve our model. The EPICS server requires a model class, input variables, output variables, and a prefix for intantiation. By default, the server uses both the pvAccess and Channel Access protocols when serving the EPICS process variables. An optional keyword argument allows the server to be started using a single protocol (`protocols=["pva"]` for pvAccess, `protocols=["ca"]` for Channel Access). Once instantiated, the server is started using the `Server.start()` method, which has an optional monitor keyword argument, `monitor`, that controls thread execution. When `monitor=True`, the server is run in the main thread and may be stopped using keyboard interrupt (`Ctr+C`). If using `monitor=False`, the server can be stopped manually using the `Server.stop()` method. 
+We can now use the EPICS server to serve our model. The EPICS server requires an instantiated model with `input_variables` and `output_variables` defined as attributes, and a prefix for intantiation. By default, the server uses both the pvAccess and Channel Access protocols when serving the EPICS process variables. An optional keyword argument allows the server to be started using a single protocol (`protocols=["pva"]` for pvAccess, `protocols=["ca"]` for Channel Access). Once instantiated, the server is started using the `Server.start()` method, which has an optional monitor keyword argument, `monitor`, that controls thread execution. When `monitor=True`, the server is run in the main thread and may be stopped using keyboard interrupt (`Ctr+C`). If using `monitor=False`, the server can be stopped manually using the `Server.stop()` method. 
 
 The input variables and output variables must be passed in the `model_kwargs` keyword argument because the model class accepts them in its `__init__` method. Arbitrary data may also be passed to the model with this approach.
 
@@ -88,13 +88,13 @@ output_variables = {
 # save variables
 save_variables(input_variables, output_variables, "example_variables.pickle")
 
+model = ExampleModel(input_variables=input_variables, output_variables=output_variables)
+
+
 prefix = "test"
 server = Server(
-            ExampleModel, 
-            input_variables, 
-            output_variables, 
-            prefix,
-            model_kwargs = {"input_variables": input_variables, "output_variables": output_variables}
+            model,
+            prefix
         )
 
 # monitor = False does not loop in main thread and can be terminated 
@@ -184,7 +184,7 @@ from lume_model.models import SurrogateModel
 from lume_model.utils import save_variables
 
 class ExampleModel(SurrogateModel):
-    def __init__(self, input_variables=None, output_variables=None):
+    def __init__(self, input_variables: dict=None, output_variables:dict=None):
         self.input_variables = input_variables
         self.output_variables = output_variables
 
