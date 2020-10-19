@@ -43,12 +43,9 @@ class Server:
 
     def __init__(
         self,
-        model_class: SurrogateModel,
-        input_variables: List[InputVariable],
-        output_variables: List[OutputVariable],
+        model: SurrogateModel,
         prefix: str,
         protocols: List[str] = ["pva", "ca"],
-        model_kwargs: dict = {},
     ) -> None:
         """Create OnlineSurrogateModel instance in the main thread and
         initialize output variables by running with the input process variable
@@ -56,12 +53,8 @@ class Server:
         process variables, and start the driver.
 
         Args:
-            model_class (SurrogateModel): Surrogate model class to be
+            model (SurrogateModel): Surrogate model to be
             instantiated.
-
-            input_variables (List[InputVariable]): Model input variables.
-            
-            output_variables (Lis[OutputVariable]): Model output variables.
 
             prefix (str): Prefix used to format process variables.
 
@@ -85,15 +78,14 @@ class Server:
         self.prefix = prefix
         self.protocols = protocols
 
-        self.input_variables = input_variables
-        self.output_variables = output_variables
+        self.input_variables = model.input_variables
+        self.output_variables = model.output_variables
 
         # update inputs for starting value to be the default
         for variable in self.input_variables.values():
             if variable.value is None:
                 variable.value = variable.default
 
-        model = model_class(**model_kwargs)
         model_input = list(self.input_variables.values())
         self.output_variables = model.evaluate(model_input)
         self.output_variables = {
@@ -109,9 +101,8 @@ class Server:
 
         self.comm_thread = threading.Thread(
             target=self.run_comm_thread,
-            args=(model_class,),
+            args=(model,),
             kwargs={
-                "model_kwargs": model_kwargs,
                 "in_queue": self.in_queue,
                 "out_queues": self.out_queues
             }
@@ -132,14 +123,12 @@ class Server:
             out_queue=self.out_queues["pva"]
         )
 
-    def run_comm_thread(self, model_class, model_kwargs={}, in_queue: multiprocessing.Queue=None,
+    def run_comm_thread(self, model, in_queue: multiprocessing.Queue=None,
                         out_queues: Dict[str, multiprocessing.Queue]=None):
         """Handles communications between pvAccess server, Channel Access server, and model.
         
         Arguments:
-            model_class: Model class to be executed.
-
-            model_kwargs (dict): Dictionary of model keyword arguments.
+            model: Model to be executed.
 
             in_queue (multiprocessing.Queue): 
 
@@ -147,7 +136,6 @@ class Server:
 
 
         """
-        model = model_class(**model_kwargs)
 
         while not self.exit_event.is_set():
             try:
