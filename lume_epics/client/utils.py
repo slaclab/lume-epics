@@ -94,7 +94,7 @@ def render_from_yaml(config_file, prefix: str, protocol: str, read_only=False, s
         callbacks.append(image.update)
 
         # create new row after 3
-        if len(striptools) == 3:
+        if len(images) == 3:
             layout.append(row(*images))
             images = []
 
@@ -165,7 +165,7 @@ def render_from_yaml(config_file, prefix: str, protocol: str, read_only=False, s
         callbacks.append(image.update)
 
         # create new row after 3
-        if len(striptools) == 3:
+        if len(images) == 3:
             layout.append(row(*images))
             images = []
 
