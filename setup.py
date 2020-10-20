@@ -27,4 +27,9 @@ setup(
     url="https://github.com/slaclab/lume-epics",
     include_package_data=True,
     python_requires=">=3.7",
+    entry_points={
+        "console_scripts": [
+        "renderfromtemplate=bin.render_from_template:render_from_template",
+        "servefromtemplate=bin.serve_from_template:serve_from_template"]
+    },
 )
