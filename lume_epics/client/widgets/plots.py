@@ -69,7 +69,7 @@ class ImagePlot:
             self.pv_monitors[variable.name] = PVImage(prefix, variable, controller)
 
         self.live_variable = list(self.pv_monitors.keys())[0]
-        #image_data = self.pv_monitors[self.live_variable].poll()
+
         image_data = DEFAULT_IMAGE_DATA
 
         self.source = ColumnDataSource(image_data)
@@ -90,6 +90,7 @@ class ImagePlot:
         # create plot
         self.plot = figure(
             tooltips=[("x", "$x"), ("y", "$y"), ("value", "@image")],
+                sizing_mode="scale_both"
         )
         self.plot.x_range.range_padding = self.plot.y_range.range_padding = 0
 
