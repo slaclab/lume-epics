@@ -88,13 +88,12 @@ output_variables = {
 # save variables
 save_variables(input_variables, output_variables, "example_variables.pickle")
 
-model = ExampleModel(input_variables=input_variables, output_variables=output_variables)
-
 
 prefix = "test"
 server = Server(
-            model,
-            prefix
+            ExampleModel,
+            prefix,
+            model_kwargs = {"input_variables": input_variables, "output_variables": output_variables}
         )
 
 # monitor = False does not loop in main thread and can be terminated 
@@ -233,8 +232,6 @@ save_variables(input_variables, output_variables, "example_variables.pickle")
 prefix = "test"
 server = Server(
             ExampleModel, 
-            input_variables, 
-            output_variables, 
             prefix,
             model_kwargs = {"input_variables": input_variables, "output_variables": output_variables}
         )
