@@ -29,7 +29,7 @@ setup(
     python_requires=">=3.7",
     entry_points={
         "console_scripts": [
-        "render-from-template=bin.render_from_template:render_from_template",
-        "serve-from-template=bin.serve_from_template:serve_from_template"]
+        "render-from-template=lume_epics.commands.render_from_template:render_from_template",
+        "serve-from-template=lume_epics.commands.serve_from_template:serve_from_template"]
     },
 )
