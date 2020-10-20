@@ -2,6 +2,7 @@ from lume_model.utils import variables_from_yaml
 from bokeh.layouts import column, row
 from bokeh.models.widgets import Select
 from bokeh.models import Div
+from bokeh import palettes
 
 from lume_epics.client.controller import Controller
 
@@ -9,6 +10,8 @@ from lume_epics.client.widgets.tables import ValueTable
 from lume_epics.client.widgets.controls import build_sliders, EntryTable
 from lume_epics.client.widgets.plots import Striptool, ImagePlot
 
+
+pal = palettes.viridis(256)
 
 # striptool data update callback
 def striptool_update_callback():
@@ -20,6 +23,11 @@ def striptool_update_callback():
 
 
 def render_from_yaml(config_file, prefix: str, protocol: str, read_only=False, striptool_limit=50):
+    """
+
+    Notes:
+    Palette is used
+    """
 
     # load variables
     with open(config_file, "r") as f:
@@ -77,10 +85,11 @@ def render_from_yaml(config_file, prefix: str, protocol: str, read_only=False, s
 
     # add images
     images = []
-    for variable in variable_output_images:
+    for variable in variable_input_images + constant_images:
         image_title = Div(text=f"<h1 style='text-align:center;'>{variable.name}</h1>")
 
         image = ImagePlot([variable], controller, prefix)
+        image.build_plot(pal)
         images.append(column(image_title, image.plot))
         callbacks.append(image.update)
 
@@ -151,6 +160,7 @@ def render_from_yaml(config_file, prefix: str, protocol: str, read_only=False, s
         image_title = Div(text=f"<h1 style='text-align:center;'>{variable.name}</h1>")
 
         image = ImagePlot([variable], controller, prefix)
+        image.build_plot(pal)
         images.append(column(image_title, image.plot))
         callbacks.append(image.update)
 
