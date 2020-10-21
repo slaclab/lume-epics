@@ -179,7 +179,7 @@ class Striptool:
     """
 
     def __init__(
-        self, variables: List[ScalarVariable], controller: Controller, prefix: str, limit: int = None
+        self, variables: List[ScalarVariable], controller: Controller, prefix: str, limit: int = None, aspect_ratio: float = 1.05
     ) -> None:
         """
         Set up monitors, current process variable, and data source.
@@ -206,7 +206,8 @@ class Striptool:
         self.source = ColumnDataSource(dict(x=ts, y=ys))
         self.reset_button = Button(label="Reset")
         self.reset_button.on_click(self._reset_values)
-        self.limit = limit
+        self._aspect_ratio = aspect_ratio
+        self._limit = limit
         self.selection =  Select(
             title="Variable to plot:",
             value=self.live_variable,
@@ -219,7 +220,7 @@ class Striptool:
         """
         Creates the plot object.
         """
-        self.plot = figure(plot_width=400, plot_height=400)
+        self.plot = figure(sizing_mode="scale_both", aspect_ratio=self._aspect_ratio)
         self.plot.line(x="x", y="y", line_width=2, source=self.source)
         self.plot.yaxis.axis_label = self.live_variable
 
@@ -240,9 +241,9 @@ class Striptool:
         """
 
         ts, ys = self.pv_monitors[self.live_variable].poll()
-        if self.limit is not None and len(ts) > self.limit:
-            ts = ts[-self.limit:]
-            ys = ys[-self.limit:]
+        if self._limit is not None and len(ts) > self._limit:
+            ts = ts[-self._limit:]
+            ys = ys[-self._limit:]
 
         self.source.data = dict(x=ts, y=ys)
         self.plot.yaxis.axis_label = f"{self.live_variable}"
