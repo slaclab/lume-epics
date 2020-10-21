@@ -13,7 +13,7 @@ from lume_epics.client.controller import Controller
 prefix = "test"
 
 # load variables
-with open("examples/files/demo_config.yaml", "r") as f:
+with open("examples/files/demo_config.yml", "r") as f:
     input_variables, output_variables = variables_from_yaml(f)
 
 # use all input variables for slider

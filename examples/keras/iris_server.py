@@ -2,7 +2,7 @@
 from lume_epics.epics_server import Server
 from lume_model.utils import model_from_yaml
 
-with open("examples/files/iris_config.yaml", "r") as f:
+with open("examples/files/iris_config.yml", "r") as f:
     model_class, model_kwargs = model_from_yaml(f, load_model=False)
 
 prefix = "test"

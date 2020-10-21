@@ -5,7 +5,7 @@ from lume_epics.client.utils import render_from_yaml
 prefix="test"
 protocol = "ca"
 
-filename = "examples/files/iris_config.yaml"
+filename = "examples/files/iris_config.yml"
 layout, callbacks = render_from_yaml(filename, prefix, protocol, read_only=False)
 
 
