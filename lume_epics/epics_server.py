@@ -44,8 +44,6 @@ class Server:
     def __init__(
         self,
         model_class: SurrogateModel,
-        input_variables: List[InputVariable],
-        output_variables: List[OutputVariable],
         prefix: str,
         protocols: List[str] = ["pva", "ca"],
         model_kwargs: dict = {},
@@ -58,10 +56,6 @@ class Server:
         Args:
             model_class (SurrogateModel): Surrogate model class to be
             instantiated.
-
-            input_variables (List[InputVariable]): Model input variables.
-            
-            output_variables (Lis[OutputVariable]): Model output variables.
 
             prefix (str): Prefix used to format process variables.
 
@@ -85,16 +79,18 @@ class Server:
         self.prefix = prefix
         self.protocols = protocols
 
-        self.input_variables = input_variables
-        self.output_variables = output_variables
+        model = model_class(**model_kwargs)
+        self.input_variables = model.input_variables
+
 
         # update inputs for starting value to be the default
         for variable in self.input_variables.values():
             if variable.value is None:
                 variable.value = variable.default
 
-        model = model_class(**model_kwargs)
         model_input = list(self.input_variables.values())
+
+        self.input_variables = model.input_variables
         self.output_variables = model.evaluate(model_input)
         self.output_variables = {
             variable.name: variable for variable in self.output_variables

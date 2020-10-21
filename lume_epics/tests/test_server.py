@@ -34,7 +34,7 @@ class ExampleScalarModel(SurrogateModel):
 
 def test_scalar_server():
     prefix = "test"
-    server = epics_server.Server(ExampleScalarModel, ExampleScalarModel.input_variables, ExampleScalarModel.output_variables, prefix)
+    server = epics_server.Server(ExampleScalarModel, prefix)
     server.start(monitor=False)
     time.sleep(0.5)
     server.stop()
@@ -113,7 +113,7 @@ class ExampleImageModel(SurrogateModel):
 
 def test_image_server():
     prefix = "test"
-    server = epics_server.Server(ExampleImageModel, ExampleImageModel.input_variables, ExampleImageModel.output_variables, prefix)
+    server = epics_server.Server(ExampleScalarModel, prefix)
 
     # start and stop pva server
     server.start(monitor=False)

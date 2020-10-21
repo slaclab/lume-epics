@@ -50,7 +50,7 @@ class ImagePlot:
     """
 
     def __init__(
-        self, variables: List[ImageVariable], controller: Controller, prefix: str,
+        self, variables: List[ImageVariable], controller: Controller, prefix: str
     ) -> None:
         """
         Initialize monitors, current process variable, and data source.
@@ -69,7 +69,7 @@ class ImagePlot:
             self.pv_monitors[variable.name] = PVImage(prefix, variable, controller)
 
         self.live_variable = list(self.pv_monitors.keys())[0]
-        #image_data = self.pv_monitors[self.live_variable].poll()
+
         image_data = DEFAULT_IMAGE_DATA
 
         self.source = ColumnDataSource(image_data)
@@ -90,6 +90,7 @@ class ImagePlot:
         # create plot
         self.plot = figure(
             tooltips=[("x", "$x"), ("y", "$y"), ("value", "@image")],
+                sizing_mode="scale_both"
         )
         self.plot.x_range.range_padding = self.plot.y_range.range_padding = 0
 
@@ -178,7 +179,7 @@ class Striptool:
     """
 
     def __init__(
-        self, variables: List[ScalarVariable], controller: Controller, prefix: str,
+        self, variables: List[ScalarVariable], controller: Controller, prefix: str, limit: int = None, aspect_ratio: float = 1.05
     ) -> None:
         """
         Set up monitors, current process variable, and data source.
@@ -189,6 +190,10 @@ class Striptool:
             controller (Controller): Controller object for getting process variable values
 
             prefix (str): Prefix used for server.
+
+            limit (int): Maximimum steps for striptool to render
+
+            aspect_ratio (float): Ratio of width to height
 
         """
         self.pv_monitors = {}
@@ -203,6 +208,8 @@ class Striptool:
         self.source = ColumnDataSource(dict(x=ts, y=ys))
         self.reset_button = Button(label="Reset")
         self.reset_button.on_click(self._reset_values)
+        self._aspect_ratio = aspect_ratio
+        self._limit = limit
         self.selection =  Select(
             title="Variable to plot:",
             value=self.live_variable,
@@ -215,7 +222,7 @@ class Striptool:
         """
         Creates the plot object.
         """
-        self.plot = figure(plot_width=400, plot_height=400)
+        self.plot = figure(sizing_mode="scale_both", aspect_ratio=self._aspect_ratio)
         self.plot.line(x="x", y="y", line_width=2, source=self.source)
         self.plot.yaxis.axis_label = self.live_variable
 
@@ -236,6 +243,10 @@ class Striptool:
         """
 
         ts, ys = self.pv_monitors[self.live_variable].poll()
+        if self._limit is not None and len(ts) > self._limit:
+            ts = ts[-self._limit:]
+            ys = ys[-self._limit:]
+
         self.source.data = dict(x=ts, y=ys)
         self.plot.yaxis.axis_label = f"{self.live_variable}"
 
