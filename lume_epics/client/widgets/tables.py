@@ -85,7 +85,7 @@ class ValueTable:
         ]
 
         self.table = DataTable(
-            source=self.source, columns=columns, width=400, height=280
+            source=self.source, columns=columns, sizing_mode="stretch_both", index_position=None
         )
 
     def update(self) -> None:
