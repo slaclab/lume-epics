@@ -30,7 +30,7 @@ layout, callbacks = render_from_yaml(filename, prefix, protocol, read_only=read_
 
 
 curdoc().add_root(
-    column(*layout, sizing_mode="scale_both")
+    layout
 )
 
 for callback in callbacks:
