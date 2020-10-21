@@ -1,5 +1,5 @@
 from lume_model.utils import variables_from_yaml
-from bokeh.layouts import column, row
+from bokeh.layouts import column, row, gridplot, layout
 from bokeh.models.widgets import Select
 from bokeh.models import Div
 from bokeh import palettes
@@ -22,11 +22,69 @@ def striptool_update_callback():
     striptool.update(live_variable = current_striptool_pv)
 
 
-def render_from_yaml(config_file, prefix: str, protocol: str, read_only=False, striptool_limit=50):
+class LayoutBuilder():
+
+    def __init__(self, ncol_widgets: int):
+        self._ncol_widgets = ncol_widgets
+        self._input_current_row = []
+        self._output_current_row = []
+        self._input_header = Div(text="<h3 style='text-align:center;'>Live Model Inputs</h1>", sizing_mode="scale_both", margin=(0,0,0,0))
+        self._output_header = Div(text="<h3 style='text-align:center;'>Live Model Outputs</h1>", sizing_mode="scale_both", margin=(0,0,0,0))
+        self._input_layout = []
+        self._output_layout = []
+        self._layout = []
+
+
+    def add_input(self, layout_item, title: str = None):
+
+        if title:
+            title_div = Div(text=f"<p style='text-align:center;'>{title}</p>", sizing_mode="scale_both")
+            layout_item = column(title_div, layout_item, sizing_mode="scale_both")
+
+        self._input_layout.append(layout_item)
+
+    def add_output(self, layout_item, title: str = None):
+
+        if title:
+            title_div = Div(text=f"<p style='text-align:center;'>{title}</p>", sizing_mode="scale_both")
+            layout_item = column(title_div, layout_item, sizing_mode="scale_both")
+
+        self._output_layout.append(layout_item)
+
+
+    def add_input_stack(self, layout_items, title=None):
+        layout_item = column(layout_items)
+        
+        if title:
+            title_div = Div(text=f"p style='text-align:center;'>{title}</p>", sizing_mode="scale_both")
+            layout_item = column(title_div, layout_item, sizing_mode = "scale_both")
+
+        self._input_layout.append(layout_item)
+
+    def add_output_stack(self, layout_items, title=None):
+        layout_item = column(layout_items)
+        
+        if title:
+            title_div = Div(text=f"p style='text-align:center;'>{title}</h1>", sizing_mode="scale_both", margin=(0,0,0,0))
+            layout_item = column(title_div, layout_item, sizing_mode = "scale_both")
+
+        else:
+            self._output_layout.append(layout_item)
+
+    def build_layout(self):
+        input_grid = gridplot(self._input_layout,  ncols=self._ncol_widgets, sizing_mode="scale_both")
+        output_grid = gridplot(self._output_layout, ncols=self._ncol_widgets, sizing_mode="scale_both")
+
+        built_layout = [self._input_header, input_grid, self._output_header, output_grid]
+        return layout(built_layout, name="layout")
+
+
+
+def render_from_yaml(config_file, prefix: str, protocol: str, read_only=False, striptool_limit=50, ncol_widgets=5):
     """
 
     Notes:
-    Palette is used
+    Default palette used
     """
 
     # load variables
@@ -75,119 +133,72 @@ def render_from_yaml(config_file, prefix: str, protocol: str, read_only=False, s
     input_value_vars = constant_scalars + variable_input_scalars
 
 
-    # now build layout- organize by input/output variables
-
-
-    input_title = Div(text="<h1 style='text-align:center;'>Live Model Inputs</h1>")
-    output_title = Div(text="<h1 style='text-align:center;'>Live Model Outputs</h1>")
-
-    layout = [row(input_title),]
+    layout_builder = LayoutBuilder(ncol_widgets)
 
     # add images
-    images = []
+    current_row = []
     for variable in variable_input_images + constant_images:
-        image_title = Div(text=f"<h1 style='text-align:center;'>{variable.name}</h1>")
-
         image = ImagePlot([variable], controller, prefix)
         image.build_plot(pal)
-        images.append(column(image_title, image.plot))
+        layout_builder.add_input(image.plot, title=variable.name)
         callbacks.append(image.update)
-
-        # create new row after 3
-        if len(images) == 3:
-            layout.append(row(*images))
-            images = []
-
-    if images:
-        layout.append(row(*images))
 
     # build input striptools
     if read_only:
         striptools = []
         for variable in variable_input_scalars:
-
-            striptool_title = Div(text=f"<h1 style='text-align:center;'>{variable.name}</h1>")
-
             striptool = Striptool([variable], controller, prefix, limit=striptool_limit)
-            striptools.append(column(striptool_title, striptool.plot))
+            layout_builder.add_input(striptool.plot, title=variable.name)
             callbacks.append(striptool.update)
-
-            # create new row after 3
-            if len(striptools) == 3:
-                layout.append(row(*striptools))
-                striptools = []
-
 
     # build sliders and value entry table
     else:
-        control_row = []
         sliders = build_sliders(variable_input_scalars, controller, prefix)
 
         slider_stack = []
         for slider in sliders:
-
             slider_stack.append(slider.bokeh_slider)
-
-            # add callback
             callbacks.append(slider.update)
-            
-        control_row.append(column(*slider_stack))
+
+        layout_builder.add_input_stack(slider_stack)
 
         # build value entry
         value_entry = EntryTable(input_value_vars, controller, prefix)
 
-        control_row.append(column(value_entry.table, row(value_entry.submit_button, value_entry.clear_button)))
-        layout.append(row(*control_row))
+        layout_builder.add_input_stack([value_entry.table, value_entry.button_row])
 
     table_row = []
 
     # add value table callback
     value_table = ValueTable(input_value_vars, controller, prefix)
-    layout.append(row(value_table.table))
+    layout_builder.add_input(value_table.table)
     callbacks.append(value_table.update)
 
 
-    layout.append(row(output_title))
-
     # add output value table callback
     output_value_table = ValueTable(variable_output_scalars, controller, prefix)
-    layout.append(row(output_value_table.table))
+
+    if read_only:
+        value_table.table.autosize_mode="fit_columns"
+
+    layout_builder.add_output(output_value_table.table)
     callbacks.append(output_value_table.update)
 
-    images = []
     for variable in variable_output_images:
-
-        image_title = Div(text=f"<h1 style='text-align:center;'>{variable.name}</h1>")
-
         image = ImagePlot([variable], controller, prefix)
         image.build_plot(pal)
-        images.append(column(image_title, image.plot))
+        layout_builder.add_output(image.plot, title=variable.name)
         callbacks.append(image.update)
-
-        # create new row after 3
-        if len(images) == 3:
-            layout.append(row(*images))
-            images = []
-
-    if images:
-        layout.append(row(*images))
 
     # build output striptools
     if read_only:
 
         for variable in variable_output_scalars:
 
-            striptool_title = Div(text=f"<h1 style='text-align:center;'>{variable.name}</h1>")
-
             striptool = Striptool([variable], controller, prefix, limit=striptool_limit)
-            striptools.append(column(striptool_title, striptool.plot))
+            layout_builder.add_output(striptool.plot, title=variable.name)
             callbacks.append(striptool.update)
-
-            # create new row after 3
-            if len(striptools) == 3:
-                layout.append(row(*striptools))
-                striptools = []
-
+            
     else:
         output_striptool = Striptool(variable_output_scalars, controller, prefix, limit=striptool_limit)
         striptool_select = Select(
@@ -195,11 +206,12 @@ def render_from_yaml(config_file, prefix: str, protocol: str, read_only=False, s
             value=output_striptool.live_variable,
             options=list(output_striptool.pv_monitors.keys()),
         )
-
+        layout_builder.add_output_stack([striptool_select, output_striptool.plot])
 
         # add the selection callback
         # striptool_select.on_change("value", striptool_select_callback)
-        layout.append(row(column(striptool_select, output_striptool.plot)))
         callbacks.append(output_striptool.update)
+
+    layout = layout_builder.build_layout()
 
     return layout, callbacks
