@@ -14,6 +14,8 @@ parser.add_argument("filename", type=str, help="Filename to load.")
 parser.add_argument("prefix", type=str, help="Prefix to serve.")
 parser.add_argument("protocol", type=str, help="Protocol used to build client.")
 parser.add_argument('--read-only', default=False, action="store_true", help="Render as read-only")
+parser.add_argument('--ncol-widgets', dest='ncol_widgets', default=5, type=int, help="Number of widgets to render per column")
+parser.add_argument('--striptool-limit', dest='striptool_limit', default=50, type=int, help="Number of striptool steps to keep")
 
 args = parser.parse_args()
 
@@ -21,10 +23,14 @@ filename=args.filename
 prefix = args.prefix
 protocol = args.protocol
 read_only = args.read_only
-layout, callbacks = render_from_yaml(filename, prefix, protocol, read_only=read_only)
+striptool_limit = args.striptool_limit
+ncol_widgets = args.ncol_widgets
+
+layout, callbacks = render_from_yaml(filename, prefix, protocol, read_only=read_only, striptool_limit=striptool_limit, ncol_widgets=ncol_widgets)
+
 
 curdoc().add_root(
-    column(*layout)
+    column(*layout, sizing_mode="scale_both")
 )
 
 for callback in callbacks:
