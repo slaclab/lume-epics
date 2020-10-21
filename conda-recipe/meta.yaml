@@ -23,7 +23,7 @@ requirements:
     - numpy
     - bokeh
     - click
-    - lume-model>=0.7
+    - lume-model>=0.8
 
 test:
   imports:
