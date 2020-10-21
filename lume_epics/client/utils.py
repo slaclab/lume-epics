@@ -111,7 +111,7 @@ class LayoutBuilder():
         output_grid = gridplot(self._output_layout, ncols=self._ncol_widgets, sizing_mode="scale_both")
 
         built_layout = [self._input_header, input_grid, self._output_header, output_grid]
-        return layout(built_layout, name="layout")
+        return layout(built_layout, name="layout", sizing_model="scale_both")
 
 
 
