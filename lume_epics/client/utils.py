@@ -23,19 +23,32 @@ def striptool_update_callback():
 
 
 class LayoutBuilder():
+    """
+    Class used for building a layout from a configuration file.
+
+    Attributes:
+        _ncol_widgets (int): Number of columns used to render layout
+        _input_header (Div): Bokeh div item for designating inputs
+        _output_header (Div): Bokeh div item for designating outputs
+        _input_layout (list): List tracking inputs to render
+        _output_layout (list): List tracking outputs to render
+    """
 
     def __init__(self, ncol_widgets: int):
         self._ncol_widgets = ncol_widgets
-        self._input_current_row = []
-        self._output_current_row = []
         self._input_header = Div(text="<h3 style='text-align:center;'>Live Model Inputs</h1>", sizing_mode="scale_both", margin=(0,0,0,0))
         self._output_header = Div(text="<h3 style='text-align:center;'>Live Model Outputs</h1>", sizing_mode="scale_both", margin=(0,0,0,0))
         self._input_layout = []
         self._output_layout = []
-        self._layout = []
 
 
-    def add_input(self, layout_item, title: str = None):
+    def add_input(self, layout_item, title: str = None) -> None:
+        """Add bokeh item to the input layout.
+
+        Args: 
+            layout_item: Bokeh object to be added to inputs
+            title (str): Optional title for the item
+        """
 
         if title:
             title_div = Div(text=f"<p style='text-align:center;'>{title}</p>", sizing_mode="scale_both")
@@ -43,7 +56,13 @@ class LayoutBuilder():
 
         self._input_layout.append(layout_item)
 
-    def add_output(self, layout_item, title: str = None):
+    def add_output(self, layout_item, title: str = None) -> None:
+        """Add bokeh item to the output layout.
+
+        Args: 
+            layout_item: Bokeh object to be added to outputs
+            title (str): Optional title for the item
+        """
 
         if title:
             title_div = Div(text=f"<p style='text-align:center;'>{title}</p>", sizing_mode="scale_both")
@@ -52,7 +71,14 @@ class LayoutBuilder():
         self._output_layout.append(layout_item)
 
 
-    def add_input_stack(self, layout_items, title=None):
+    def add_input_stack(self, layout_items: list, title: str = None) -> None:
+        """Add stacked items as an input layout item.
+
+        Args:
+            layout_items (list): list of items to add to layout
+            title (str): Optional title for the stack
+
+        """
         layout_item = column(layout_items)
         
         if title:
@@ -61,7 +87,13 @@ class LayoutBuilder():
 
         self._input_layout.append(layout_item)
 
-    def add_output_stack(self, layout_items, title=None):
+    def add_output_stack(self, layout_items:list, title: str = None) -> None:
+        """Add stacked items as an output layout item.
+
+        Args:
+            layout_items (list): list of items to add to layout
+            title (str): Optional title for the stack
+        """
         layout_item = column(layout_items)
         
         if title:
@@ -72,6 +104,9 @@ class LayoutBuilder():
             self._output_layout.append(layout_item)
 
     def build_layout(self):
+        """Builds layout for rendering with bokeh document.
+
+        """
         input_grid = gridplot(self._input_layout,  ncols=self._ncol_widgets, sizing_mode="scale_both")
         output_grid = gridplot(self._output_layout, ncols=self._ncol_widgets, sizing_mode="scale_both")
 
@@ -81,10 +116,20 @@ class LayoutBuilder():
 
 
 def render_from_yaml(config_file, prefix: str, protocol: str, read_only=False, striptool_limit=50, ncol_widgets=5):
-    """
+    """Renders a bokeh layout from the configuration file. Returns layout and callbacks. 
 
-    Notes:
-    Default palette used
+    Args:
+        config_file: Opened configuration file
+        prefix (str): Prefix for setting up controller
+        protocol (str): Indicates whether to use channel access ("ca") or pvAccess ("pva")
+        read_only (bool): Whether to render the page as read only
+        striptool_limit (int): Maximum number of steps to display on the striptool
+        ncol_widgets (int): Number of columns for rendering widgets
+
+    Returns
+        layout
+        callbacks
+
     """
 
     # load variables
