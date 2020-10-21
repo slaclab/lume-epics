@@ -24,7 +24,7 @@ from bokeh.models import (
 from bokeh.events import Tap, MouseLeave, ButtonClick
 from bokeh.models.callbacks import CustomJS
 from bokeh import document
-from bokeh.layouts import column, row
+from bokeh.layouts import column, row, gridplot
 
 from lume_model.variables import ScalarInputVariable
 from lume_epics.client.controller import Controller
@@ -156,6 +156,7 @@ class EntryTable:
         controller: Controller,
         prefix: str,
         row_height: int = 50,
+        button_aspect_ratio: float = 6.0
     ) -> None:
         """
         Initialize table.
@@ -169,16 +170,20 @@ class EntryTable:
 
             row_height (int): Height to render row
 
+            button_aspect_ratio (float): Aspect ratio for rendering buttons.
+
+
         """
         self.prefix = prefix
         self.controller = controller
+
+        self._button_aspect_ratio = button_aspect_ratio
 
         # be sure to surface units in the table
         self.unit_map = {}
         self.text_inputs = {}
 
-        title_column = []
-        input_column = []
+        grid_layout = []
 
         for variable in variables:
 
@@ -189,21 +194,21 @@ class EntryTable:
             else:
                 label = variable.name
 
-            entry_title = Paragraph(text=variable.name, align="center")
-            self.text_inputs[variable.name] = TextInput(name=label)
+            entry_title = Paragraph(text=variable.name, align="start",  sizing_mode="scale_both")
+            self.text_inputs[variable.name] = TextInput(name=label,  sizing_mode="scale_both")
 
             # create columns
-            title_column.append(row(entry_title, height=row_height))
-            input_column.append(row(self.text_inputs[variable.name], height=row_height))
+            grid_layout.append([entry_title, self.text_inputs[variable.name]])
 
         # set up table
-        self.table = row(column(*title_column), column(*input_column))
+        self.table = gridplot(grid_layout, sizing_mode="scale_both")
 
         # Set up buttons
-        self.clear_button = Button(label="Clear")
+        self.clear_button = Button(label="Clear", sizing_mode="scale_both", aspect_ratio=self._button_aspect_ratio)
         self.clear_button.on_click(self.clear)
-        self.submit_button = Button(label="Submit")
+        self.submit_button = Button(label="Submit", sizing_mode="scale_both", aspect_ratio=self._button_aspect_ratio)
         self.submit_button.on_click(self.submit)
+        self.button_row = row(self.clear_button, self.submit_button, sizing_mode="scale_both")
 
     def submit(self) -> None:
         """
