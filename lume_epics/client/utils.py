@@ -246,6 +246,10 @@ def render_from_yaml(config_file, prefix: str, protocol: str, read_only=False, s
             
     else:
         output_striptool = Striptool(variable_output_scalars, controller, prefix, limit=striptool_limit)
+
+
+        global current_output_striptool_pv = output_striptool.live_variable
+
         striptool_select = Select(
             title="Variable to plot:",
             value=output_striptool.live_variable,
@@ -253,10 +257,19 @@ def render_from_yaml(config_file, prefix: str, protocol: str, read_only=False, s
         )
         layout_builder.add_output_stack([striptool_select, output_striptool.plot])
 
+        # striptool data update callback
+        def striptool_update_callback():
+            """
+            Calls striptool update with the current global process variable.
+            """
+            global current_output_striptool_pv
+            striptool.update(live_variable =current_output_striptool_pv)
+
+
         # add the selection callback
-        # striptool_select.on_change("value", striptool_select_callback)
+        striptool_select.on_change("value", striptool_select_callback)
         callbacks.append(output_striptool.update)
 
     layout = layout_builder.build_layout()
 
-    return layout, callbacks
+    return layout, callbacks, 
