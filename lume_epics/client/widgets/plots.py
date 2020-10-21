@@ -193,6 +193,8 @@ class Striptool:
 
             limit (int): Maximimum steps for striptool to render
 
+            aspect_ratio (float): Ratio of width to height
+
         """
         self.pv_monitors = {}
 
