@@ -113,20 +113,23 @@ class Server:
             }
         )
 
-        self.ca_process = CAServer(
-            prefix=self.prefix,
-            input_variables=self.input_variables,
-            output_variables=self.output_variables,
-            in_queue=self.in_queue,
-            out_queue=self.out_queues["ca"]
-        )
-        self.pva_process = PVAServer(
-            prefix=self.prefix,
-            input_variables=self.input_variables,
-            output_variables=self.output_variables,
-            in_queue=self.in_queue,
-            out_queue=self.out_queues["pva"]
-        )
+        if "ca" in protocols:
+            self.ca_process = CAServer(
+                prefix=self.prefix,
+                input_variables=self.input_variables,
+                output_variables=self.output_variables,
+                in_queue=self.in_queue,
+                out_queue=self.out_queues["ca"]
+            )
+
+        if "pva" in protocols:
+            self.pva_process = PVAServer(
+                prefix=self.prefix,
+                input_variables=self.input_variables,
+                output_variables=self.output_variables,
+                in_queue=self.in_queue,
+                out_queue=self.out_queues["pva"]
+            )
 
     def run_comm_thread(self, model_class, model_kwargs={}, in_queue: multiprocessing.Queue=None,
                         out_queues: Dict[str, multiprocessing.Queue]=None):
@@ -177,7 +180,7 @@ class Server:
         Args: 
             monitor (bool): Indicates whether to run the server in the background
                 or to continually monitor. If monitor = False, the server must be
-                explicitely stopped using server.stop()
+                explicitly stopped using server.stop()
 
         """
         self.comm_thread.start()
