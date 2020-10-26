@@ -24,7 +24,8 @@ def serve_from_template(filename, prefix, serve_ca, serve_pva):
     server = Server(
         model_class,
         prefix,
-        model_kwargs=model_kwargs
+        model_kwargs=model_kwargs,
+        protocols = protocols
     )
 
     server.start(monitor=True)

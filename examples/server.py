@@ -5,11 +5,12 @@ from lume_model.utils import variables_from_yaml
 with open("examples/files/demo_config.yml", "r") as f:
     input_variables, output_variables = variables_from_yaml(f)
 
-model = DemoModel(input_variables=input_variables, output_variables=output_variables)
 prefix = "test"
 server = Server(
-    model,
+    DemoModel,
     prefix,
+    model_kwargs={"input_variables": input_variables, "output_variables": output_variables},
+    protocols=["pva"]
 )
 # monitor = False does not loop in main thread
 server.start(monitor=True)
