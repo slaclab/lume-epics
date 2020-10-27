@@ -18,9 +18,9 @@ setup(
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     packages=find_packages(),
-    author="Jacqueline Garrahan",
+    author='SLAC National Accelerator Laboratory',
     author_email="jgarra@slac.stanford.edu",
-    license="Apache License, Version 2.0",
+    license="SLAC Open",
     install_requires=requirements,
     # set up development requirements
     extras_require={"dev": dev_requirements},
