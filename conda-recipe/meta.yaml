@@ -36,5 +36,9 @@ test:
 
 about:
   home: https://github.com/slaclab/lume-epics
-  license: Apache License 2.0
+  license: SLAC Open
+  license_family: OTHER
+  license_file: LICENSE.md
   summary: Lume-epics is a dedicated API for serving LUME model variables with EPICS. 
+  doc_url: https://slaclab.github.io/lume-epics/
+  dev_url: https://github.com/slaclab/lume-epics
