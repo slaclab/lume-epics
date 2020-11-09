@@ -160,7 +160,11 @@ class PVAServer(multiprocessing.Process):
         """
         variables = input_variables+output_variables
         for variable in variables:
-            if not variable.is_constant:
+
+            if variable.is_constant:
+                logger.debug("Cannot update constant variable.")
+
+            else:
                 pvname = f"{self._prefix}:{variable.name}"
                 if variable.variable_type == "image":
                     logger.debug("pvAccess image process variable %s updated.",
@@ -175,16 +179,15 @@ class PVAServer(multiprocessing.Process):
                         "y_max": variable.y_max,
                     }
                     value = nd_array
-    
                 # do not build attribute pvs
                 else:
                     logger.debug(
                         "pvAccess process variable %s updated with value %s.",
                         variable.name, variable.value)
                     value = variable.value
-                    
-                output_provider = self._providers[pvname]
-                output_provider.post(value)
+
+            output_provider = self._providers[pvname]
+            output_provider.post(value)
 
     def run(self) -> None:
         """Start server process.

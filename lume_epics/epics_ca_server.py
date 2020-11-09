@@ -100,7 +100,7 @@ class CAServer(multiprocessing.Process):
         self.ca_server.createPV(self._prefix + ":", pvdb)
 
         # set up driver for handing read and write requests to process variables
-        self.ca_driver = CADriver(server=self)
+        self.ca_driver = CADriver(server=self.ca_server)
 
         # start the server thread
         self.server_thread = ServerThread(self.ca_server)
@@ -296,14 +296,18 @@ class CADriver(Driver):
             return False
 
         if pvname in self.server._input_variables:
-            self.setParam(pvname, value)
-            self.updatePVs()
-            logger.debug(
-                "Channel Access process variable %s updated with value %s",
-                pvname, value)
+            if self.server._input_variables[pvname].is_constant:
+                logger.debug("Unable to update constant variable %s", pvname)
+            
+            else:
+                self.setParam(pvname, value)
+                self.updatePVs()
+                logger.debug(
+                    "Channel Access process variable %s updated with value %s",
+                    pvname, value)
 
-            self.server.update_pv(pvname=pvname, value=value)
-            return True
+                self.server.update_pv(pvname=pvname, value=value)
+                return True
 
         else:
             logger.error("%s not found in server variables.", pvname)
@@ -316,7 +320,10 @@ class CADriver(Driver):
             variables (List[Variable]): List of variables.
         """
         for variable in variables:
-            if not variable.is_constant:
+            if variable.is_constant:
+                logger.debug("Cannot update constant variable %s", variable.name)
+
+            else:
                 if variable.variable_type == "image":
                     logger.debug(
                         "Channel Access image process variable %s updated.",
