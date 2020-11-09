@@ -10,7 +10,6 @@ server = Server(
     DemoModel,
     prefix,
     model_kwargs={"input_variables": input_variables, "output_variables": output_variables},
-    protocols=["pva"]
 )
 # monitor = False does not loop in main thread
 server.start(monitor=True)
