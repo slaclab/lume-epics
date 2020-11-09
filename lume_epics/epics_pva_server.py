@@ -161,7 +161,7 @@ class PVAServer(multiprocessing.Process):
         variables = input_variables+output_variables
         for variable in variables:
 
-            if variable.is_constant:
+            if variable.name in self._input_variables and variable.is_constant:
                 logger.debug("Cannot update constant variable.")
 
             else:

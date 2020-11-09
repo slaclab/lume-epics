@@ -320,7 +320,7 @@ class CADriver(Driver):
             variables (List[Variable]): List of variables.
         """
         for variable in variables:
-            if variable.is_constant:
+            if variable in self.server._input_variables and variable.is_constant:
                 logger.debug("Cannot update constant variable %s", variable.name)
 
             else:
