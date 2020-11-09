@@ -120,7 +120,7 @@ def test_image_server():
     prefix = "test"
     server = epics_server.Server(ExampleScalarModel, prefix)
 
-    server = epics_server.Server(ExampleModel, ExampleModel.input_variables, ExampleModel.output_variables, prefix, protocols=["pva"])
+    server = epics_server.Server(ExampleModel, prefix, protocols=["pva"])
     server.start(monitor=False)
 
     for var in server.input_variables:
@@ -131,7 +131,7 @@ def test_image_server():
 
 @pytest.mark.parametrize("value,prefix", [(1.0, "test")])
 def test_constant_variable(value,prefix):
-    server = epics_server.Server(ExampleModel, ExampleModel.input_variables, ExampleModel.output_variables, prefix, protocols=["pva"])
+    server = epics_server.Server(ExampleModel, prefix, protocols=["pva"])
     server.start(monitor=False)
 
 
