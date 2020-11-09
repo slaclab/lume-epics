@@ -110,7 +110,7 @@ class PVAServer(multiprocessing.Process):
                     "Unsupported variable type provided: %s", variable.variable_type
                 )
 
-            handler = PVAccessInputHandler(pvname=pvname, server=self)
+            handler = PVAccessInputHandler(pvname=pvname, is_constant=variable.is_constant, server=self)
             pv = SharedPV(handler=handler, nt=nt, initial=initial)
             self._providers[pvname] = pv
 
@@ -220,7 +220,7 @@ class PVAccessInputHandler:
     process variables.
     """
 
-    def __init__(self, pvname: str, server: PVAServer):
+    def __init__(self, pvname: str, is_constant: bool, server: PVAServer):
         """
         Initialize the handler with prefix and image pv attributes
 
@@ -229,6 +229,7 @@ class PVAccessInputHandler:
             server (PVAServer): Reference to the server holding this PV
 
         """
+        self.is_constant = is_constant
         self.pvname = pvname
         self.server = server
 
@@ -245,7 +246,8 @@ class PVAccessInputHandler:
 
         """
         # update input values and global input process variable state
-        pv.post(op.value())
-        self.server.update_pv(pvname=self.pvname, value=op.value())
+        if not self.is_constant:
+            pv.post(op.value())
+            self.server.update_pv(pvname=self.pvname, value=op.value())
         # mark server operation as complete
         op.done()
