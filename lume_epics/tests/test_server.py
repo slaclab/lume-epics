@@ -81,6 +81,9 @@ class ExampleModel(SurrogateModel):
 @pytest.fixture(scope='session')
 def server():
     prefix = "test"
+   # os.environ["EPICS_CA_SERVER_PORT"] = "5064"
+   # os.environ["EPICS_CA_REPEATER_PORT"] = "5065"
+    os.environ["EPICS_PVA_SERVER_PORT"] = "5064"
 
     server = epics_server.Server(ExampleModel, prefix)
     server.start(monitor=False)
@@ -96,8 +99,6 @@ def test_constant_variable_pva(value, prefix, server):
     for variable_name, variable in server.input_variables.items():
         if variable.variable_type == "scalar":
             ctxt.put(f"{prefix}:{variable.name}", value, timeout=2.0, throw=True)
-
-
 
     for variable_name, variable in server.input_variables.items():
         if variable.variable_type == "scalar":
@@ -117,24 +118,3 @@ def test_constant_variable_pva(value, prefix, server):
                 assert val == value
 
     ctxt.close()
-
-
-@pytest.mark.parametrize("value,prefix", [(1.0, "test")])
-def test_constant_variable_ca(value, prefix, server):
-
-    for variable_name, variable in server.input_variables.items():
-        if variable.variable_type == "scalar":
-            p = subprocess.Popen(["caput", f"{prefix}:{variable.name}", f"{value}"], stdout=subprocess.PIPE)
-
-    for variable_name, variable in server.input_variables.items():
-        if variable.variable_type == "scalar":
-            p = subprocess.Popen(["caget", f"{prefix}:{variable.name}"], stdout=subprocess.PIPE)
-
-            stdout = p.communicate()[0]
-            val = float(stdout.split()[-1])
-
-            if variable.is_constant:
-                assert val != value
-
-            else:
-                assert val == value
