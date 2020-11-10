@@ -19,6 +19,8 @@ from typing import Dict, Mapping, Union, List
 logger = logging.getLogger(__name__)
 
 
+
+
 class CAServer(multiprocessing.Process):
     """
     Process-based implementation of Channel Access server.
@@ -66,6 +68,7 @@ class CAServer(multiprocessing.Process):
         self.ca_driver = None
         self.server_thread = None
         self.exit_event = multiprocessing.Event()
+
 
     def update_pv(self, pvname, value) -> None:
         """Adds update to input process variable to the input queue.
@@ -137,6 +140,7 @@ class CAServer(multiprocessing.Process):
 
         self.server_thread.stop()
         logger.info("Channel access server stopped.")
+        
 
     def shutdown(self):
         """Safely shutdown the server process. 
@@ -296,14 +300,18 @@ class CADriver(Driver):
             return False
 
         if pvname in self.server._input_variables:
-            self.setParam(pvname, value)
-            self.updatePVs()
-            logger.debug(
-                "Channel Access process variable %s updated with value %s",
-                pvname, value)
+            if self.server._input_variables[pvname].is_constant:
+                logger.debug("Unable to update constant variable %s", pvname)
+            
+            else:
+                self.setParam(pvname, value)
+                self.updatePVs()
+                logger.debug(
+                    "Channel Access process variable %s updated with value %s",
+                    pvname, value)
 
-            self.server.update_pv(pvname=pvname, value=value)
-            return True
+                self.server.update_pv(pvname=pvname, value=value)
+                return True
 
         else:
             logger.error("%s not found in server variables.", pvname)
@@ -316,22 +324,26 @@ class CADriver(Driver):
             variables (List[Variable]): List of variables.
         """
         for variable in variables:
-            if variable.variable_type == "image":
-                logger.debug(
-                    "Channel Access image process variable %s updated.",
-                    variable.name)
-                self.setParam(
-                    variable.name + ":ArrayData_RBV", variable.value.flatten()
-                )
-                self.setParam(variable.name + ":MinX_RBV", variable.x_min)
-                self.setParam(variable.name + ":MinY_RBV", variable.y_min)
-                self.setParam(variable.name + ":MaxX_RBV", variable.x_max)
-                self.setParam(variable.name + ":MaxY_RBV", variable.y_max)
+            if variable.name in self.server._input_variables and variable.is_constant:
+                logger.debug("Cannot update constant variable %s", variable.name)
 
             else:
-                logger.debug(
-                    "Channel Access process variable %s updated wth value %s.",
-                    variable.name, variable.value)
-                self.setParam(variable.name, variable.value)
+                if variable.variable_type == "image":
+                    logger.debug(
+                        "Channel Access image process variable %s updated.",
+                        variable.name)
+                    self.setParam(
+                        variable.name + ":ArrayData_RBV", variable.value.flatten()
+                    )
+                    self.setParam(variable.name + ":MinX_RBV", variable.x_min)
+                    self.setParam(variable.name + ":MinY_RBV", variable.y_min)
+                    self.setParam(variable.name + ":MaxX_RBV", variable.x_max)
+                    self.setParam(variable.name + ":MaxY_RBV", variable.y_max)
+
+                else:
+                    logger.debug(
+                        "Channel Access process variable %s updated wth value %s.",
+                        variable.name, variable.value)
+                    self.setParam(variable.name, variable.value)
 
         self.updatePVs()

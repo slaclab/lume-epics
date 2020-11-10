@@ -110,7 +110,7 @@ class PVAServer(multiprocessing.Process):
                     "Unsupported variable type provided: %s", variable.variable_type
                 )
 
-            handler = PVAccessInputHandler(pvname=pvname, server=self)
+            handler = PVAccessInputHandler(pvname=pvname, is_constant=variable.is_constant, server=self)
             pv = SharedPV(handler=handler, nt=nt, initial=initial)
             self._providers[pvname] = pv
 
@@ -160,26 +160,32 @@ class PVAServer(multiprocessing.Process):
         """
         variables = input_variables+output_variables
         for variable in variables:
-            pvname = f"{self._prefix}:{variable.name}"
-            if variable.variable_type == "image":
-                logger.debug("pvAccess image process variable %s updated.",
-                             variable.name)
-                nd_array = variable.value.view(NTNDArrayData)
 
-                # get dw and dh from model output
-                nd_array.attrib = {
-                    "x_min": variable.x_min,
-                    "y_min": variable.y_min,
-                    "x_max": variable.x_max,
-                    "y_max": variable.y_max,
-                }
-                value = nd_array
-            # do not build attribute pvs
+            if variable.name in self._input_variables and variable.is_constant:
+                logger.debug("Cannot update constant variable.")
+
             else:
-                logger.debug(
-                    "pvAccess process variable %s updated with value %s.",
-                    variable.name, variable.value)
-                value = variable.value
+                pvname = f"{self._prefix}:{variable.name}"
+                if variable.variable_type == "image":
+                    logger.debug("pvAccess image process variable %s updated.",
+                                variable.name)
+                    nd_array = variable.value.view(NTNDArrayData)
+
+                    # get dw and dh from model output
+                    nd_array.attrib = {
+                        "x_min": variable.x_min,
+                        "y_min": variable.y_min,
+                        "x_max": variable.x_max,
+                        "y_max": variable.y_max,
+                    }
+                    value = nd_array
+                # do not build attribute pvs
+                else:
+                    logger.debug(
+                        "pvAccess process variable %s updated with value %s.",
+                        variable.name, variable.value)
+                    value = variable.value
+
             output_provider = self._providers[pvname]
             output_provider.post(value)
 
@@ -214,7 +220,7 @@ class PVAccessInputHandler:
     process variables.
     """
 
-    def __init__(self, pvname: str, server: PVAServer):
+    def __init__(self, pvname: str, is_constant: bool, server: PVAServer):
         """
         Initialize the handler with prefix and image pv attributes
 
@@ -223,6 +229,7 @@ class PVAccessInputHandler:
             server (PVAServer): Reference to the server holding this PV
 
         """
+        self.is_constant = is_constant
         self.pvname = pvname
         self.server = server
 
@@ -239,7 +246,8 @@ class PVAccessInputHandler:
 
         """
         # update input values and global input process variable state
-        pv.post(op.value())
-        self.server.update_pv(pvname=self.pvname, value=op.value())
+        if not self.is_constant:
+            pv.post(op.value())
+            self.server.update_pv(pvname=self.pvname, value=op.value())
         # mark server operation as complete
         op.done()
