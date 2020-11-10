@@ -81,10 +81,6 @@ class ExampleModel(SurrogateModel):
 @pytest.fixture(scope='session')
 def server():
     prefix = "test"
-   # os.environ["EPICS_CA_SERVER_PORT"] = "5064"
-   # os.environ["EPICS_CA_REPEATER_PORT"] = "5065"
-    os.environ["EPICS_PVA_SERVER_PORT"] = "5064"
-
     server = epics_server.Server(ExampleModel, prefix)
     server.start(monitor=False)
     yield server
@@ -95,6 +91,7 @@ def server():
 @pytest.mark.parametrize("value,prefix", [(1.0, "test")])
 def test_constant_variable_pva(value, prefix, server):
     ctxt = Context('pva')
+
 
     for variable_name, variable in server.input_variables.items():
         if variable.variable_type == "scalar":
