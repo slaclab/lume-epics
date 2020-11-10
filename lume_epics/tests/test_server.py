@@ -1,7 +1,9 @@
 import numpy as np
 import time
 import pytest
-import epics
+import subprocess
+import os
+from p4p.client.thread import Context
 from lume_model.variables import (
     ScalarInputVariable,
     ScalarOutputVariable,
@@ -15,47 +17,9 @@ from lume_model.models import SurrogateModel
 class ExampleModel(SurrogateModel):
     input_variables = {
         "input1": ScalarInputVariable(name="input1", value=1, default=1, range=[0.0, 5.0]),
-        "input2": ScalarInputVariable(name="input2", value=2, default=2, range=[0.0, 5.0]),
-    }
-
-    output_variables = {
-        "output1": ScalarOutputVariable(name="output1"),
-        "output2": ScalarOutputVariable(name="output2"),
-    }
-
-    def evaluate(self, input_variables):
-
-        self.input_variables = {variable.name: variable for variable in input_variables}
-
-        self.output_variables["output1"].value = self.input_variables["input1"].value * 2
-        self.output_variables["output2"].value = self.input_variables["input2"].value * 2
-
-        # return inputs * 2
-        return list(self.output_variables.values())
-
-
-def test_scalar_server():
-    prefix = "test"
-    server = epics_server.Server(ExampleScalarModel, prefix)
-    server.start(monitor=False)
-    time.sleep(0.5)
-    server.stop()
-
-
-class ExampleImageModel(SurrogateModel):
-    input_variables = {
-        "input1": ImageInputVariable(
-            name="input1",
-            default=np.array([[1, 2,], [3, 4]]),
-            value_range=[1, 10],
-            axis_labels=["count_1", "count_2"],
-            x_min=0,
-            y_min=0,
-            x_max=5,
-            y_max=5,
-        ),
-        "input2": ImageInputVariable(
-            name="input2",
+        "input2": ScalarInputVariable(name="input2", value=2, default=2, range=[0.0, 5.0], is_constant=True),
+        "input3": ImageInputVariable(
+            name="input3",
             default=np.array([[1, 6,], [4, 1]]),
             value_range=[1, 10],
             axis_labels=["count_1", "count_2"],
@@ -81,9 +45,6 @@ class ExampleImageModel(SurrogateModel):
         self.output_variables["output1"].value = self.input_variables["input1"].value * 2
         self.output_variables["output2"].value = self.input_variables["input2"].value * 2
 
-        self.output_variables["output3"].value = (
-            self.input_variables["input1"].value * 2
-        )
         self.output_variables["output3"].value = (
             self.input_variables["input3"].value * 2
         )
@@ -116,32 +77,64 @@ class ExampleImageModel(SurrogateModel):
         return list(self.output_variables.values())
 
 
-def test_image_server():
+
+@pytest.fixture(scope='session')
+def server():
     prefix = "test"
-    server = epics_server.Server(ExampleScalarModel, prefix)
 
-    server = epics_server.Server(ExampleModel, prefix, protocols=["pva"])
+    server = epics_server.Server(ExampleModel, prefix)
     server.start(monitor=False)
-
-    for var in server.input_variables:
-        epics.caget(f"{prefix}:{var}")
-
+    yield server
+    # teardown
     server.stop()
 
 
 @pytest.mark.parametrize("value,prefix", [(1.0, "test")])
-def test_constant_variable(value,prefix):
-    server = epics_server.Server(ExampleModel, prefix, protocols=["pva"])
-    server.start(monitor=False)
+def test_constant_variable_pva(value, prefix, server):
+    ctxt = Context('pva')
+
+    for variable_name, variable in server.input_variables.items():
+        if variable.variable_type == "scalar":
+            ctxt.put(f"{prefix}:{variable.name}", value, timeout=2.0, throw=True)
+
 
 
     for variable_name, variable in server.input_variables.items():
         if variable.variable_type == "scalar":
-            epics.caput(f"{prefix}:{variable_name}", value)
+            val = None
+            count = 5
+
+            while not val and count > 0:
+                try:
+                    val = ctxt.get(f"{prefix}:{variable.name}", timeout=2.0, throw = True)
+                except:
+                    count -= 1
+
+            if variable.is_constant:
+                assert val != value
+
+            else:
+                assert val == value
+
+    ctxt.close()
+
+
+@pytest.mark.parametrize("value,prefix", [(1.0, "test")])
+def test_constant_variable_ca(value, prefix, server):
 
     for variable_name, variable in server.input_variables.items():
         if variable.variable_type == "scalar":
-            val = epics.caget(f"{prefix}:{variable_name}")
-            assert val == value
+            p = subprocess.Popen(["caput", f"{prefix}:{variable.name}", f"{value}"], stdout=subprocess.PIPE)
 
-    server.stop()
+    for variable_name, variable in server.input_variables.items():
+        if variable.variable_type == "scalar":
+            p = subprocess.Popen(["caget", f"{prefix}:{variable.name}"], stdout=subprocess.PIPE)
+
+            stdout = p.communicate()[0]
+            val = float(stdout.split()[-1])
+
+            if variable.is_constant:
+                assert val != value
+
+            else:
+                assert val == value
