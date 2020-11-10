@@ -19,6 +19,8 @@ from typing import Dict, Mapping, Union, List
 logger = logging.getLogger(__name__)
 
 
+
+
 class CAServer(multiprocessing.Process):
     """
     Process-based implementation of Channel Access server.
@@ -67,6 +69,7 @@ class CAServer(multiprocessing.Process):
         self.server_thread = None
         self.exit_event = multiprocessing.Event()
 
+
     def update_pv(self, pvname, value) -> None:
         """Adds update to input process variable to the input queue.
 
@@ -100,7 +103,7 @@ class CAServer(multiprocessing.Process):
         self.ca_server.createPV(self._prefix + ":", pvdb)
 
         # set up driver for handing read and write requests to process variables
-        self.ca_driver = CADriver(server=self.ca_server)
+        self.ca_driver = CADriver(server=self)
 
         # start the server thread
         self.server_thread = ServerThread(self.ca_server)
@@ -137,6 +140,7 @@ class CAServer(multiprocessing.Process):
 
         self.server_thread.stop()
         logger.info("Channel access server stopped.")
+        
 
     def shutdown(self):
         """Safely shutdown the server process. 
@@ -320,7 +324,7 @@ class CADriver(Driver):
             variables (List[Variable]): List of variables.
         """
         for variable in variables:
-            if variable in self.server._input_variables and variable.is_constant:
+            if variable.name in self.server._input_variables and variable.is_constant:
                 logger.debug("Cannot update constant variable %s", variable.name)
 
             else:
