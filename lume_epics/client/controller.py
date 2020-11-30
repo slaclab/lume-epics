@@ -2,10 +2,11 @@
 The lume-epics controller serves as the intermediary between variable monitors 
 and process variables served over EPICS.
 """
-from typing import Union
+from typing import Union, List
 import numpy as np
 import copy
 import logging
+from datetime import datetime
 from collections import defaultdict
 from functools import partial 
 from epics import PV
@@ -35,16 +36,16 @@ class Controller:
     both getting and setting values on the process variables.
 
     Attributes:
-        protocol (str): Protocol for getting values from variables ("pva" for pvAccess, "ca" for
+        _protocol (str): Protocol for getting values from variables ("pva" for pvAccess, "ca" for
             Channel Access)
 
-        context (Context): P4P threaded context instance for use with pvAccess.
+        _context (Context): P4P threaded context instance for use with pvAccess.
 
-        set_ca (bool): Update Channel Access variable on put.
+        _pv_registry (dict): Registry mapping pvname to dict of value and pv monitor
 
-        set_pva (bool): Update pvAccess variable on put.
+        last_input_update (datetime): Last update of input variables
 
-        pv_registry (dict): Registry mapping pvname to dict of value and pv monitor
+        last_output_update (datetime): Last update of output variables
 
     Example:
         ```
@@ -60,7 +61,7 @@ class Controller:
 
     """
 
-    def __init__(self, protocol: str):
+    def __init__(self, protocol: str, input_pvs: List[str], output_pvs: List[str]):
         """
         Initializes controller. Stores protocol and creates context attribute if 
         using pvAccess.
@@ -69,17 +70,25 @@ class Controller:
             protocol (str): Protocol for getting values from variables ("pva" for pvAccess, "ca" for
             Channel Access)
 
+            input_pvs (List(str)): List of input process variable names
+
+            output_pvs (List(str)): List of output process variable names
+
         """
-        self.protocol = protocol
-        self.pv_registry = defaultdict()
+        self._protocol = protocol
+        self._pv_registry = defaultdict()
+        self._input_pvs = input_pvs
+        self._output_pvs = output_pvs
+        self.last_input_update = ""
+        self.last_output_update = ""
 
         # initalize context for pva
-        self.context = None
-        if self.protocol == "pva":
-            self.context = Context("pva")
+        self._context = None
+        if self._protocol == "pva":
+            self._context = Context("pva")
 
 
-    def ca_value_callback(self, pvname, value, *args, **kwargs):
+    def _ca_value_callback(self, pvname, value, *args, **kwargs):
         """Callback executed by Channel Access monitor.
 
         Args:
@@ -87,18 +96,24 @@ class Controller:
 
             value (Union[np.ndarray, float]): Value to assign to process variable.
         """
-        self.pv_registry[pvname]["value"] = value
+        self._pv_registry[pvname]["value"] = value
+
+        if pvname in self._input_pvs:
+            self.last_input_update = datetime.now().strftime('%m/%d/%Y, %H:%M:%S')
+
+        if pvname in self._output_pvs:
+            self.last_output_update = datetime.now().strftime('%m/%d/%Y, %H:%M:%S')
 
 
-    def ca_connection_callback(self, *, pvname, conn, pv):
+    def _ca_connection_callback(self, *, pvname, conn, pv):
         """Callback used for monitoring connection and setting values to None on disconnect.
         """
         # if disconnected, set value to None
         if not conn:
-            self.pv_registry[pvname]["value"] = None
+            self._pv_registry[pvname]["value"] = None
 
 
-    def pva_value_callback(self, pvname, value):
+    def _pva_value_callback(self, pvname, value):
         """Callback executed by pvAccess monitor.
 
         Args:
@@ -107,41 +122,47 @@ class Controller:
             value (Union[np.ndarray, float]): Value to assign to process variable.
         """
         if isinstance(value, Disconnected):
-            self.pv_registry[pvname]["value"] = None
+            self._pv_registry[pvname]["value"] = None
         else:
-            self.pv_registry[pvname]["value"] = value
+            self._pv_registry[pvname]["value"] = value
+
+        if pvname in self._input_pvs:
+            self.last_input_update = datetime.now().strftime('%m/%d/%Y, %H:%M:%S')
+
+        if pvname in self._output_pvs:
+            self.last_output_update = datetime.now().strftime('%m/%d/%Y, %H:%M:%S')
 
 
-    def setup_pv_monitor(self, pvname):
+    def _set_up_pv_monitor(self, pvname):
         """Set up process variable monitor.
 
         Args:
             pvname (str): Process variable name
 
         """
-        if pvname in self.pv_registry:
+        if pvname in self._pv_registry:
             return
 
-        if self.protocol == "ca":
+        if self._protocol == "ca":
             # add to registry (must exist for connection callback)
-            self.pv_registry[pvname] = {"pv": None, "value": None}
+            self._pv_registry[pvname] = {"pv": None, "value": None}
 
             # create the pv
-            pv_obj = PV(pvname, callback=self.ca_value_callback, connection_callback=self.ca_connection_callback)
+            pv_obj = PV(pvname, callback=self._ca_value_callback, connection_callback=self._ca_connection_callback)
 
             # update registry
-            self.pv_registry[pvname]["pv"] = pv_obj
+            self._pv_registry[pvname]["pv"] = pv_obj
 
-        elif self.protocol == "pva":
-            cb = partial(self.pva_value_callback, pvname)
+        elif self._protocol == "pva":
+            cb = partial(self._pva_value_callback, pvname)
             # populate registry s.t. initially disconnected will populate
-            self.pv_registry[pvname] = {"pv": None, "value": None}
+            self._pv_registry[pvname] = {"pv": None, "value": None}
 
             # create the monitor obj
-            mon_obj = self.context.monitor(pvname, cb, notify_disconnect=True)
+            mon_obj = self._context.monitor(pvname, cb, notify_disconnect=True)
             
             # update registry with the monitor
-            self.pv_registry[pvname]["pv"] = mon_obj
+            self._pv_registry[pvname]["pv"] = mon_obj
 
 
     def get(self, pvname: str) -> np.ndarray:
@@ -152,10 +173,9 @@ class Controller:
             pvname (str): Process variable name
 
         """
-        self.setup_pv_monitor(pvname)
-        pv = self.pv_registry.get(pvname, None)
+        self._set_up_pv_monitor(pvname)
+        pv = self._pv_registry.get(pvname, None)
         if pv:
-            #return pv.get("value", None)
             return pv["value"]
         return None
 
@@ -183,7 +203,7 @@ class Controller:
 
         """
         image = None
-        if self.protocol == "ca":
+        if self._protocol == "ca":
             image_flat = self.get(f"{pvname}:ArrayData_RBV")
             nx = self.get(f"{pvname}:ArraySizeX_RBV")
             ny = self.get(f"{pvname}:ArraySizeY_RBV")
@@ -198,7 +218,7 @@ class Controller:
 
                 image = image_flat.reshape(int(nx), int(ny))
 
-        elif self.protocol == "pva":
+        elif self._protocol == "pva":
             # context returns numpy array with WRITEABLE=False
             # copy to manipulate array below
 
@@ -236,22 +256,22 @@ class Controller:
             timeout (float): Operation timeout in seconds
 
         """
-        self.setup_pv_monitor(pvname)
+        self._set_up_pv_monitor(pvname)
 
         # allow no puts before a value has been collected
         registered = self.get(pvname)
 
         # if the value is registered
         if registered is not None:
-            if self.protocol == "ca":
-                self.pv_registry[pvname]["pv"].put(value, timeout=timeout)
+            if self._protocol == "ca":
+                self._pv_registry[pvname]["pv"].put(value, timeout=timeout)
 
-            elif self.protocol == "pva":
-                self.context.put(pvname, value, throw=False, timeout=timeout)
+            elif self._protocol == "pva":
+                self._context.put(pvname, value, throw=False, timeout=timeout)
 
         else:
             logger.debug(f"No initial value set for {pvname}.")
 
     def close(self):
-        if self.protocol == "pva":
-            self.context.close()
+        if self._protocol == "pva":
+            self._context.close()
