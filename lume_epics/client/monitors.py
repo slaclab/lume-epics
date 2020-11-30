@@ -5,6 +5,7 @@ EPICs.
 
 """
 
+from datetime import datetime
 import time
 import logging
 
@@ -117,12 +118,14 @@ class PVTimeSeries:
         Collects image data via appropriate protocol and returns time and data.
 
         """
-        t = time.time()
+        t = datetime.now()
+
         v = self.controller.get_value(self.pvname)
 
         self.time = np.append(self.time, t)
         self.data = np.append(self.data, v)
-        return self.time - self.tstart, self.data
+
+        return self.time, self.data
 
     def reset(self) -> None:
         self.time = np.array([])

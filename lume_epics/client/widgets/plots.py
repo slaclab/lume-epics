@@ -9,6 +9,7 @@ import logging
 
 from bokeh.plotting import figure
 from bokeh.models import ColumnDataSource, ColorMapper, Button
+from bokeh.models.formatters import DatetimeTickFormatter
 from bokeh.models.widgets import Select
 
 from lume_model.variables import Variable, ImageVariable, ScalarVariable
@@ -203,8 +204,8 @@ class Striptool:
 
         self.live_variable = list(self.pv_monitors.keys())[0]
 
-        ts = [0]
-        ys = [DEFAULT_SCALAR_VALUE]
+        ts = []
+        ys = []
         self.source = ColumnDataSource(dict(x=ts, y=ys))
         self.reset_button = Button(label="Reset")
         self.reset_button.on_click(self._reset_values)
@@ -225,6 +226,17 @@ class Striptool:
         self.plot = figure(sizing_mode="scale_both", aspect_ratio=self._aspect_ratio)
         self.plot.line(x="x", y="y", line_width=2, source=self.source)
         self.plot.yaxis.axis_label = self.live_variable
+
+        # as its scales, the plot uses all definedformats
+        self.plot.xaxis.formatter = DatetimeTickFormatter(
+            minutes= "%H:%M:%S", 
+            minsec="%H:%M:%S", 
+            seconds="%H:%M:%S", 
+            microseconds="%H:%M:%S", 
+            milliseconds="%H:%M:%S"
+        )
+
+        self.plot.xaxis.major_label_orientation = "vertical"
 
         # add units to label
         if self.pv_monitors[self.live_variable].units:
@@ -248,13 +260,6 @@ class Striptool:
             ys = ys[-self._limit:]
 
         self.source.data = dict(x=ts, y=ys)
-        self.plot.yaxis.axis_label = f"{self.live_variable}"
-
-        # add units to label
-        if self.pv_monitors[self.live_variable].units:
-            self.plot.yaxis.axis_label += (
-                f" ({self.pv_monitors[self.live_variable].units})"
-            )
 
     def update_selection(self, attr, old, new):
         """
