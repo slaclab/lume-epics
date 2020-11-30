@@ -22,7 +22,7 @@ def test_entry_table_construction(
     protocol, prefix, input_variables,
 ):
     # create controller
-    controller = Controller("pva")
+    controller = Controller("pva", [f"{prefix}:{pv}" for pv in input_variables], [])
 
     # create entry table
     entry_table = EntryTable(input_variables, controller, prefix)
@@ -48,7 +48,7 @@ def test_entry_table_clear(
     protocol, prefix, input_variables,
 ):
     # create controller
-    controller = Controller("pva")
+    controller = Controller("pva", [f"{prefix}:{pv}" for pv in input_variables], [])
 
     # create entry table
     entry_table = EntryTable(input_variables, controller, prefix)

@@ -8,9 +8,7 @@ from lume_epics import epics_server
 
 
 def test_image_plot_ca():
-    PREFIX = "test"
-
-    controller = Controller("ca")
+    prefix = "test"
 
     output3 = ImageOutputVariable(
             name="output3",
@@ -23,7 +21,10 @@ def test_image_plot_ca():
         )
 
     outputs = [output3]
-    image_plot = ImagePlot(outputs, controller, PREFIX)
+
+    controller = Controller("pva", [], [output3.name])
+
+    image_plot = ImagePlot(outputs, controller, prefix)
     image_plot.build_plot()
     controller.close()
 

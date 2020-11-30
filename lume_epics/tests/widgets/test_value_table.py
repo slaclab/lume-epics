@@ -7,16 +7,16 @@ from lume_epics import epics_server
 
 
 def test_value_table_ca():
-    PREFIX = "test"
+    prefix = "test"
 
     output1 = ScalarOutputVariable(name="output1")
     output2 = ScalarOutputVariable(name="output2")
 
     # create controller
-    controller = Controller("ca")
+    controller = Controller("ca", [], [f"{prefix}:{output1.name}", f"{prefix}:{output2.name}"])
 
     outputs = [output1, output2]
 
-    value_table = ValueTable(outputs, controller, PREFIX)
+    value_table = ValueTable(outputs, controller, prefix)
 
     controller.close()

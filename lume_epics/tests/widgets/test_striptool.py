@@ -10,7 +10,8 @@ from lume_epics import epics_server
 )
 def test_striptool_build(protocol, prefix, output_variables):
     # create controller
-    controller = Controller(protocol)
+    controller = Controller(protocol, [], [f"{prefix}:{pv.name}" for pv in output_variables])
+
 
     striptool = Striptool(output_variables, controller, prefix)
 
@@ -22,7 +23,7 @@ def test_striptool_build(protocol, prefix, output_variables):
 def test_reset_button(protocol, prefix, output_variables):
 
     # create controller
-    controller = Controller(protocol)
+    controller = Controller(protocol, [], [f"{prefix}:{pv.name}" for pv in output_variables])
 
     striptool = Striptool(output_variables, controller, prefix)
 
