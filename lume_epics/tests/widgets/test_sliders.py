@@ -5,7 +5,7 @@ from lume_epics.client.controller import Controller
 
 
 def test_sliders_pva():
-    PREFIX = "test"
+    prefix = "test"
 
     input_variables = {
         "input1": ScalarInputVariable(name="input1", value=1, default=1, range=[0.0, 5.0]),
@@ -15,9 +15,9 @@ def test_sliders_pva():
     inputs = list(input_variables.values())
 
     # create controller
-    controller = Controller("pva")
+    controller = Controller("pva", [f"{prefix}:{pv}" for pv in input_variables], [])
 
     # build sliders for the command process variable database
-    sliders = build_sliders(inputs, controller, PREFIX)
+    sliders = build_sliders(inputs, controller, prefix)
 
     controller.close()
