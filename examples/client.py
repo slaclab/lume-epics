@@ -1,7 +1,7 @@
 from bokeh.io import curdoc
 from bokeh import palettes
 from bokeh.layouts import column, row
-from bokeh.models import LinearColorMapper
+from bokeh.models import LinearColorMapper, Div
 
 from lume_epics.client.controller import Controller
 from lume_model.utils import variables_from_yaml
@@ -16,6 +16,9 @@ prefix = "test"
 with open("examples/files/demo_config.yml", "r") as f:
     input_variables, output_variables = variables_from_yaml(f)
 
+input_variable_names = [f"{prefix}:{input_var}" for input_var in input_variables]
+output_variable_names = [f"{prefix}:{output_var}" for output_var in input_variables]
+
 # use all input variables for slider
 # prepare as list for rendering
 input_variables = list(input_variables.values())
@@ -24,7 +27,7 @@ input_variables = list(input_variables.values())
 image_output = [output_variables["output1"]]
 
 # set up controller
-controller = Controller("ca")  # can also use channel access
+controller = Controller("ca", input_variable_names, output_variable_names)  # can also use channel access
 
 # build sliders
 sliders = build_sliders(input_variables, controller, prefix)
@@ -45,25 +48,45 @@ entry_table = EntryTable(input_variables, controller, prefix)
 def image_update_callback():
     image_plot.update()
 
+# set sizes
+image_plot.plot.height = 400
+image_plot.plot.width = 450
+striptool.plot.height = 400
+striptool.plot.width = 450
+
+title_div = Div(text=f"<b>Demo app: Last input update {controller.last_input_update}</b>", style={'font-size': '150%', 'color': '#3881e8', 'text-align': 'center', 'width':'100%'})
+output_update_div = Div(text=f"<b>Last output update {controller.last_output_update}</b>", style={'font-size': '150%', 'color': '#3881e8', 'text-align': 'center', 'width':'100%'})
+
+def update_div_text():
+    global controller
+    title_div.text = f"<b>Demo app: Last input update {controller.last_input_update}</b>"
+    output_update_div.text = f"<b>Last output update {controller.last_output_update}</b>"
+
+
 
 # render
 curdoc().title = "Demo App"
 curdoc().add_root(
     column(
         row(
-            column([slider.bokeh_slider for slider in sliders], width=350),
-            column(image_plot.plot),
+            column(
+                title_div, 
+                output_update_div
+            )
         ),
         row(
-            entry_table.table,
-            column(entry_table.clear_button, entry_table.submit_button),
+            column([slider.bokeh_slider for slider in sliders], width=350),
+            column(image_plot.plot),
+            column(striptool.selection, striptool.reset_button, striptool.plot)
         ),
-        row(striptool.plot, striptool.selection, striptool.reset_button),
+        row(
+            column(entry_table.table, entry_table.clear_button, entry_table.submit_button),
+        ),
     )
 )
-
 
 curdoc().add_periodic_callback(image_plot.update, 250)
 for slider in sliders:
     curdoc().add_periodic_callback(slider.update, 250)
 curdoc().add_periodic_callback(striptool.update, 250)
+curdoc().add_periodic_callback(update_div_text, 250)
