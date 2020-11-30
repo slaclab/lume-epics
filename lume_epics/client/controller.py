@@ -70,9 +70,9 @@ class Controller:
             protocol (str): Protocol for getting values from variables ("pva" for pvAccess, "ca" for
             Channel Access)
 
-            input_pvs (List(str)): List of input process variable names
+            input_pvs (List[str]): List of input process variable names
 
-            output_pvs (List(str)): List of output process variable names
+            output_pvs (List[str]): List of output process variable names
 
         """
         self._protocol = protocol
