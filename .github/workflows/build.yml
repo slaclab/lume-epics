@@ -4,7 +4,7 @@ on:
   push:
     branches:    
       - master
-      - 'jacquelinegarrahan/github-actions'
+      - github-actions
 
 jobs:
   build-linux:
