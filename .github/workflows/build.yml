@@ -19,6 +19,8 @@ jobs:
       - name: Set up conda
         run: |
           # $CONDA points to the root of the miniconda directory
+          echo $CONDA
+          $CONDA/bin/conda info
           $CONDA/bin/conda --set always_yes yes --set changeps1 no
           $CONDA/bin/conda --add channels conda-forge
           $CONDA/bin/conda --set channel_priority strict
