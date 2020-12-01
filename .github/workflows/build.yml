@@ -7,14 +7,14 @@ on:
       - github-actions
 
 jobs:
-  build-linux:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: ${{ matrix.os }}
     strategy:
-      max-parallel: 5
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        os: [macOS-latest, ubuntu-latest, windows-latest]
         python-version: [3.6, 3.7, 3.8]
 
+    name: Python ${{ matrix.python-version }} build
     steps:
       - uses: actions/checkout@v2
       - name: Set up conda
@@ -23,15 +23,15 @@ jobs:
           update-conda: true
           python-version: ${{ matrix.python-version }}
           conda-channels: anaconda, conda-forge
+      - name: Add conda channels
         run: |
-
           conda info
           conda --set always_yes yes --set changeps1 no
           conda --add channels conda-forge
           conda --set channel_priority strict
           conda config --append channels jrgarrahan # temporary lume-model fix
           conda install conda-build anaconda-client
-          cconda update -q conda conda-build
+          conda update -q conda conda-build
       - name: Build package
         run: |
           conda build -q conda-recipe --python=$TRAVIS_PYTHON_VERSION --output-folder bld-dir
