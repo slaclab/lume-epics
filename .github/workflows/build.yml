@@ -26,9 +26,9 @@ jobs:
       - name: Add conda channels
         run: |
           conda info
-          conda --set always_yes yes --set changeps1 no
-          conda --add channels conda-forge
-          conda --set channel_priority strict
+          conda config --set always_yes yes --set changeps1 no
+          conda config --add channels conda-forge
+          conda config --set channel_priority strict
           conda config --append channels jrgarrahan # temporary lume-model fix
           conda install conda-build anaconda-client
           conda update -q conda conda-build
