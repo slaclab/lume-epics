@@ -16,23 +16,28 @@ jobs:
         python-version: [3.6, 3.7, 3.8]
 
     steps:
+      - uses: actions/checkout@v2
       - name: Set up conda
+        uses: s-weigand/setup-conda@v1
+        with:
+          update-conda: true
+          python-version: ${{ matrix.python-version }}
+          conda-channels: anaconda, conda-forge
         run: |
-          # $CONDA points to the root of the miniconda directory
-          echo $CONDA
-          $CONDA/bin/conda info
-          $CONDA/bin/conda --set always_yes yes --set changeps1 no
-          $CONDA/bin/conda --add channels conda-forge
-          $CONDA/bin/conda --set channel_priority strict
-          $CONDA/bin/conda config --append channels jrgarrahan # temporary lume-model fix
-          $CONDA/bin/conda install conda-build anaconda-client
-          $CONDA/bin/conda update -q conda conda-build
+
+          conda info
+          conda --set always_yes yes --set changeps1 no
+          conda --add channels conda-forge
+          conda --set channel_priority strict
+          conda config --append channels jrgarrahan # temporary lume-model fix
+          conda install conda-build anaconda-client
+          cconda update -q conda conda-build
       - name: Build package
         run: |
-          $CONDA/bin/conda build -q conda-recipe --python=$TRAVIS_PYTHON_VERSION --output-folder bld-dir
+          conda build -q conda-recipe --python=$TRAVIS_PYTHON_VERSION --output-folder bld-dir
       - name: Test with pytest
         run: |
-          $CONDA/bin/conda config --add channels "file://`pwd`/bld-dir"
-          $CONDA/bin/conda create -q -n test-environment --file dev-requirements.txt
-          $CONDA/bin/conda activate test-environment
+          conda config --add channels "file://`pwd`/bld-dir"
+          conda create -q -n test-environment --file dev-requirements.txt
+          conda activate test-environment
           pytest
