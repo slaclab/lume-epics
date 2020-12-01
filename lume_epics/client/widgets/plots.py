@@ -6,6 +6,7 @@ process variables.
 
 from typing import List
 import logging
+import numpy as np
 
 from bokeh.plotting import figure
 from bokeh.models import ColumnDataSource, ColorMapper, Button
@@ -51,7 +52,12 @@ class ImagePlot:
     """
 
     def __init__(
-        self, variables: List[ImageVariable], controller: Controller, prefix: str
+        self, 
+        variables: List[ImageVariable], 
+        controller: Controller, 
+        prefix: str, 
+        x_range: List[float] = None, 
+        y_range: List[float] = None,
     ) -> None:
         """
         Initialize monitors, current process variable, and data source.
@@ -65,6 +71,8 @@ class ImagePlot:
 
         """
         self.pv_monitors = {}
+        self._x_range = x_range
+        self._y_range = y_range
 
         for variable in variables:
             self.pv_monitors[variable.name] = PVImage(prefix, variable, controller)
@@ -72,6 +80,8 @@ class ImagePlot:
         self.live_variable = list(self.pv_monitors.keys())[0]
 
         image_data = DEFAULT_IMAGE_DATA
+
+        image_data["image"][0] = np.flipud(image_data["image"][0].T)
 
         self.source = ColumnDataSource(image_data)
 
@@ -91,7 +101,7 @@ class ImagePlot:
         # create plot
         self.plot = figure(
             tooltips=[("x", "$x"), ("y", "$y"), ("value", "@image")],
-                sizing_mode="scale_both"
+                sizing_mode="scale_both", x_range=self._x_range, y_range=self._y_range
         )
         self.plot.x_range.range_padding = self.plot.y_range.range_padding = 0
 
@@ -105,7 +115,8 @@ class ImagePlot:
                 dh="dh",
                 source=self.source,
                 color_mapper=color_mapper,
-            )
+        )
+
         elif palette:
             self.plot.image(
                 name="image_plot",
