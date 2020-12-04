@@ -4,7 +4,7 @@ variables.
 
 """
 
-from typing import List
+from typing import List, Dict
 import logging
 
 from bokeh.models import ColumnDataSource, DataTable, TableColumn, StringFormatter
@@ -19,19 +19,23 @@ class ValueTable:
     Table of process variable names and values.
 
     Attriibutes:
-        pv_monitors (Dict[str, PVScalar]): Monitors associated with process variables.
+        _pv_monitors (Dict[str, PVScalar]): Monitors associated with process variables.
 
-        output_values (dict): Dict mapping process variable name to current value.
+        _output_values (dict): Dict mapping process variable name to current value.
 
-        labels (dict): Dict mapping process variable name to labels.
+        _source (ColumnDataSource): Data source for populating bokeh table.
 
-        source (ColumnDataSource): Data source for populating bokeh table.
+        _labels (Dict[str, str]): Dictionary mapping pvname to label
+
+        _unit_map (Dict[str, str]): Dictionary mapping pvname to units
+
+        table (DataTable): Bokeh data table 
 
 
 
     """
     def __init__(
-        self, variables: List[ScalarVariable], controller: Controller, prefix: str,
+        self, variables: List[ScalarVariable], controller: Controller, prefix: str, labels: Dict[str, str]= {}, sig_figs: int = 5
     ) -> None:
         """
         Initialize table.
@@ -43,28 +47,34 @@ class ValueTable:
 
             prefix (str): Prefix used in setting up the server.
 
+            labels (Dict[list, list]): Dictionary mapping pvname to label
+
         """
         # only creating pvs for non-image pvs
-        self.pv_monitors = {}
-        self.output_values = {}
-        self.labels = {}
+        self._pv_monitors = {}
+        self._output_values = {}
+        self._labels = {}
+        self._sig_figs = sig_figs
 
         # be sure to surface units in the table
-        self.unit_map = {}
+        self._unit_map = {}
 
         for variable in variables:
-            self.pv_monitors[variable.name] = PVScalar(prefix, variable, controller)
-        #    v = self.pv_monitors[variable.name].poll()
+            self._pv_monitors[variable.name] = PVScalar(prefix, variable, controller)
             v = DEFAULT_SCALAR_VALUE
 
-            self.output_values[variable.name] = v
+            # format to sig figs
+            v = format(float('{:.{p}g}'.format(v, p=self._sig_figs)))
+            self._output_values[variable.name] = v
+
+            label_base = labels.get(variable.name, variable.name)
 
             # check if units assigned
             if "units" in variable.__fields_set__ and variable.units:
-                self.labels[variable.name] = variable.name + f" ({variable.units})"
+                self._labels[variable.name] = label_base + f" ({variable.units})"
 
             else:
-                self.labels[variable.name] = variable.name
+                self._labels[variable.name] = label_base
 
         self.create_table()
 
@@ -72,11 +82,11 @@ class ValueTable:
         """
         Creates the bokeh table and populates variable data.
         """
-        x_vals = [self.labels[var] for var in self.output_values.keys()]
-        y_vals = list(self.output_values.values())
+        x_vals = [self._labels[var] for var in self._output_values.keys()]
+        y_vals = list(self._output_values.values())
         
         table_data = dict(x=x_vals, y=y_vals)
-        self.source = ColumnDataSource(table_data)
+        self._source = ColumnDataSource(table_data)
         columns = [
             TableColumn(
                 field="x", title="Outputs", formatter=StringFormatter(font_style="bold")
@@ -85,17 +95,20 @@ class ValueTable:
         ]
 
         self.table = DataTable(
-            source=self.source, columns=columns, sizing_mode="stretch_both", index_position=None
+            source=self._source, columns=columns, sizing_mode="stretch_both", index_position=None
         )
 
     def update(self) -> None:
         """
         Callback function to update data source to reflect updated values.
         """
-        for variable in self.pv_monitors:
-            v = self.pv_monitors[variable].poll()
-            self.output_values[variable] = v
+        for variable in self._pv_monitors:
+            v = self._pv_monitors[variable].poll()
 
-        x_vals = [self.labels[var] for var in self.output_values.keys()]
-        y_vals = list(self.output_values.values())
-        self.source.data = dict(x=x_vals, y=y_vals)
+            # format to sig figs
+            v = format(float('{:.{p}g}'.format(v, p=self._sig_figs)))
+            self._output_values[variable] = v
+
+        x_vals = [self._labels[var] for var in self._output_values.keys()]
+        y_vals = list(self._output_values.values())
+        self._source.data = dict(x=x_vals, y=y_vals)
