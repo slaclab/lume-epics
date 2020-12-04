@@ -43,10 +43,3 @@ jobs:
           conda install --file dev-requirements.txt
           conda install lume-epics
           pytest
-      - name: build-docs
-        if: ${{ github.repository == 'slaclab/lume-epics' }}
-        run: |
-          pip install -r docs-requirements.txt
-          mkdocs build -c -d site
-          doctr deploy . --built-docs site --deploy-branch-name gh-pages
-      
