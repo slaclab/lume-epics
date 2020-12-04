@@ -44,7 +44,7 @@ jobs:
           conda install lume-epics
           pytest
       - name: build-docs
-        if: ${{ github.repository == "slaclab/lume-epics" }}
+        if: ${{ github.repository == 'slaclab/lume-epics' }}
         run: |
           pip install -r docs-requirements.txt
           mkdocs build -c -d site
