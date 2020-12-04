@@ -170,6 +170,7 @@ class ImagePlot:
 
         # get image data
         image_data = self.pv_monitors[self.live_variable].poll()
+        image_data["image"][0] = np.flipud(image_data["image"][0].T)
 
         self.source.data.update(image_data)
 
