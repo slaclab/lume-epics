@@ -7,6 +7,7 @@ from lume_epics.client.controller import Controller
 from lume_model.utils import variables_from_yaml
 
 from lume_epics.client.widgets.plots import ImagePlot, Striptool
+from lume_epics.client.widgets.tables import ValueTable
 from lume_epics.client.widgets.controls import build_sliders, EntryTable
 from lume_epics.client.controller import Controller
 
@@ -43,6 +44,7 @@ striptool = Striptool(
     [output_variables["output2"], output_variables["output3"]], controller, prefix
 )
 entry_table = EntryTable(input_variables, controller, prefix)
+value_table = ValueTable(input_variables, controller, prefix)
 
 # Set up image update callback
 def image_update_callback():
@@ -80,7 +82,7 @@ curdoc().add_root(
             column(striptool.selection, striptool.reset_button, striptool.plot)
         ),
         row(
-            column(entry_table.table, entry_table.clear_button, entry_table.submit_button),
+            column(entry_table.table, entry_table.clear_button, entry_table.submit_button), value_table.table,
         ),
     )
 )
@@ -90,3 +92,4 @@ for slider in sliders:
     curdoc().add_periodic_callback(slider.update, 250)
 curdoc().add_periodic_callback(striptool.update, 250)
 curdoc().add_periodic_callback(update_div_text, 250)
+curdoc().add_periodic_callback(value_table.update, 250)
