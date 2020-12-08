@@ -11,7 +11,7 @@ from lume_model.variables import (
 )
 
 
-class ExampleModel(SurrogateModel):
+class TestModel(SurrogateModel):
     input_variables = {
         "input1": ScalarInputVariable(name="input1", default=1.0, range=[0.0, 5.0]),
         "input2": ScalarInputVariable(name="input2", default=2.0, range=[0.0, 5.0], is_constant=True),
@@ -75,7 +75,7 @@ class ExampleModel(SurrogateModel):
 
 if __name__ == "__main__":
     prefix = "test"
-    server = epics_server.Server(ExampleModel, prefix)
+    server = epics_server.Server(TestModel, prefix)
     server.start(monitor=True)
 
 
