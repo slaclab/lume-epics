@@ -42,7 +42,9 @@ class CAServer(multiprocessing.Process):
                  input_variables: Dict[str, InputVariable], 
                  output_variables: Dict[str, OutputVariable],
                  in_queue: multiprocessing.Queue, 
-                 out_queue: multiprocessing.Queue, *args, **kwargs) -> None:
+                 out_queue: multiprocessing.Queue, 
+                 running_indicator: multiprocessing.Value,
+                 *args, **kwargs) -> None:
         """Initialize server process.
 
         Args:
@@ -58,16 +60,17 @@ class CAServer(multiprocessing.Process):
 
         """
         super().__init__(*args, **kwargs)
+        self.ca_server = None
+        self.ca_driver = None
+        self.server_thread = None
+        self.exit_event = multiprocessing.Event()
         self._prefix = prefix
         self._input_variables = input_variables
         self._output_variables = output_variables
         self._in_queue = in_queue
         self._out_queue = out_queue
         self._providers = {}
-        self.ca_server = None
-        self.ca_driver = None
-        self.server_thread = None
-        self.exit_event = multiprocessing.Event()
+        self._running = running_indicator
 
 
     def update_pv(self, pvname, value) -> None:
@@ -128,6 +131,7 @@ class CAServer(multiprocessing.Process):
 
         """
         self.setup_server()
+        self._running.value = True
         while not self.exit_event.is_set():
             try:
                 data = self._out_queue.get_nowait()
@@ -139,6 +143,7 @@ class CAServer(multiprocessing.Process):
                 logger.debug("out queue empty")
 
         self.server_thread.stop()
+        self._running.value = False
         logger.info("Channel access server stopped.")
         
 

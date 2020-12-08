@@ -1,5 +1,17 @@
 import logging
 import pytest
+import sys
+from os.path import abspath, dirname
+
+package_path = abspath(dirname(dirname(__file__)))
+sys.path.insert(0, package_path)
+
+
+
+@pytest.fixture(scope="session", autouse=True)
+def rootdir():
+    package_path = abspath(dirname(dirname(dirname(__file__))))
+    return package_path
 
 def clear_loggers():
     """
