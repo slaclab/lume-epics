@@ -3,7 +3,12 @@ import time
 import pytest
 import subprocess
 import os
+import sys
+import epics
+import signal
+from epicscorelibs.path import get_lib
 from p4p.client.thread import Context
+from p4p import cleanup
 from lume_model.variables import (
     ScalarInputVariable,
     ScalarOutputVariable,
@@ -12,7 +17,7 @@ from lume_model.variables import (
 )
 from lume_epics import epics_server
 from lume_model.models import SurrogateModel
-
+from lume_epics.tests.conftest import PVA_CONFIG
 
 class ExampleModel(SurrogateModel):
     input_variables = {
@@ -78,35 +83,116 @@ class ExampleModel(SurrogateModel):
 
 
 
-@pytest.fixture(scope='session')
-def server():
-    prefix = "test"
-    server = epics_server.Server(ExampleModel, prefix)
-    server.start(monitor=False)
-    yield server
+@pytest.fixture(scope="module")
+def ca_server(rootdir):
+    env = os.environ.copy()
+
+    # add root dir to pythonpath in order to run test
+    env["PYTHONPATH"] = env.get("PYTHONPATH", "") + f":{rootdir}"
+
+    ca_proc = subprocess.Popen(
+            [
+                sys.executable, "launch_server.py"
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd= os.path.dirname(os.path.realpath(__file__)),
+            env=env
+    )
+
+    time.sleep(1)
+
+    # Check it started successfully
+    assert not ca_proc.poll()
+
+    #yield ca_proc
+    yield ca_proc
+
     # teardown
-    server.stop()
+    ca_proc.send_signal(signal.SIGINT)
 
-"""
+    for ln in ca_proc.stdout:
+        print(ln)
+
+    for ln in ca_proc.stderr:
+        print(ln)
+
+    print("Printed...")
+
+
+
+
 @pytest.mark.parametrize("value,prefix", [(1.0, "test")])
-def test_constant_variable_pva(value, prefix, server):
-    ctxt = Context('pva')
+def test_constant_variable_ca(value, prefix, ca_server):
 
+    os.environ["PYEPICS_LIBCA"] = get_lib('ca')
 
-    for variable_name, variable in server.input_variables.items():
+    # check constant variable assignment
+    for _, variable in ExampleModel.input_variables.items():
+        pvname = f"{prefix}:{variable.name}"
         if variable.variable_type == "scalar":
-            ctxt.put(f"{prefix}:{variable.name}", value, timeout=2.0, throw=True)
+            epics.caput(pvname, value, timeout=1)
 
-    for variable_name, variable in server.input_variables.items():
+    for _, variable in ExampleModel.input_variables.items():
         if variable.variable_type == "scalar":
-            val = None
-            count = 5
+            pvname = f"{prefix}:{variable.name}"
+            val = epics.caget(pvname, timeout=1)
 
-            while not val and count > 0:
+            if variable.is_constant:
+                assert val != value
+
+            else:
+                assert val == value
+
+@pytest.mark.parametrize("value,prefix", [(1.0, "test")])
+def test_pva_manual(value, prefix, ca_server):
+    ctxt = Context("pva", conf=PVA_CONFIG, maxsize=2)
+
+    #check constant variable assignment
+    for _, variable in ExampleModel.input_variables.items():
+        pvname = f"{prefix}:{variable.name}"
+            
+        if variable.variable_type == "scalar":
+
+            count = 3
+            successful_put = False
+            while count > 0 and not successful_put:
                 try:
-                    val = ctxt.get(f"{prefix}:{variable.name}", timeout=2.0, throw = True)
+                    ctxt.put(pvname, value)
+                    successful_put = True
+
                 except:
+                    ctxt.close()
+                    del ctxt
+                    time.sleep(3)
+                    ctxt = Context("pva", conf=PVA_CONFIG)
                     count -= 1
+
+            if count == 0:
+                raise Exception("Failed puts.")
+
+    for _, variable in ExampleModel.input_variables.items():
+        if variable.variable_type == "scalar":
+            pvname = f"{prefix}:{variable.name}"
+
+            count = 3
+            successful_get = False
+            val = None
+            while count > 0 and not successful_get:
+                try:
+                    val = ctxt.get(pvname)
+                    successful_get = True
+
+                except:
+                    ctxt.close()
+                    del ctxt
+                    time.sleep(5)
+                    ctxt = Context("pva", conf=PVA_CONFIG)
+                    time.sleep(1)
+                    count -= 1
+            
+            if count == 0:
+                raise Exception("Failed gets.")
 
             if variable.is_constant:
                 assert val != value
@@ -115,4 +201,3 @@ def test_constant_variable_pva(value, prefix, server):
                 assert val == value
 
     ctxt.close()
-"""
