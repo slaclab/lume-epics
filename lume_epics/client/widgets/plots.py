@@ -129,6 +129,9 @@ class ImagePlot:
                 palette=palette,
             )
 
+        else:
+            raise Exception("Must provide palette or color mapper during ImagePlot construction.")
+
         axis_labels = self.pv_monitors[self.live_variable].axis_labels
         axis_units = self.pv_monitors[self.live_variable].axis_units
 
