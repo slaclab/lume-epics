@@ -20,15 +20,17 @@ with open("examples/files/demo_config.yml", "r") as f:
 input_variable_names = [f"{prefix}:{input_var}" for input_var in input_variables]
 output_variable_names = [f"{prefix}:{output_var}" for output_var in input_variables]
 
-# use all input variables for slider
-# prepare as list for rendering
-input_variables = list(input_variables.values())
+
 
 # select our image output variable to render
 image_output = [output_variables["output1"]]
 
 # set up controller
-controller = Controller("ca", input_variable_names, output_variable_names)  # can also use channel access
+controller = Controller("ca", input_variables, output_variables, prefix)  # can also use channel access
+
+# use all input variables for slider
+# prepare as list for rendering
+input_variables = list(input_variables.values())
 
 # build sliders
 sliders = build_sliders(input_variables, controller, prefix)
