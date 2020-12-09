@@ -1,5 +1,5 @@
 # lume-epics
-Lume-epics is a dedicated API for serving LUME model variables with EPICS. 
+Lume-epics is a dedicated API for serving LUME model variables with EPICS.
 
 ## Model Development
 
@@ -15,7 +15,7 @@ def model(input_1, input_2):
 
 ### Defining input and output variables
 
-Model input and output variables are represented by [lume-model](https://github.com/slaclab/lume-model) variable representations. These variables enforce the minimal data requirements necessary for serving EPICS process variables associated with an online model. Lume-model defines two variable types: scalar and image. Each type has both an associated input and output class. Scalar variables hold float values while image variables hold two dimensional arrays. 
+Model input and output variables are represented by [lume-model](https://github.com/slaclab/lume-model) variable representations. These variables enforce the minimal data requirements necessary for serving EPICS process variables associated with an online model. Lume-model defines two variable types: scalar and image. Each type has both an associated input and output class. Scalar variables hold float values while image variables hold two dimensional arrays.
 
 In order to appropriately interface with the EPICS server, scalar input variables must be assigned a range and default. When started, the server uses these defaults to execute the model and serve output variables based on the default execution. The range limits correspond the the low and high limits for EPICS graphics displays. During model execution, the current value of the variable is stored using the `value` attribute.
 
@@ -24,14 +24,14 @@ For our model, we must define two scalar input variables and one scalar output v
 from lume_model.variables import ScalarInputVariable, ScalarOutputVariable
 
 input_1 = ScalarInputVariable(
-    name="input_1", 
-    default=1.0, 
+    name="input_1",
+    default=1.0,
     range=[0, 256]
 )
 
 input_2 = ScalarInputVariable(
-    name="input_2", 
-    default=2.0, 
+    name="input_2",
+    default=2.0,
     range=[0, 256]
 )
 
@@ -51,7 +51,7 @@ class ExampleModel(SurrogateModel):
     def __init__(self, input_variables = [], output_variables = []):
         self.input_variables = input_variables
         self.output_variables = output_variables
-    
+
     def evaluate(self, input_variables):
         self.input_variables = {input_variable.name: input_variable for input_variable in input_variables}
         self.output_variables["output"].value = np.random.uniform(
@@ -62,7 +62,7 @@ class ExampleModel(SurrogateModel):
 
 ### Setting up the server
 
-We can now use the EPICS server to serve our model. The EPICS server requires an instantiated model with `input_variables` and `output_variables` defined as attributes, and a prefix for intantiation. By default, the server uses both the pvAccess and Channel Access protocols when serving the EPICS process variables. An optional keyword argument allows the server to be started using a single protocol (`protocols=["pva"]` for pvAccess, `protocols=["ca"]` for Channel Access). Once instantiated, the server is started using the `Server.start()` method, which has an optional monitor keyword argument, `monitor`, that controls thread execution. When `monitor=True`, the server is run in the main thread and may be stopped using keyboard interrupt (`Ctr+C`). If using `monitor=False`, the server can be stopped manually using the `Server.stop()` method. 
+We can now use the EPICS server to serve our model. The EPICS server requires an instantiated model with `input_variables` and `output_variables` defined as attributes, and a prefix for intantiation. By default, the server uses both the pvAccess and Channel Access protocols when serving the EPICS process variables. An optional keyword argument allows the server to be started using a single protocol (`protocols=["pva"]` for pvAccess, `protocols=["ca"]` for Channel Access). Once instantiated, the server is started using the `Server.start()` method, which has an optional monitor keyword argument, `monitor`, that controls thread execution. When `monitor=True`, the server is run in the main thread and may be stopped using keyboard interrupt (`Ctr+C`). If using `monitor=False`, the server can be stopped manually using the `Server.stop()` method.
 
 The input variables and output variables must be passed in the `model_kwargs` keyword argument because the model class accepts them in its `__init__` method. Arbitrary data may also be passed to the model with this approach.
 
@@ -96,7 +96,7 @@ server = Server(
             model_kwargs = {"input_variables": input_variables, "output_variables": output_variables}
         )
 
-# monitor = False does not loop in main thread and can be terminated 
+# monitor = False does not loop in main thread and can be terminated
 # with server.stop()
 server.start(monitor=True)
 # Runs until keyboard interrupt.
@@ -108,7 +108,7 @@ A number of EPICS compatable widgets are included in `lume-epics`. Each widget a
 
 The controller fetches variables using a configurable protocol defined on instantiation. Variable assigment is done over both pvAccess and Channel Access protocols by default. The controller must be configured to reflect the corresponding server. If using a single protocol for serving, the controller must be set up to fetch using that protocol and the excluded protocol must be disabled manually using the appropriate `set_pva=False`, `set_ca=False` key word argument. The prefix used for serving must match the prefix used with the client.
 
-For our client, we will load our saved variables and create a set of sliders for our inputs and a value table displaying the output variable. This code should be in a separate script from the server setup named `client.py`.  
+For our client, we will load our saved variables and create a set of sliders for our inputs and a value table displaying the output variable. This code should be in a separate script from the server setup named `client.py`.
 
 ```python
 from lume_model.utils import load_variables
@@ -121,19 +121,19 @@ input_variables, output_variables = load_variables("example_variables.pickle")
 prefix = "test"
 
 # initialize controller to use pvAccess for variable gets
-controller = Controller("pva")
+controller = Controller("pva", input_variables, output_variables, prefix)
 
 # build sliders for the command process variable database
 sliders = build_sliders(
             [input_variables["input_1"], input_variables["input_2"]],
-            controller, 
+            controller,
             prefix
         )
 
 # build value table
 value_table = ValueTable(
-                [output_variables["output"]], 
-                controller, 
+                [output_variables["output"]],
+                controller,
                 prefix
 )
 ```
@@ -152,7 +152,7 @@ curdoc().title = "Demo App"
 curdoc().add_root(
             row(
                 column(bokeh_sliders, width=350), column(value_table.table)
-                ) 
+                )
     )
 
 curdoc().add_periodic_callback(value_table.update, 250)
@@ -199,26 +199,26 @@ class ExampleModel(SurrogateModel):
 
 input_variables = {
     "input1": ScalarInputVariable(
-        name="input1", 
-        value=1, 
-        default=1, 
+        name="input1",
+        value=1,
+        default=1,
         range=[0, 256]
     ),
     "input2": ScalarInputVariable(
-        name="input2", 
-        value=2, 
-        default=2, 
+        name="input2",
+        value=2,
+        default=2,
         range=[0, 256]),
 }
 
 output_variables = {
     "output1": ImageOutputVariable(
-        name="output1", 
-        axis_labels=["value_1", "value_2"], 
-        axis_units=["mm", "mm"], 
-        x_min=0, 
-        x_max=50, 
-        y_min=0, 
+        name="output1",
+        axis_labels=["value_1", "value_2"],
+        axis_units=["mm", "mm"],
+        x_min=0,
+        x_max=50,
+        y_min=0,
         y_max=50
     )
 }
@@ -231,12 +231,12 @@ save_variables(input_variables, output_variables, "example_variables.pickle")
 
 prefix = "test"
 server = Server(
-            ExampleModel, 
+            ExampleModel,
             prefix,
             model_kwargs = {"input_variables": input_variables, "output_variables": output_variables}
         )
 
-# monitor = False does not loop in main thread and can be terminated 
+# monitor = False does not loop in main thread and can be terminated
 # with server.stop()
 server.start(monitor=True)
 # Runs until keyboard interrupt.
@@ -269,19 +269,19 @@ y_max = ScalarOutputVariable(
         )
 
 image_output = ImageOutputVariable(
-    name="image_output", 
-    axis_labels=["value_1", "value_2"], 
-    axis_units=["mm", "mm"], 
+    name="image_output",
+    axis_labels=["value_1", "value_2"],
+    axis_units=["mm", "mm"],
     x_min_variable="x_min",
-    x_max_variable="x_max", 
-    y_min_variable="y_min", 
+    x_max_variable="x_max",
+    y_min_variable="y_min",
     y_max_variable="y_max"
 )
 ```
 
 ### Serving from configuration files
 
-The model may be served using the variable configuration files as defined in [lume-epics](https://slaclab.github.io/lume-model/#configuration-files). Additionally, a display may be autogenerated from the same configuration file. These commands are registered as entrypoints. 
+The model may be served using the variable configuration files as defined in [lume-epics](https://slaclab.github.io/lume-model/#configuration-files). Additionally, a display may be autogenerated from the same configuration file. These commands are registered as entrypoints.
 
 After installing lume-epics, the server can be launched by:
 
@@ -309,7 +309,7 @@ Additional arguments include the number of steps to show using the striptool and
 $ render-from-template examples/files/iris_config.yml {PROTOCOL} {PREFIX} --striptool-limit 50 --ncol-widgets 5
 ```
 
-Rendering in read-only mode will hide all entry controls and render a striptool for each of the variables. 
+Rendering in read-only mode will hide all entry controls and render a striptool for each of the variables.
 
 ```
 $ render-from-template examples/files/iris_config.yml {PROTOCOL} {PREFIX} --striptool-limit 50 --ncol-widgets 5 --read-only
