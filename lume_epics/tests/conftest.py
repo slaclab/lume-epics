@@ -114,7 +114,7 @@ def protocol():
 
 @pytest.fixture(scope="session", autouse=True)
 def controller(prefix, protocol, model):
-    controller = Controller(protocol, [f"{prefix}:{pv}" for pv in model.input_variables], [])
+    controller = Controller(protocol, [f"{prefix}:{pv}" for pv in model.input_variables], [f"{prefix}:{pv}" for pv in model.output_variables])
 
     yield controller
 

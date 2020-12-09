@@ -1,6 +1,7 @@
 import subprocess
 import numpy as np
 import os
+import logging
 from lume_epics import epics_server
 from lume_model.models import SurrogateModel
 from lume_model.variables import (
@@ -9,6 +10,9 @@ from lume_model.variables import (
     ImageInputVariable,
     ImageOutputVariable,
 )
+
+logger = logging.getLogger(__name__)
+logger.setLevel("DEBUG")
 
 
 class TestModel(SurrogateModel):
