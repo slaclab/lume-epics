@@ -6,7 +6,7 @@ All widgets accept a `lume-epics` controller, a prefix, and a`lume-model` variab
 
 ## Control widgets
 
-These widgets are used for manipulating process variable values. 
+These widgets are used for manipulating process variable values.
 
 ### Sliders
 
@@ -27,11 +27,13 @@ from lume_epics.client.widgets.controls import build_sliders
 prefix = "test"
 variable_filename = "examples/variables.pickle"
 
-# set up controller
-controller = Controller("ca")
-
 # load variables
 input_variables, output_variables = load_variables(variable_filename)
+
+# set up controller
+controller = Controller("ca", input_variables, output_variables, prefix)
+
+# convert ot list for slider use
 input_variables = list(input_variable.values())
 
 # build sliders
@@ -48,7 +50,7 @@ for slider in sliders:
 ```
 ### Entry table
 
-The entry table is used for single value updates to process variables. Bulk modification can also be submitted using the entry table. The table is composed of labels and entry fields. The entry table is also packaged with a clear button, for clearing the entered values from the fields, and a submit button for sending the values to the process variables. 
+The entry table is used for single value updates to process variables. Bulk modification can also be submitted using the entry table. The table is composed of labels and entry fields. The entry table is also packaged with a clear button, for clearing the entered values from the fields, and a submit button for sending the values to the process variables.
 
 
 ```python
@@ -64,11 +66,13 @@ from lume_epics.client.widgets.controls import EntryTable
 prefix = "test"
 variable_filename = "examples/variables.pickle"
 
-# set up controller
-controller = Controller("ca")
-
 # load variables
 input_variables, output_variables = load_variables(variable_filename)
+
+# set up controller
+controller = Controller("ca", input_variables, output_variables, prefix)
+
+# conver to list for use with table
 input_variables = list(input_variable.values())
 
 # build entry table
@@ -104,7 +108,7 @@ variable_filename = "examples/variables.pickle"
 input_variables, output_variables = load_variables(variable_filename)
 
 # set up controller
-controller = Controller("ca")
+controller = Controller("ca", input_variables, output_variables, prefix)
 
 # select our image output variable to render
 image_output = [output_variables["output1"]]
@@ -146,8 +150,7 @@ variable_filename = "examples/variables.pickle"
 input_variables, output_variables = load_variables(variable_filename)
 
 # set up controller
-controller = Controller("ca")
-
+controller = Controller("ca", input_variables, output_variables, prefix)
 
 striptool = Striptool([output_variables["output2"], output_variables["output3"]], controller, prefix)
 
@@ -182,8 +185,7 @@ variable_filename = "examples/variables.pickle"
 input_variables, output_variables = load_variables(variable_filename)
 
 # set up controller
-controller = Controller("ca")
-
+controller = Controller("ca", input_variables, output_variables, prefix)
 
 value_table = ValueTable([output_variables["output2"], output_variables["output3"]], controller, prefix)
 
