@@ -12,7 +12,9 @@ from lume_epics.client.widgets.plots import ImagePlot
 
 @pytest.fixture(scope="session")
 def image_vars(model):
-    return [var for var in model.input_variables.values() if var.variable_type == "image"]
+    return [
+        var for var in model.input_variables.values() if var.variable_type == "image"
+    ]
 
 
 @pytest.fixture(scope="session")
@@ -38,7 +40,6 @@ def test_image_plot_missing_build_params(image_plot):
     image_plot.build_plot(palette=YlGn3)
 
 
-@pytest.mark.skip(reason="Relies on fixes in controller")
 def test_image_plot_update(image_plot, image_vars, prefix, server, controller):
     updated_vals = {}
 
@@ -57,11 +58,9 @@ def test_image_plot_update(image_plot, image_vars, prefix, server, controller):
     # random dist for variable
     for var in image_vars:
         image_plot.live_variable = var.name
-        
+
         image_plot.update()
 
         val = image_plot.source.data["image"][0]
 
         assert (updated_vals[var.name] == val).all
-
-
