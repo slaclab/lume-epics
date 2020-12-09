@@ -102,7 +102,7 @@ class CAServer(multiprocessing.Process):
 
         # create all process variables using the process variables stored in
         # pvdb with the given prefix
-        pvdb = build_pvdb(self._input_variables, self._output_variables)
+        pvdb, self._child_to_parent_map = build_pvdb(self._input_variables, self._output_variables)
         self.ca_server.createPV(self._prefix + ":", pvdb)
 
         # set up driver for handing read and write requests to process variables
@@ -155,7 +155,7 @@ class CAServer(multiprocessing.Process):
 
 
 def build_pvdb(input_variables: List[InputVariable],
-               output_variables: List[OutputVariable]) -> dict:
+               output_variables: List[OutputVariable]) -> tuple:
     """Utility function for building dictionary (pvdb) used to initialize the channel
     access server.
 
@@ -166,6 +166,10 @@ def build_pvdb(input_variables: List[InputVariable],
         output_variables (List[OutputVariable]): List of lume_model output variables to be served with
             channel access server.
 
+    Returns:
+        pvdb (dict)
+        child_to_parent_map (dict): Mapping of child pvs to parent model variables
+
     """
     pvdb = {}
 
@@ -173,6 +177,8 @@ def build_pvdb(input_variables: List[InputVariable],
     variables = copy.deepcopy(input_variables)
     variables.update(output_variables)
     variables = list(variables.values())
+
+    child_to_parent_map = {}
 
     for variable in variables:
         if variable.variable_type == "image":
@@ -240,6 +246,8 @@ def build_pvdb(input_variables: List[InputVariable],
                 }
             )
 
+            child_to_parent_map.update({f"{variable.name}:{child}":variable.name for child in ["NDimensions_RBV","Dimensions_RBV", "ArraySizeX_RBV","ArraySizeY_RBV", "ArraySize_RBV", "ArrayData_RBV", "MinX_RBV","MinY_RBV", "MaxX_RBV", "MaxY_RBV", "ColorMode_RBV"]})
+
             if "units" in variable.__fields_set__:
                 pvdb[f"{variable.name}:ArrayData_RBV"]["unit"] = variable.units
 
@@ -261,7 +269,7 @@ def build_pvdb(input_variables: List[InputVariable],
             if variable.units is not None:
                 pvdb[variable.name]["unit"] = variable.units
 
-    return pvdb
+    return pvdb, child_to_parent_map
 
 
 class CADriver(Driver):
@@ -297,15 +305,23 @@ class CADriver(Driver):
             value (Union[float, np.ndarray]): Value to assign to the process variable.
 
         """
-        if pvname in self.server._output_variables:
+
+        # handle area detector types
+        model_var_name = pvname
+        if pvname in self.server._child_to_parent_map:
+            model_var_name = self.server._child_to_parent_map[pvname]
+
+        if model_var_name in self.server._output_variables:
             logger.warning(
                 "Cannot update variable %s. Output variables can only be updated via surrogate model callback.",
                 pvname)
             return False
 
-        if pvname in self.server._input_variables:
-            if self.server._input_variables[pvname].is_constant:
-                logger.debug("Unable to update constant variable %s", pvname)
+        if model_var_name in self.server._input_variables:
+
+            # handle image variables
+            if self.server._input_variables[model_var_name].is_constant:
+                logger.debug("Unable to update constant variable %s", model_var_name)
             
             else:
                 self.setParam(pvname, value)
