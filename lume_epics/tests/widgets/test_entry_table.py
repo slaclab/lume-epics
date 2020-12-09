@@ -1,60 +1,39 @@
 import pytest
+import epics
+import time
+
 from lume_model.variables import ScalarInputVariable
-
 from lume_epics.client.widgets.controls import EntryTable
-from lume_epics.client.controller import Controller
+
+@pytest.fixture(scope="module", autouse=True)
+def entry_inputs(model):
+    return [var for var in model.input_variables.values() if var.variable_type=="scalar"]
 
 
-@pytest.mark.parametrize(
-    "protocol,prefix,input_variables",
-    [
-        (
-            "pva",
-            "test",
-            [
-                ScalarInputVariable(name="input1", default=1, range=[0.0, 5.0]),
-                ScalarInputVariable(name="input2", default=2, range=[0.0, 5.0]),
-            ],
-        ),
-    ],
-)
-def test_entry_table_construction(
-    protocol, prefix, input_variables,
-):
-    # create controller
-    controller = Controller("pva", [f"{prefix}:{pv}" for pv in input_variables], [])
-
+@pytest.fixture(scope="module", autouse=True)
+def entry_table(controller, prefix, entry_inputs, server):
     # create entry table
-    entry_table = EntryTable(input_variables, controller, prefix)
+    return EntryTable(entry_inputs, controller, prefix)
 
-    # close controller
-    controller.close()
-
-
-@pytest.mark.parametrize(
-    "protocol,prefix,input_variables",
-    [
-        (
-            "pva",
-            "test",
-            [
-                ScalarInputVariable(name="input1", default=1, range=[0.0, 5.0]),
-                ScalarInputVariable(name="input2", default=2, range=[0.0, 5.0]),
-            ],
-        ),
-    ],
-)
-def test_entry_table_clear(
-    protocol, prefix, input_variables,
-):
-    # create controller
-    controller = Controller("pva", [f"{prefix}:{pv}" for pv in input_variables], [])
-
-    # create entry table
-    entry_table = EntryTable(input_variables, controller, prefix)
-
+def test_entry_table_clear(entry_table, entry_inputs):
     # clear
     entry_table.clear()
+    for input_var in entry_inputs:
+        assert entry_table.text_inputs[input_var.name].value_input == ""
 
-    # stop controller
-    controller.close()
+# test entry table submit
+@pytest.mark.skip(reason="Relies on fix in controller bug.")
+@pytest.mark.parametrize("value", [(7), (3)])
+def test_entry_table_sumbit(value, entry_table, entry_inputs, prefix, server):
+
+    for input_var in entry_inputs:
+        entry_table.text_inputs[input_var.name].value_input = str(value)
+
+    entry_table.submit()
+
+    time.sleep(1)
+
+    for input_var in entry_inputs:
+        if not input_var.is_constant:
+            val = epics.caget(f"{prefix}:{input_var.name}")
+            assert val == value

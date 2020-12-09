@@ -4,18 +4,16 @@ from lume_epics.client.widgets.controls import build_sliders
 from lume_epics.client.controller import Controller
 
 
-def test_sliders_pva():
+def sliders(prefix, controller, model):
     prefix = "test"
 
-    input_variables = {
-        "input1": ScalarInputVariable(name="input1", value=1, default=1, range=[0.0, 5.0]),
-        "input2": ScalarInputVariable(name="input2", value=2, default=2, range=[0.0, 5.0]),
-    }
+    slider_inputs = [var for var in model.input_variables.values() if var.variable_type == "scalar"]
 
-    inputs = list(input_variables.values())
+
+    inputs = list(model.input_variables.values())
 
     # create controller
-    controller = Controller("pva", [f"{prefix}:{pv}" for pv in input_variables], [])
+    controller = Controller("pva", [f"{prefix}:{pv}" for pv in model.input_variables], [])
 
     # build sliders for the command process variable database
     sliders = build_sliders(inputs, controller, prefix)

@@ -1,5 +1,6 @@
 import logging
 import multiprocessing
+from multiprocessing.managers import DictProxy
 from queue import Full, Empty
 import numpy as np
 import time
@@ -32,10 +33,19 @@ class PVAServer(multiprocessing.Process):
     """
 
     protocol = "pva"
-    def __init__(self,
-                 prefix: str,
-                 input_variables: List[InputVariable], output_variables: List[OutputVariable],
-                 in_queue: multiprocessing.Queue, out_queue: multiprocessing.Queue, *args, **kwargs) -> None:
+
+    def __init__(
+        self,
+        prefix: str,
+        input_variables: List[InputVariable],
+        output_variables: List[OutputVariable],
+        in_queue: multiprocessing.Queue,
+        out_queue: multiprocessing.Queue,
+        running_indicator: multiprocessing.Value,
+        conf_proxy: DictProxy,
+        *args,
+        **kwargs,
+    ) -> None:
         """Initialize server process.
 
         Args:
@@ -50,16 +60,18 @@ class PVAServer(multiprocessing.Process):
             out_queue (multiprocessing.Queue): Queue for tracking updates to output variables
 
         """
-        
+
         super().__init__(*args, **kwargs)
+        self.pva_server = None
+        self.exit_event = multiprocessing.Event()
         self._prefix = prefix
         self._input_variables = input_variables
         self._output_variables = output_variables
         self._in_queue = in_queue
         self._out_queue = out_queue
         self._providers = {}
-        self.pva_server = None
-        self.exit_event = multiprocessing.Event()
+        self._conf = conf_proxy
+        self._running = running_indicator
 
     def update_pv(self, pvname: str, value: Union[np.ndarray, float]) -> None:
         """Adds update to input process variable to the input queue.
@@ -73,9 +85,7 @@ class PVAServer(multiprocessing.Process):
         # Hack for now to get the pickable value
         val = value.raw.value
         pvname = pvname.replace(f"{self._prefix}:", "")
-        self._in_queue.put(
-            {"protocol": self.protocol, "pvname": pvname, "value": val}
-        )
+        self._in_queue.put({"protocol": self.protocol, "pvname": pvname, "value": val})
 
     def setup_server(self) -> None:
         """Configure and start server.
@@ -87,7 +97,6 @@ class PVAServer(multiprocessing.Process):
         logger.info("Initializing pvAccess server")
         # initialize global inputs
         for variable in self._input_variables.values():
-            # input_pvs[variable.name] = variable.value
             pvname = f"{self._prefix}:{variable.name}"
 
             # prepare scalar variable types
@@ -110,7 +119,9 @@ class PVAServer(multiprocessing.Process):
                     "Unsupported variable type provided: %s", variable.variable_type
                 )
 
-            handler = PVAccessInputHandler(pvname=pvname, is_constant=variable.is_constant, server=self)
+            handler = PVAccessInputHandler(
+                pvname=pvname, is_constant=variable.is_constant, server=self
+            )
             pv = SharedPV(handler=handler, nt=nt, initial=initial)
             self._providers[pvname] = pv
 
@@ -125,7 +136,8 @@ class PVAServer(multiprocessing.Process):
 
             elif variable.variable_type == "image":
                 nd_array = variable.value.view(NTNDArrayData)
-                # get limits from model output
+
+                # get image limits from model output
                 nd_array.attrib = {
                     "x_min": np.float64(variable.x_min),
                     "y_min": np.float64(variable.y_min),
@@ -137,8 +149,7 @@ class PVAServer(multiprocessing.Process):
                 initial = nd_array
             else:
                 raise ValueError(
-                    "Unsupported variable type provided: %s",
-                    variable.variable_type
+                    "Unsupported variable type provided: %s", variable.variable_type
                 )
             pv = SharedPV(nt=nt, initial=initial)
             self._providers[pvname] = pv
@@ -146,10 +157,20 @@ class PVAServer(multiprocessing.Process):
         else:
             pass  # throw exception for incorrect data type
 
+        # initialize pva server
         self.pva_server = P4PServer(providers=[self._providers])
+
+        # update configuration
+        for key in self.pva_server.conf():
+            self._conf[key]= self.pva_server.conf()[key]
+
         logger.info("pvAccess server started")
 
-    def update_pvs(self, input_variables: List[InputVariable], output_variables: List[OutputVariable]) -> None:
+    def update_pvs(
+        self,
+        input_variables: List[InputVariable],
+        output_variables: List[OutputVariable],
+    ) -> None:
         """Update process variables over pvAccess.
 
         Args:
@@ -158,7 +179,7 @@ class PVAServer(multiprocessing.Process):
             output_variables (List[OutputVariable]): List of lume-model output variables.
 
         """
-        variables = input_variables+output_variables
+        variables = input_variables + output_variables
         for variable in variables:
 
             if variable.name in self._input_variables and variable.is_constant:
@@ -167,8 +188,9 @@ class PVAServer(multiprocessing.Process):
             else:
                 pvname = f"{self._prefix}:{variable.name}"
                 if variable.variable_type == "image":
-                    logger.debug("pvAccess image process variable %s updated.",
-                                variable.name)
+                    logger.debug(
+                        "pvAccess image process variable %s updated.", variable.name
+                    )
                     nd_array = variable.value.view(NTNDArrayData)
 
                     # get dw and dh from model output
@@ -183,7 +205,9 @@ class PVAServer(multiprocessing.Process):
                 else:
                     logger.debug(
                         "pvAccess process variable %s updated with value %s.",
-                        variable.name, variable.value)
+                        variable.name,
+                        variable.value,
+                    )
                     value = variable.value
 
             output_provider = self._providers[pvname]
@@ -194,17 +218,21 @@ class PVAServer(multiprocessing.Process):
 
         """
         self.setup_server()
+        self._running.value = True
+
+        # mark running
         while not self.exit_event.is_set():
             try:
                 data = self._out_queue.get_nowait()
-                inputs = data.get('input_variables', [])
-                outputs = data.get('output_variables', [])
+                inputs = data.get("input_variables", [])
+                outputs = data.get("output_variables", [])
                 self.update_pvs(inputs, outputs)
             except Empty:
                 time.sleep(0.01)
                 logger.debug("out queue empty")
 
         self.pva_server.stop()
+        self._running.value = False
         logger.info("pvAccess server stopped.")
 
     def shutdown(self):
@@ -251,3 +279,4 @@ class PVAccessInputHandler:
             self.server.update_pv(pvname=self.pvname, value=op.value())
         # mark server operation as complete
         op.done()
+
