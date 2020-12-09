@@ -61,7 +61,7 @@ class Controller:
 
     """
 
-    def __init__(self, protocol: str, input_pvs: List[str], output_pvs: List[str]):
+    def __init__(self, protocol: str, input_pvs: dict, output_pvs: dict, prefix):
         """
         Initializes controller. Stores protocol and creates context attribute if 
         using pvAccess.
@@ -86,6 +86,13 @@ class Controller:
         self._context = None
         if self._protocol == "pva":
             self._context = Context("pva")
+
+
+        for variable in {**input_pvs, **output_pvs}.values():
+            if variable.variable_type == "image":
+                self.get_image(f"{prefix}:{variable.name}")
+            else:
+                self.get_value(f"{prefix}:{variable.name}")
 
 
     def _ca_value_callback(self, pvname, value, *args, **kwargs):
@@ -184,7 +191,7 @@ class Controller:
         """Gets scalar value of a process variable.
 
         Args:
-            pvname (str): Image process variable name.
+            pvname (str): Process variable name.
 
         """
         value = self.get(pvname)
