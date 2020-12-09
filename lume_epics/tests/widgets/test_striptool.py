@@ -6,29 +6,26 @@ from lume_epics.client.widgets.plots import Striptool
 from lume_epics.client.controller import Controller
 from lume_epics import epics_server
 
-@pytest.mark.parametrize("protocol,prefix,output_variables", [("pva", "test", [ScalarOutputVariable(name="output1"),  ScalarOutputVariable(name="output2")]), ("ca", "test", [ScalarOutputVariable(name="output1"),  ScalarOutputVariable(name="output2")])]
-)
-def test_striptool_build(protocol, prefix, output_variables):
-    # create controller
-    controller = Controller(protocol, [], [f"{prefix}:{pv.name}" for pv in output_variables])
+
+@pytest.fixture(scope="module")
+def striptool(controller, prefix, model):
+
+    output_variables = [var for var in model.output_variables.values() if not var.variable_type == "image"]
+
+    return Striptool(output_variables, controller, prefix)
 
 
-    striptool = Striptool(output_variables, controller, prefix)
-
-    striptool.build_plot()
-    controller.close()
-
-@pytest.mark.parametrize("protocol,prefix,output_variables", [("pva", "test", [ScalarOutputVariable(name="output1"),  ScalarOutputVariable(name="output2")]), ("ca", "test", [ScalarOutputVariable(name="output1"),  ScalarOutputVariable(name="output2")])]
-)
-def test_reset_button(protocol, prefix, output_variables):
-
-    # create controller
-    controller = Controller(protocol, [], [f"{prefix}:{pv.name}" for pv in output_variables])
-
-    striptool = Striptool(output_variables, controller, prefix)
-
-    striptool.build_plot()
+def test_reset_button(striptool, server):
+    striptool.update()
+    striptool.update()
+    
+    initial_val = striptool.source.data["y"]
 
     striptool._reset_values()
+    striptool.update()
 
-    controller.close()
+    after_reset = striptool.source.data["y"]
+
+    assert len(initial_val) != len(after_reset)
+
+
