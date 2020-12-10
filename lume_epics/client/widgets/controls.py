@@ -1,5 +1,5 @@
 """
-The controls module contains tools for constructing bokeh control widgets. 
+The controls module contains tools for constructing bokeh control widgets.
 Controls may be built for lume-model ScalarInputVariables.
 
 """
@@ -61,7 +61,7 @@ class EpicsSlider:
         if "units" in self.variable.__fields_set__:
             title += " (" + self.variable.units + ")"
 
-        self.pvname = self.prefix + ":" + self.variable.name
+        self.pvname = self.variable.name
         step = (self.variable.value_range[1] - self.variable.value_range[0]) / 100.0
 
         # construct slider
@@ -94,7 +94,7 @@ def build_sliders(
     """
     Build sliders for a list of variables.
 
-    Args: 
+    Args:
         prefix (str): Prefix used to serve process variables.
 
         variables (List[ScalarInputVariable]): List of variables for which to build sliders.
@@ -126,7 +126,7 @@ def set_pv_from_slider(
 
         pvname (str): Name of the process variable.
 
-        controller (Controller): Controller object for interacting with process 
+        controller (Controller): Controller object for interacting with process
             variable values.
 
     """
@@ -156,7 +156,7 @@ class EntryTable:
         controller: Controller,
         prefix: str,
         row_height: int = 50,
-        button_aspect_ratio: float = 6.0
+        button_aspect_ratio: float = 6.0,
     ) -> None:
         """
         Initialize table.
@@ -194,8 +194,12 @@ class EntryTable:
             else:
                 label = variable.name
 
-            entry_title = Paragraph(text=variable.name, align="start",  sizing_mode="scale_both")
-            self.text_inputs[variable.name] = TextInput(name=label,  sizing_mode="scale_both")
+            entry_title = Paragraph(
+                text=variable.name, align="start", sizing_mode="scale_both"
+            )
+            self.text_inputs[variable.name] = TextInput(
+                name=label, sizing_mode="scale_both"
+            )
 
             # create columns
             grid_layout.append([entry_title, self.text_inputs[variable.name]])
@@ -204,24 +208,33 @@ class EntryTable:
         self.table = gridplot(grid_layout, sizing_mode="scale_both")
 
         # Set up buttons
-        self.clear_button = Button(label="Clear", sizing_mode="scale_both", aspect_ratio=self._button_aspect_ratio)
+        self.clear_button = Button(
+            label="Clear",
+            sizing_mode="scale_both",
+            aspect_ratio=self._button_aspect_ratio,
+        )
         self.clear_button.on_click(self.clear)
-        self.submit_button = Button(label="Submit", sizing_mode="scale_both", aspect_ratio=self._button_aspect_ratio)
+        self.submit_button = Button(
+            label="Submit",
+            sizing_mode="scale_both",
+            aspect_ratio=self._button_aspect_ratio,
+        )
         self.submit_button.on_click(self.submit)
-        self.button_row = row(self.clear_button, self.submit_button, sizing_mode="scale_both")
+        self.button_row = row(
+            self.clear_button, self.submit_button, sizing_mode="scale_both"
+        )
 
     def submit(self) -> None:
         """
         Function to submit values entered into table
         """
-        for variable, text_input in self.text_inputs.items():
+        for variable_name, text_input in self.text_inputs.items():
             if text_input.value_input != "":
-                pvname = f"{self.prefix}:{variable}"
-                self.controller.put(pvname, text_input.value_input)
+                self.controller.put(variable_name, text_input.value_input)
 
     def clear(self) -> None:
         """
         Function to clear all entered values
         """
-        for variable, text_input in self.text_inputs.items():
+        for _, text_input in self.text_inputs.items():
             text_input.value_input = ""
