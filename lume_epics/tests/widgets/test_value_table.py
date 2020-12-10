@@ -1,5 +1,6 @@
 import pytest
 import epics
+import time
 from lume_epics.client.widgets.tables import ValueTable
 
 
@@ -31,6 +32,8 @@ def test_value_table_update(
     # update input variables to trigger output update
     for var in input_variables:
         epics.caput(f"{prefix}:{var.name}", value)
+
+    time.sleep(1)
 
     value_table.update()
 
