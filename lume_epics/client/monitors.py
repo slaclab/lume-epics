@@ -1,6 +1,6 @@
 """
-Monitors interface with widgets to surface process variable information. They are 
-initialized using a lume-model variable and a controller used to access values over 
+Monitors interface with widgets to surface process variable information. They are
+initialized using a lume-model variable and a controller used to access values over
 EPICs.
 
 """
@@ -16,6 +16,7 @@ from lume_epics.client.controller import Controller
 from lume_model.variables import ImageVariable, ScalarVariable
 
 logger = logging.getLogger(__name__)
+
 
 class PVImage:
     """
@@ -54,7 +55,7 @@ class PVImage:
         if "units" in variable.__fields_set__:
             self.units = variable.units.split(":")
 
-        self.pvname = f"{prefix}:{variable.name}"
+        self.pvname = variable.name
         self.controller = controller
         self.axis_labels = variable.axis_labels
         self.axis_units = variable.axis_units
@@ -101,7 +102,7 @@ class PVTimeSeries:
             controller (Controller): Controller object for accessing process variable.
 
         """
-        self.pvname = f"{prefix}:{variable.name}"
+        self.pvname = variable.name
         self.tstart = time.time()
         self.time = np.array([])
         self.data = np.array([])
@@ -165,7 +166,7 @@ class PVScalar:
         # check if units has been set
         if "units" in variable.__fields_set__:
             self.units = variable.units
-        self.pvname = f"{prefix}:{variable.name}"
+        self.pvname = variable.name
         self.controller = controller
 
     def poll(self) -> Tuple[np.ndarray]:
