@@ -116,7 +116,7 @@ def protocol():
 
 
 @pytest.fixture(scope="session", autouse=True)
-def controller(prefix, protocol, model):
+def ca_controller(prefix, protocol, model):
     controller = Controller(
         protocol, model.input_variables, model.output_variables, prefix
     )

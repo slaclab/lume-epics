@@ -14,9 +14,9 @@ def slider_variables(model):
 
 
 @pytest.fixture(scope="module")
-def sliders(prefix, controller, slider_variables):
+def sliders(prefix, ca_controller, slider_variables):
     # build sliders for the command process variable database
-    return build_sliders(slider_variables, controller, prefix)
+    return build_sliders(slider_variables, ca_controller, prefix)
 
 
 @pytest.mark.parametrize("value", [(4), (-8)])
