@@ -1,21 +1,41 @@
+import pytest
+import epics
 from lume_model.variables import ScalarInputVariable
 
 from lume_epics.client.widgets.controls import build_sliders
 from lume_epics.client.controller import Controller
 
 
-def sliders(prefix, controller, model):
-    prefix = "test"
+@pytest.fixture(scope="module")
+def slider_variables(model):
+    return [
+        var for var in model.input_variables.values() if var.variable_type == "constant"
+    ]
 
-    slider_inputs = [var for var in model.input_variables.values() if var.variable_type == "scalar"]
 
-
-    inputs = list(model.input_variables.values())
-
-    # create controller
-    controller = Controller("pva", [f"{prefix}:{pv}" for pv in model.input_variables], [])
-
+@pytest.fixture(scope="module")
+def sliders(prefix, controller, slider_variables):
     # build sliders for the command process variable database
-    sliders = build_sliders(inputs, controller, prefix)
+    return build_sliders(slider_variables, controller, prefix)
 
-    controller.close()
+
+@pytest.mark.parametrize("value", [(4), (-8)])
+def test_slider_update(value, slider_variables, prefix, sliders):
+
+    for var in slider_variables:
+        epics.caput(f"{prefix}:{var.name}", value)
+
+    for slider in sliders:
+        slider.update()
+        assert value == slider.bokeh_slider.value
+
+
+@pytest.mark.parametrize("value", [(4), (-8)])
+def test_slider_set(value, slider_variables, prefix, sliders):
+
+    for slider in sliders:
+        slider.bokeh_slider.value = value
+
+    for var in slider_variables:
+        val = epics.caget(f"{prefix}:{var.name}")
+        assert val == value

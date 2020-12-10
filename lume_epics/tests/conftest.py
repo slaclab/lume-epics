@@ -19,38 +19,41 @@ package_path = abspath(dirname(dirname(__file__)))
 sys.path.insert(0, package_path)
 
 PVA_CONFIG = {
-'EPICS_PVAS_AUTO_BEACON_ADDR_LIST': 'NO', 
-'EPICS_PVAS_BEACON_ADDR_LIST': '127.0.0.1', 
-'EPICS_PVAS_BEACON_PERIOD': '15', 
-'EPICS_PVAS_BROADCAST_PORT': '60858', 
-'EPICS_PVAS_INTF_ADDR_LIST': '127.0.0.1:0', 
-'EPICS_PVAS_MAX_ARRAY_BYTES': '16384', 
-'EPICS_PVAS_PROVIDER_NAMES': '3a7aff4f-8fd4-4f9f-b696-bd9f5f6f13ed', 
-'EPICS_PVAS_SERVER_PORT': '61192', 
-'EPICS_PVA_ADDR_LIST': '127.0.0.1', 
-'EPICS_PVA_AUTO_ADDR_LIST': 'NO', 
-'EPICS_PVA_BEACON_PERIOD': '15', 
-'EPICS_PVA_BROADCAST_PORT': '60858', 
-'EPICS_PVA_MAX_ARRAY_BYTES': '16384', 
-'EPICS_PVA_SERVER_PORT': '61192'
+    "EPICS_PVAS_AUTO_BEACON_ADDR_LIST": "NO",
+    "EPICS_PVAS_BEACON_ADDR_LIST": "127.0.0.1",
+    "EPICS_PVAS_BEACON_PERIOD": "15",
+    "EPICS_PVAS_BROADCAST_PORT": "60858",
+    "EPICS_PVAS_INTF_ADDR_LIST": "127.0.0.1:0",
+    "EPICS_PVAS_MAX_ARRAY_BYTES": "16384",
+    "EPICS_PVAS_PROVIDER_NAMES": "3a7aff4f-8fd4-4f9f-b696-bd9f5f6f13ed",
+    "EPICS_PVAS_SERVER_PORT": "61192",
+    "EPICS_PVA_ADDR_LIST": "127.0.0.1",
+    "EPICS_PVA_AUTO_ADDR_LIST": "NO",
+    "EPICS_PVA_BEACON_PERIOD": "15",
+    "EPICS_PVA_BROADCAST_PORT": "60858",
+    "EPICS_PVA_MAX_ARRAY_BYTES": "16384",
+    "EPICS_PVA_SERVER_PORT": "61192",
 }
 os.environ.update(PVA_CONFIG)
 
-os.environ["PYEPICS_LIBCA"] = get_lib('ca')
+os.environ["PYEPICS_LIBCA"] = get_lib("ca")
+
 
 @pytest.fixture(scope="session", autouse=True)
 def rootdir():
     package_path = abspath(dirname(dirname(dirname(__file__))))
     return package_path
 
+
 def clear_loggers():
     """
     Remove handlers from all loggers
     """
     import logging
+
     loggers = [logging.getLogger()] + list(logging.Logger.manager.loggerDict.values())
     for logger in loggers:
-        handlers = getattr(logger, 'handlers', [])
+        handlers = getattr(logger, "handlers", [])
         for handler in handlers:
             logger.removeHandler(handler)
 
@@ -78,13 +81,11 @@ def server():
     env["PYTHONPATH"] = env.get("PYTHONPATH", "") + f":{rootdir}"
 
     ca_proc = subprocess.Popen(
-            [
-                sys.executable, "launch_server.py"
-            ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            cwd= os.path.dirname(os.path.realpath(__file__)),
-            env=env
+        [sys.executable, "launch_server.py"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        cwd=os.path.dirname(os.path.realpath(__file__)),
+        env=env,
     )
 
     time.sleep(2)
@@ -92,7 +93,7 @@ def server():
     # Check it started successfully
     assert not ca_proc.poll()
 
-    #yield ca_proc
+    # yield ca_proc
     yield ca_proc
 
     # teardown
@@ -108,13 +109,17 @@ def model():
 def prefix():
     yield "test"
 
+
 @pytest.fixture(scope="session", autouse=True)
 def protocol():
     yield "ca"
 
+
 @pytest.fixture(scope="session", autouse=True)
 def controller(prefix, protocol, model):
-    controller = Controller(protocol, [f"{prefix}:{pv}" for pv in model.input_variables], [f"{prefix}:{pv}" for pv in model.output_variables])
+    controller = Controller(
+        protocol, model.input_variables, model.output_variables, prefix
+    )
 
     yield controller
 
