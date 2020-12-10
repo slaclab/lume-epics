@@ -58,7 +58,6 @@ def test_image_plot_update(image_plot, image_vars, prefix, server, controller):
     # random dist for variable
     for var in image_vars:
         image_plot.live_variable = var.name
-
         image_plot.update()
 
         val = image_plot.source.data["image"][0]
