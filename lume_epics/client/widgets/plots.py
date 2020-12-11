@@ -1,6 +1,6 @@
 """
-The plots module contains bokeh figure based widgets. These widgets are initialized with 
-variables and a lume_epics.client.controller.Controller for interfacing with the EPICS 
+The plots module contains bokeh figure based widgets. These widgets are initialized with
+variables and a lume_epics.client.controller.Controller for interfacing with the EPICS
 process variables.
 """
 
@@ -14,10 +14,15 @@ from bokeh.models.formatters import DatetimeTickFormatter
 from bokeh.models.widgets import Select
 
 from lume_model.variables import Variable, ImageVariable, ScalarVariable
-from lume_epics.client.controller import Controller, DEFAULT_IMAGE_DATA, DEFAULT_SCALAR_VALUE
+from lume_epics.client.controller import (
+    Controller,
+    DEFAULT_IMAGE_DATA,
+    DEFAULT_SCALAR_VALUE,
+)
 from lume_epics.client.monitors import PVImage, PVTimeSeries
 
 logger = logging.getLogger(__name__)
+
 
 class ImagePlot:
     """
@@ -37,26 +42,23 @@ class ImagePlot:
     Example:
 
         ```
-        prefix = "test"
 
         # controller initialized to use Channel Access
         controller = Controller("ca")
 
         value_table = ImagePlot(
-                [output_variables["image_variable"]], 
-                controller, 
-                prefix
+                [output_variables["image_variable"]],
+                controller,
             )
 
         ```
     """
 
     def __init__(
-        self, 
-        variables: List[ImageVariable], 
-        controller: Controller, 
-        prefix: str, 
-        x_range: List[float] = None, 
+        self,
+        variables: List[ImageVariable],
+        controller: Controller,
+        x_range: List[float] = None,
         y_range: List[float] = None,
     ) -> None:
         """
@@ -67,15 +69,13 @@ class ImagePlot:
 
             controller (Controller): Controller object for getting pv values
 
-            prefix (str): Prefix used for server
-
         """
         self.pv_monitors = {}
         self._x_range = x_range
         self._y_range = y_range
 
         for variable in variables:
-            self.pv_monitors[variable.name] = PVImage(prefix, variable, controller)
+            self.pv_monitors[variable.name] = PVImage(variable, controller)
 
         self.live_variable = list(self.pv_monitors.keys())[0]
 
@@ -94,14 +94,16 @@ class ImagePlot:
         Args:
             palette (Optional[tuple]): Bokeh color palette to use for plot.
 
-            color_mapper (Optional[ColorMapper]): Bokeh color mapper for rendering 
+            color_mapper (Optional[ColorMapper]): Bokeh color mapper for rendering
                 plot.
 
         """
         # create plot
         self.plot = figure(
             tooltips=[("x", "$x"), ("y", "$y"), ("value", "@image")],
-                sizing_mode="scale_both", x_range=self._x_range, y_range=self._y_range
+            sizing_mode="scale_both",
+            x_range=self._x_range,
+            y_range=self._y_range,
         )
         self.plot.x_range.range_padding = self.plot.y_range.range_padding = 0
 
@@ -115,7 +117,7 @@ class ImagePlot:
                 dh="dh",
                 source=self.source,
                 color_mapper=color_mapper,
-        )
+            )
 
         elif palette:
             self.plot.image(
@@ -130,7 +132,9 @@ class ImagePlot:
             )
 
         else:
-            raise Exception("Must provide palette or color mapper during ImagePlot construction.")
+            raise Exception(
+                "Must provide palette or color mapper during ImagePlot construction."
+            )
 
         axis_labels = self.pv_monitors[self.live_variable].axis_labels
         axis_units = self.pv_monitors[self.live_variable].axis_units
@@ -147,7 +151,7 @@ class ImagePlot:
 
     def update(self, live_variable: str = None) -> None:
         """
-        Callback which updates the plot to reflect updated process variable values or 
+        Callback which updates the plot to reflect updated process variable values or
         new process variable.
 
         Args:
@@ -195,7 +199,11 @@ class Striptool:
     """
 
     def __init__(
-        self, variables: List[ScalarVariable], controller: Controller, prefix: str, limit: int = None, aspect_ratio: float = 1.05
+        self,
+        variables: List[ScalarVariable],
+        controller: Controller,
+        limit: int = None,
+        aspect_ratio: float = 1.05,
     ) -> None:
         """
         Set up monitors, current process variable, and data source.
@@ -205,8 +213,6 @@ class Striptool:
 
             controller (Controller): Controller object for getting process variable values
 
-            prefix (str): Prefix used for server.
-
             limit (int): Maximimum steps for striptool to render
 
             aspect_ratio (float): Ratio of width to height
@@ -215,7 +221,7 @@ class Striptool:
         self.pv_monitors = {}
 
         for variable in variables:
-            self.pv_monitors[variable.name] = PVTimeSeries(prefix, variable, controller)
+            self.pv_monitors[variable.name] = PVTimeSeries(variable, controller)
 
         self.live_variable = list(self.pv_monitors.keys())[0]
 
@@ -226,7 +232,7 @@ class Striptool:
         self.reset_button.on_click(self._reset_values)
         self._aspect_ratio = aspect_ratio
         self._limit = limit
-        self.selection =  Select(
+        self.selection = Select(
             title="Variable to plot:",
             value=self.live_variable,
             options=list(self.pv_monitors.keys()),
@@ -244,11 +250,11 @@ class Striptool:
 
         # as its scales, the plot uses all definedformats
         self.plot.xaxis.formatter = DatetimeTickFormatter(
-            minutes= "%H:%M:%S", 
-            minsec="%H:%M:%S", 
-            seconds="%H:%M:%S", 
-            microseconds="%H:%M:%S", 
-            milliseconds="%H:%M:%S"
+            minutes="%H:%M:%S",
+            minsec="%H:%M:%S",
+            seconds="%H:%M:%S",
+            microseconds="%H:%M:%S",
+            milliseconds="%H:%M:%S",
         )
 
         self.plot.xaxis.major_label_orientation = "vertical"
@@ -263,7 +269,7 @@ class Striptool:
 
     def update(self) -> None:
         """
-        Callback to update the plot to reflect updated process variable values or to 
+        Callback to update the plot to reflect updated process variable values or to
         display a new process variable.
 
 
@@ -271,8 +277,8 @@ class Striptool:
 
         ts, ys = self.pv_monitors[self.live_variable].poll()
         if self._limit is not None and len(ts) > self._limit:
-            ts = ts[-self._limit:]
-            ys = ys[-self._limit:]
+            ts = ts[-self._limit :]
+            ys = ys[-self._limit :]
 
         self.source.data = dict(x=ts, y=ys)
 
@@ -281,7 +287,6 @@ class Striptool:
         Bokeh callback for assigning new live process variable.
         """
         self.live_variable = new
-        
 
     def _reset_values(self) -> None:
         """

@@ -37,10 +37,7 @@ class EpicsSlider:
 
     """
 
-    def __init__(
-        self, prefix: str, variable: ScalarInputVariable, controller: Controller
-    ):
-        self.prefix = prefix
+    def __init__(self, variable: ScalarInputVariable, controller: Controller):
         self.controller = controller
         self.variable = variable
         self.build_slider()
@@ -50,8 +47,6 @@ class EpicsSlider:
         Utility function for building a slider.
 
         Args:
-            prefix (str): Prefix used for serving process variables.
-
             variable (ScalarInputVariable): Variable associated with the slider.
 
             controller (Controller): Controller object for getting process variable values.
@@ -89,14 +84,12 @@ class EpicsSlider:
 
 
 def build_sliders(
-    variables: List[ScalarInputVariable], controller: Controller, prefix: str,
+    variables: List[ScalarInputVariable], controller: Controller,
 ) -> List[Slider]:
     """
     Build sliders for a list of variables.
 
     Args:
-        prefix (str): Prefix used to serve process variables.
-
         variables (List[ScalarInputVariable]): List of variables for which to build sliders.
 
         controller (Controller): Controller object for getting process variable values.
@@ -105,7 +98,7 @@ def build_sliders(
     sliders = []
 
     for variable in variables:
-        slider = EpicsSlider(prefix, variable, controller,)
+        slider = EpicsSlider(variable, controller,)
         sliders.append(slider)
 
     return sliders
@@ -154,7 +147,6 @@ class EntryTable:
         self,
         variables: List[ScalarInputVariable],
         controller: Controller,
-        prefix: str,
         row_height: int = 50,
         button_aspect_ratio: float = 6.0,
     ) -> None:
@@ -166,15 +158,12 @@ class EntryTable:
 
             controller (Controller): Controller object for accessing process variables.
 
-            prefix (str): Prefix used in setting up the server.
-
             row_height (int): Height to render row
 
             button_aspect_ratio (float): Aspect ratio for rendering buttons.
 
 
         """
-        self.prefix = prefix
         self.controller = controller
 
         self._button_aspect_ratio = button_aspect_ratio
