@@ -23,8 +23,6 @@ class PVImage:
     Monitor for updating and formatting image data.
 
     Attributes:
-        prefix (str): Prefix used for initializing server.
-
         variable (ImageVariable): Image process variable to be displayed.
 
         controller (Controller): Controller object for accessing process variable.
@@ -37,14 +35,10 @@ class PVImage:
 
     """
 
-    def __init__(
-        self, prefix: str, variable: ImageVariable, controller: Controller,
-    ) -> None:
+    def __init__(self, variable: ImageVariable, controller: Controller,) -> None:
         """Initialize monitor for an image variable.
 
         Args:
-            prefix (str): Prefix used for initializing server.
-
             variable (ImageVariable): Image process variable to be displayed.
 
             controller (Controller): Controller object for accessing process variable.
@@ -77,8 +71,6 @@ class PVTimeSeries:
 
         data (np.ndarray): Array of sampled data.
 
-        prefix (str): Prefix used for initializing server.
-
         variable (ScalarVariable): Variable monitored for time series.
 
         controller (Controller): Controller object for accessing process variable.
@@ -89,14 +81,10 @@ class PVTimeSeries:
 
     """
 
-    def __init__(
-        self, prefix: str, variable: ScalarVariable, controller: Controller,
-    ) -> None:
+    def __init__(self, variable: ScalarVariable, controller: Controller,) -> None:
         """Initializes monitor attributes.
 
         Args:
-            prefix (str): Prefix used for initializing server.
-
             variable (ScalarVariable): Variable to monitor for time series
 
             controller (Controller): Controller object for accessing process variable.
@@ -138,8 +126,6 @@ class PVScalar:
     Monitor for scalar process variables.
 
     Attributes:
-        prefix (str): Prefix used for initializing server.
-
         variable (ScalarVariable): Variable to monitor for value.
 
         controller (Controller): Controller object for accessing process variable.
@@ -150,14 +136,10 @@ class PVScalar:
 
     """
 
-    def __init__(
-        self, prefix: str, variable: ScalarVariable, controller: Controller,
-    ) -> None:
+    def __init__(self, variable: ScalarVariable, controller: Controller,) -> None:
         """Initializes monitor attributes.
 
         Args:
-            prefix (str): Prefix used for initializing server.
-
             variable (ScalarVariable):  Variable to monitor for value.
 
             controller (Controller): Controller object for accessing process variable.
