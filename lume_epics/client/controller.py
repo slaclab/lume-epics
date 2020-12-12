@@ -76,9 +76,9 @@ class Controller:
             protocol (str): Protocol for getting values from variables ("pva" for pvAccess, "ca" for
             Channel Access)
 
-            input_pvs (List[str]): List of input process variable names
+            input_pvs (dict): Dict mapping input variable names to variable
 
-            output_pvs (List[str]): List of output process variable names
+            output_pvs (dict): Dict mapping output variable names to variable
 
         """
         self._protocol = protocol
