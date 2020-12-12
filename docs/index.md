@@ -126,15 +126,13 @@ controller = Controller("pva", input_variables, output_variables, prefix)
 # build sliders for the command process variable database
 sliders = build_sliders(
             [input_variables["input_1"], input_variables["input_2"]],
-            controller,
-            prefix
+            controller
         )
 
 # build value table
 value_table = ValueTable(
                 [output_variables["output"]],
                 controller,
-                prefix
 )
 ```
 
