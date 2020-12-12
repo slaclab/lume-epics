@@ -8,7 +8,7 @@ from lume_epics import epics_server
 
 
 @pytest.fixture(scope="module")
-def striptool(ca_controller, prefix, model):
+def striptool(ca_controller, model):
 
     output_variables = [
         var
@@ -16,7 +16,7 @@ def striptool(ca_controller, prefix, model):
         if not var.variable_type == "image"
     ]
 
-    return Striptool(output_variables, ca_controller, prefix)
+    return Striptool(output_variables, ca_controller)
 
 
 def test_reset_button(striptool, server):
