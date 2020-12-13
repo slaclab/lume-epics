@@ -18,8 +18,8 @@ def image_vars(model):
 
 
 @pytest.fixture(scope="session")
-def image_plot(controller, server, model, prefix, image_vars):
-    image_plot = ImagePlot(image_vars, controller, prefix)
+def image_plot(ca_controller, server, model, image_vars):
+    image_plot = ImagePlot(image_vars, ca_controller)
 
     image_plot.build_plot(palette=YlGn3)
 
@@ -40,7 +40,7 @@ def test_image_plot_missing_build_params(image_plot):
     image_plot.build_plot(palette=YlGn3)
 
 
-def test_image_plot_update(image_plot, image_vars, prefix, server, controller):
+def test_image_plot_update(image_plot, image_vars, prefix, server, ca_controller):
     updated_vals = {}
 
     # random dist for variable

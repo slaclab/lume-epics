@@ -14,9 +14,9 @@ def entry_inputs(model):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def entry_table(controller, prefix, entry_inputs, server):
+def entry_table(ca_controller, entry_inputs, server):
     # create entry table
-    return EntryTable(entry_inputs, controller, prefix)
+    return EntryTable(entry_inputs, ca_controller)
 
 
 def test_entry_table_clear(entry_table, entry_inputs):

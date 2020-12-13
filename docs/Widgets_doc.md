@@ -187,7 +187,7 @@ input_variables, output_variables = load_variables(variable_filename)
 # set up controller
 controller = Controller("ca", input_variables, output_variables, prefix)
 
-value_table = ValueTable([output_variables["output2"], output_variables["output3"]], controller, prefix)
+value_table = ValueTable([output_variables["output2"], output_variables["output3"]], controller)
 
 # render
 curdoc().title = "Demo App"

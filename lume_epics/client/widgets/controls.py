@@ -1,5 +1,5 @@
 """
-The controls module contains tools for constructing bokeh control widgets. 
+The controls module contains tools for constructing bokeh control widgets.
 Controls may be built for lume-model ScalarInputVariables.
 
 """
@@ -37,10 +37,7 @@ class EpicsSlider:
 
     """
 
-    def __init__(
-        self, prefix: str, variable: ScalarInputVariable, controller: Controller
-    ):
-        self.prefix = prefix
+    def __init__(self, variable: ScalarInputVariable, controller: Controller):
         self.controller = controller
         self.variable = variable
         self.build_slider()
@@ -50,8 +47,6 @@ class EpicsSlider:
         Utility function for building a slider.
 
         Args:
-            prefix (str): Prefix used for serving process variables.
-
             variable (ScalarInputVariable): Variable associated with the slider.
 
             controller (Controller): Controller object for getting process variable values.
@@ -61,7 +56,7 @@ class EpicsSlider:
         if "units" in self.variable.__fields_set__:
             title += " (" + self.variable.units + ")"
 
-        self.pvname = self.prefix + ":" + self.variable.name
+        self.pvname = self.variable.name
         step = (self.variable.value_range[1] - self.variable.value_range[0]) / 100.0
 
         # construct slider
@@ -89,14 +84,12 @@ class EpicsSlider:
 
 
 def build_sliders(
-    variables: List[ScalarInputVariable], controller: Controller, prefix: str,
+    variables: List[ScalarInputVariable], controller: Controller,
 ) -> List[Slider]:
     """
     Build sliders for a list of variables.
 
-    Args: 
-        prefix (str): Prefix used to serve process variables.
-
+    Args:
         variables (List[ScalarInputVariable]): List of variables for which to build sliders.
 
         controller (Controller): Controller object for getting process variable values.
@@ -105,7 +98,7 @@ def build_sliders(
     sliders = []
 
     for variable in variables:
-        slider = EpicsSlider(prefix, variable, controller,)
+        slider = EpicsSlider(variable, controller,)
         sliders.append(slider)
 
     return sliders
@@ -126,7 +119,7 @@ def set_pv_from_slider(
 
         pvname (str): Name of the process variable.
 
-        controller (Controller): Controller object for interacting with process 
+        controller (Controller): Controller object for interacting with process
             variable values.
 
     """
@@ -154,9 +147,8 @@ class EntryTable:
         self,
         variables: List[ScalarInputVariable],
         controller: Controller,
-        prefix: str,
         row_height: int = 50,
-        button_aspect_ratio: float = 6.0
+        button_aspect_ratio: float = 6.0,
     ) -> None:
         """
         Initialize table.
@@ -166,15 +158,12 @@ class EntryTable:
 
             controller (Controller): Controller object for accessing process variables.
 
-            prefix (str): Prefix used in setting up the server.
-
             row_height (int): Height to render row
 
             button_aspect_ratio (float): Aspect ratio for rendering buttons.
 
 
         """
-        self.prefix = prefix
         self.controller = controller
 
         self._button_aspect_ratio = button_aspect_ratio
@@ -194,8 +183,12 @@ class EntryTable:
             else:
                 label = variable.name
 
-            entry_title = Paragraph(text=variable.name, align="start",  sizing_mode="scale_both")
-            self.text_inputs[variable.name] = TextInput(name=label,  sizing_mode="scale_both")
+            entry_title = Paragraph(
+                text=variable.name, align="start", sizing_mode="scale_both"
+            )
+            self.text_inputs[variable.name] = TextInput(
+                name=label, sizing_mode="scale_both"
+            )
 
             # create columns
             grid_layout.append([entry_title, self.text_inputs[variable.name]])
@@ -204,24 +197,33 @@ class EntryTable:
         self.table = gridplot(grid_layout, sizing_mode="scale_both")
 
         # Set up buttons
-        self.clear_button = Button(label="Clear", sizing_mode="scale_both", aspect_ratio=self._button_aspect_ratio)
+        self.clear_button = Button(
+            label="Clear",
+            sizing_mode="scale_both",
+            aspect_ratio=self._button_aspect_ratio,
+        )
         self.clear_button.on_click(self.clear)
-        self.submit_button = Button(label="Submit", sizing_mode="scale_both", aspect_ratio=self._button_aspect_ratio)
+        self.submit_button = Button(
+            label="Submit",
+            sizing_mode="scale_both",
+            aspect_ratio=self._button_aspect_ratio,
+        )
         self.submit_button.on_click(self.submit)
-        self.button_row = row(self.clear_button, self.submit_button, sizing_mode="scale_both")
+        self.button_row = row(
+            self.clear_button, self.submit_button, sizing_mode="scale_both"
+        )
 
     def submit(self) -> None:
         """
         Function to submit values entered into table
         """
-        for variable, text_input in self.text_inputs.items():
+        for variable_name, text_input in self.text_inputs.items():
             if text_input.value_input != "":
-                pvname = f"{self.prefix}:{variable}"
-                self.controller.put(pvname, text_input.value_input)
+                self.controller.put(variable_name, text_input.value_input)
 
     def clear(self) -> None:
         """
         Function to clear all entered values
         """
-        for variable, text_input in self.text_inputs.items():
+        for _, text_input in self.text_inputs.items():
             text_input.value_input = ""

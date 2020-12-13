@@ -19,9 +19,9 @@ def table_variables(model):
 
 
 @pytest.fixture(scope="module")
-def value_table(controller, model, prefix, table_variables):
+def value_table(ca_controller, table_variables):
 
-    return ValueTable(table_variables, controller, prefix)
+    return ValueTable(table_variables, ca_controller)
 
 
 @pytest.mark.parametrize("value", [(1), (5), (8)])

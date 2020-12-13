@@ -1,5 +1,5 @@
 """
-This module contains table widgets for displaying the values of lume-model scalar 
+This module contains table widgets for displaying the values of lume-model scalar
 variables.
 
 """
@@ -29,13 +29,16 @@ class ValueTable:
 
         _unit_map (Dict[str, str]): Dictionary mapping pvname to units
 
-        table (DataTable): Bokeh data table 
-
-
+        table (DataTable): Bokeh data table
 
     """
+
     def __init__(
-        self, variables: List[ScalarVariable], controller: Controller, prefix: str, labels: Dict[str, str]= {}, sig_figs: int = 5
+        self,
+        variables: List[ScalarVariable],
+        controller: Controller,
+        labels: Dict[str, str] = {},
+        sig_figs: int = 5,
     ) -> None:
         """
         Initialize table.
@@ -44,8 +47,6 @@ class ValueTable:
             variables (List[ScalarVariable]): List of variables to display.
 
             controller (Controller): Controller object for accessing process variables.
-
-            prefix (str): Prefix used in setting up the server.
 
             labels (Dict[list, list]): Dictionary mapping pvname to label
 
@@ -60,11 +61,11 @@ class ValueTable:
         self._unit_map = {}
 
         for variable in variables:
-            self._pv_monitors[variable.name] = PVScalar(prefix, variable, controller)
+            self._pv_monitors[variable.name] = PVScalar(variable, controller)
             v = DEFAULT_SCALAR_VALUE
 
             # format to sig figs
-            v = format(float('{:.{p}g}'.format(v, p=self._sig_figs)))
+            v = format(float("{:.{p}g}".format(v, p=self._sig_figs)))
             self._output_values[variable.name] = v
 
             label_base = labels.get(variable.name, variable.name)
@@ -84,7 +85,7 @@ class ValueTable:
         """
         x_vals = [self._labels[var] for var in self._output_values.keys()]
         y_vals = list(self._output_values.values())
-        
+
         table_data = dict(x=x_vals, y=y_vals)
         self._source = ColumnDataSource(table_data)
         columns = [
@@ -95,7 +96,10 @@ class ValueTable:
         ]
 
         self.table = DataTable(
-            source=self._source, columns=columns, sizing_mode="stretch_both", index_position=None
+            source=self._source,
+            columns=columns,
+            sizing_mode="stretch_both",
+            index_position=None,
         )
 
     def update(self) -> None:
@@ -106,7 +110,7 @@ class ValueTable:
             v = self._pv_monitors[variable].poll()
 
             # format to sig figs
-            v = format(float('{:.{p}g}'.format(v, p=self._sig_figs)))
+            v = format(float("{:.{p}g}".format(v, p=self._sig_figs)))
             self._output_values[variable] = v
 
         x_vals = [self._labels[var] for var in self._output_values.keys()]
