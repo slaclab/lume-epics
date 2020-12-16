@@ -139,7 +139,7 @@ class EntryTable:
 
         source (ColumnDataSource): Data source for populating bokeh table.
 
-
+        labels (Dict[list, list]): Dictionary mapping pvname to label
 
     """
 
@@ -149,6 +149,7 @@ class EntryTable:
         controller: Controller,
         row_height: int = 50,
         button_aspect_ratio: float = 6.0,
+        labels: dict = {},
     ) -> None:
         """
         Initialize table.
@@ -168,6 +169,9 @@ class EntryTable:
 
         self._button_aspect_ratio = button_aspect_ratio
 
+        # add labels
+        self._labels = labels
+
         # be sure to surface units in the table
         self.unit_map = {}
         self.text_inputs = {}
@@ -176,18 +180,23 @@ class EntryTable:
 
         for variable in variables:
 
+            label_base = labels.get(variable.name, variable.name)
+
             # check if units assigned
             if "units" in variable.__fields_set__ and variable.units:
-                label = variable.name + f" ({variable.units})"
+                self._labels[variable.name] = label_base + f" ({variable.units})"
 
             else:
-                label = variable.name
+                self._labels[variable.name] = label_base
 
             entry_title = Paragraph(
-                text=variable.name, align="start", sizing_mode="scale_both"
+                text=self._labels[variable.name],
+                align="start",
+                sizing_mode="scale_both",
             )
+
             self.text_inputs[variable.name] = TextInput(
-                name=label, sizing_mode="scale_both"
+                name=variable.name, sizing_mode="scale_both"
             )
 
             # create columns
