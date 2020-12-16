@@ -77,7 +77,7 @@ class ImagePlot:
         self._y_range = y_range
 
         if color_mapper is None and palette is None:
-            raise Exception("Must provdie color mapper or palette")
+            raise Exception("Must provide color mapper or palette")
 
         self._color_mapper = color_mapper
         self._palette = palette
@@ -112,7 +112,6 @@ class ImagePlot:
             x_range=self._x_range,
             y_range=self._y_range,
         )
-        self.plot.x_range.range_padding = self.plot.y_range.range_padding = 0
 
         if self._color_mapper:
             self.plot.image(
