@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://slaclab.github.io/lume-epics/Controller/" rel="canonical"/>
+<link href="../img/favicon.ico" rel="shortcut icon"/>
+<title>Controller - lume-epics</title>
+<link href="../css/bootstrap.min.css" rel="stylesheet"/>
+<link href="../css/font-awesome.min.css" rel="stylesheet"/>
+<link href="../css/base.css" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet"/>
+<script defer="" src="../js/jquery-1.10.2.min.js"></script>
+<script defer="" src="../js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+</head>
+<body>
+<div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+<div class="container">
+<a class="navbar-brand" href="..">lume-epics</a>
+<!-- Expander button -->
+<button class="navbar-toggler" data-target="#navbar-collapse" data-toggle="collapse" type="button">
+<span class="navbar-toggler-icon"></span>
+</button>
+<!-- Expanded navigation -->
+<div class="navbar-collapse collapse" id="navbar-collapse">
+<!-- Main navigation -->
+<ul class="nav navbar-nav">
+<li class="navitem">
+<a class="nav-link" href="..">Overview</a>
+</li>
+<li class="navitem">
+<a class="nav-link" href="../Install/">Install</a>
+</li>
+<li class="dropdown">
+<a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">Tutorial <b class="caret"></b></a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../BokehServer/">Bokeh Server</a>
+</li>
+<li>
+<a class="dropdown-item" href="../Jupyter/">Jupyter Notebook Demo</a>
+</li>
+</ul>
+</li>
+<li class="navitem">
+<a class="nav-link" href="../Widgets_doc/">Widgets</a>
+</li>
+<li class="dropdown active">
+<a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">Documentation <b class="caret"></b></a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../Layout/">Layout</a>
+</li>
+<li class="dropdown-submenu">
+<a class="dropdown-item" href="#">Client</a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item active" href="./">Controller</a>
+</li>
+<li>
+<a class="dropdown-item" href="../Monitors/">Monitors</a>
+</li>
+<li>
+<a class="dropdown-item" href="../Widgets/">Widgets</a>
+</li>
+</ul>
+</li>
+<li>
+<a class="dropdown-item" href="../Model/">Model</a>
+</li>
+<li>
+<a class="dropdown-item" href="../Server/">Server</a>
+</li>
+</ul>
+</li>
+</ul>
+<ul class="nav navbar-nav ml-auto">
+<li class="nav-item">
+<a class="nav-link" href="../Layout/" rel="prev">
+<i class="fa fa-arrow-left"></i> Previous
+                                </a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="../Monitors/" rel="next">
+                                    Next <i class="fa fa-arrow-right"></i>
+</a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="https://github.com/slaclab/lume-epics/edit/master/docs/Controller.md"><i class="fa fa-github"></i> Edit on GitHub</a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="container">
+<div class="row">
+<div class="col-md-3"><div class="navbar-light navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+<div class="navbar-header">
+<button class="navbar-toggler collapsed" data-target="#toc-collapse" data-toggle="collapse" title="Table of Contents" type="button">
+<span class="fa fa-angle-down"></span>
+</button>
+</div>
+<div class="navbar-collapse collapse card bg-secondary" id="toc-collapse">
+<ul class="nav flex-column">
+<li class="nav-item" data-level="1"><a class="nav-link" href="#controller">Controller</a>
+<ul class="nav flex-column">
+<li class="nav-item" data-level="2"><a class="nav-link" href="#lume_epics.client.controller">lume_epics.client.controller</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="2"><a class="nav-link" href="#lume_epics.client.controller.Controller">Controller</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div></div>
+<div class="col-md-9" role="main">
+<h1 id="controller">Controller</h1>
+<div class="doc doc-object doc-module">
+<h2 class="hidden-toc" href="#lume_epics.client.controller" id="lume_epics.client.controller" style="visibility: hidden; position: absolute;">
+</h2>
+<div class="doc doc-contents first">
+<p>The lume-epics controller serves as the intermediary between variable monitors
+and process variables served over EPICS.</p>
+<div class="doc doc-children">
+<div class="doc doc-object doc-class">
+<h2 class="doc doc-heading" id="lume_epics.client.controller.Controller">
+<code>Controller</code>
+</h2>
+<div class="doc doc-contents">
+<p>Controller class used to access process variables. Controllers are used for
+interfacing with both Channel Access and pvAccess process variables. The
+controller object is initialized using a single protocol has methods for
+both getting and setting values on the process variables.</p>
+<p><strong>Attributes:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>_protocol</code></td>
+<td><code>str</code></td>
+<td>
+<p>Protocol for getting values from variables ("pva" for pvAccess, "ca" for
+Channel Access)</p>
+</td>
+</tr>
+<tr>
+<td><code>_context</code></td>
+<td><code>Context</code></td>
+<td>
+<p>P4P threaded context instance for use with pvAccess.</p>
+</td>
+</tr>
+<tr>
+<td><code>_pv_registry</code></td>
+<td><code>dict</code></td>
+<td>
+<p>Registry mapping pvname to dict of value and pv monitor</p>
+</td>
+</tr>
+<tr>
+<td><code>_input_pvs</code></td>
+<td><code>dict</code></td>
+<td>
+<p>Dictionary of input process variables</p>
+</td>
+</tr>
+<tr>
+<td><code>_output_pvs</code></td>
+<td><code>dict</code></td>
+<td>
+<p>Dictionary out output process variables</p>
+</td>
+</tr>
+<tr>
+<td><code>_prefix</code></td>
+<td><code>str</code></td>
+<td>
+<p>Prefix to use for accessing variables</p>
+</td>
+</tr>
+<tr>
+<td><code>last_input_update</code></td>
+<td><code>datetime</code></td>
+<td>
+<p>Last update of input variables</p>
+</td>
+</tr>
+<tr>
+<td><code>last_output_update</code></td>
+<td><code>datetime</code></td>
+<td>
+<p>Last update of output variables</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Examples:</strong></p>
+<pre><code># create PVAcess controller
+controller = Controller("pva")
+
+value = controller.get_value("scalar_input")
+image_value = controller.get_image("image_input")
+
+controller.close()
+</code></pre>
+<div class="doc doc-children">
+<div class="doc doc-object doc-method">
+<h3 class="doc doc-heading" id="lume_epics.client.controller.Controller.__init__">
+<code class="highlight language-python">
+__init__
+(self, protocol, input_pvs, output_pvs, prefix)
+
+        </code>
+<span class="doc doc-properties">
+<small class="doc doc-property doc-property-special"><code>special</code></small>
+</span>
+</h3>
+<div class="doc doc-contents">
+<p>Initializes controller. Stores protocol and creates context attribute if
+using pvAccess.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>protocol</code></td>
+<td><code>str</code></td>
+<td>
+<p>Protocol for getting values from variables ("pva" for pvAccess, "ca" for</p>
+</td>
+<td><em>required</em></td>
+</tr>
+<tr>
+<td><code>input_pvs</code></td>
+<td><code>dict</code></td>
+<td>
+<p>Dict mapping input variable names to variable</p>
+</td>
+<td><em>required</em></td>
+</tr>
+<tr>
+<td><code>output_pvs</code></td>
+<td><code>dict</code></td>
+<td>
+<p>Dict mapping output variable names to variable</p>
+</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>lume_epics/client/controller.py</code></summary>
+<pre class="highlight"><code class="language-python">def __init__(self, protocol: str, input_pvs: dict, output_pvs: dict, prefix):
+    """
+    Initializes controller. Stores protocol and creates context attribute if
+    using pvAccess.
+
+    Args:
+        protocol (str): Protocol for getting values from variables ("pva" for pvAccess, "ca" for
+        Channel Access)
+
+        input_pvs (dict): Dict mapping input variable names to variable
+
+        output_pvs (dict): Dict mapping output variable names to variable
+
+    """
+    self._protocol = protocol
+    self._pv_registry = defaultdict()
+    self._input_pvs = input_pvs
+    self._output_pvs = output_pvs
+    self._prefix = prefix
+    self.last_input_update = ""
+    self.last_output_update = ""
+
+    # initalize context for pva
+    self._context = None
+    if self._protocol == "pva":
+        self._context = Context("pva")
+
+    # initialize controller
+    for variable in {**input_pvs, **output_pvs}.values():
+        if variable.variable_type == "image":
+            self.get_image(variable.name)
+        else:
+            self.get_value(variable.name)
+</code></pre>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-method">
+<h3 class="doc doc-heading" id="lume_epics.client.controller.Controller.get">
+<code class="highlight language-python">
+get
+(self, pvname)
+
+        </code>
+</h3>
+<div class="doc doc-contents">
+<p>Accesses and returns the value of a process variable.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pvname</code></td>
+<td><code>str</code></td>
+<td>
+<p>Process variable name</p>
+</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>lume_epics/client/controller.py</code></summary>
+<pre class="highlight"><code class="language-python">def get(self, pvname: str) -&gt; np.ndarray:
+    """
+    Accesses and returns the value of a process variable.
+
+    Args:
+        pvname (str): Process variable name
+
+    """
+    self._set_up_pv_monitor(pvname)
+    pv = self._pv_registry.get(pvname, None)
+    if pv:
+        return pv["value"]
+    return None
+</code></pre>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-method">
+<h3 class="doc doc-heading" id="lume_epics.client.controller.Controller.get_image">
+<code class="highlight language-python">
+get_image
+(self, pvname)
+
+        </code>
+</h3>
+<div class="doc doc-contents">
+<p>Gets image data via controller protocol.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pvname</code></td>
+<td><code>str</code></td>
+<td>
+<p>Image process variable name</p>
+</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>lume_epics/client/controller.py</code></summary>
+<pre class="highlight"><code class="language-python">def get_image(self, pvname) -&gt; dict:
+    """Gets image data via controller protocol.
+
+    Args:
+        pvname (str): Image process variable name
+
+    """
+    image = None
+    if self._protocol == "ca":
+        image_flat = self.get(f"{pvname}:ArrayData_RBV")
+        nx = self.get(f"{pvname}:ArraySizeX_RBV")
+        ny = self.get(f"{pvname}:ArraySizeY_RBV")
+        x = self.get(f"{pvname}:MinX_RBV")
+        y = self.get(f"{pvname}:MinY_RBV")
+        x_max = self.get(f"{pvname}:MaxX_RBV")
+        y_max = self.get(f"{pvname}:MaxY_RBV")
+
+        if all(
+            [
+                image_def is not None
+                for image_def in [image_flat, nx, ny, x, y, x_max, y_max]
+            ]
+        ):
+            dw = x_max - x
+            dh = y_max - y
+
+            image = image_flat.reshape(int(nx), int(ny))
+
+    elif self._protocol == "pva":
+        # context returns numpy array with WRITEABLE=False
+        # copy to manipulate array below
+
+        image = self.get(pvname)
+
+        if image is not None:
+            attrib = image.attrib
+            x = attrib["x_min"]
+            y = attrib["y_min"]
+            dw = attrib["x_max"] - attrib["x_min"]
+            dh = attrib["y_max"] - attrib["y_min"]
+            image = copy.copy(image)
+
+    if image is not None:
+        return {
+            "image": [image],
+            "x": [x],
+            "y": [y],
+            "dw": [dw],
+            "dh": [dh],
+        }
+
+    else:
+        return DEFAULT_IMAGE_DATA
+</code></pre>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-method">
+<h3 class="doc doc-heading" id="lume_epics.client.controller.Controller.get_value">
+<code class="highlight language-python">
+get_value
+(self, pvname)
+
+        </code>
+</h3>
+<div class="doc doc-contents">
+<p>Gets scalar value of a process variable.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pvname</code></td>
+<td><code>str</code></td>
+<td>
+<p>Process variable name.</p>
+</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>lume_epics/client/controller.py</code></summary>
+<pre class="highlight"><code class="language-python">def get_value(self, pvname):
+    """Gets scalar value of a process variable.
+
+    Args:
+        pvname (str): Process variable name.
+
+    """
+    value = self.get(pvname)
+
+    if value is None:
+        value = DEFAULT_SCALAR_VALUE
+
+    return value
+</code></pre>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-method">
+<h3 class="doc doc-heading" id="lume_epics.client.controller.Controller.put">
+<code class="highlight language-python">
+put
+(self, pvname, value, timeout=1.0)
+
+        </code>
+</h3>
+<div class="doc doc-contents">
+<p>Assign the value of a scalar process variable.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pvname</code></td>
+<td><code>str</code></td>
+<td>
+<p>Name of the process variable</p>
+</td>
+<td><em>required</em></td>
+</tr>
+<tr>
+<td><code>value</code></td>
+<td><code>float</code></td>
+<td>
+<p>Value to assing to process variable.</p>
+</td>
+<td><em>required</em></td>
+</tr>
+<tr>
+<td><code>timeout</code></td>
+<td><code>float</code></td>
+<td>
+<p>Operation timeout in seconds</p>
+</td>
+<td><code>1.0</code></td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>lume_epics/client/controller.py</code></summary>
+<pre class="highlight"><code class="language-python">def put(self, pvname, value: float, timeout=1.0) -&gt; None:
+    """Assign the value of a scalar process variable.
+
+    Args:
+        pvname (str): Name of the process variable
+
+        value (float): Value to assing to process variable.
+
+        timeout (float): Operation timeout in seconds
+
+    """
+    self._set_up_pv_monitor(pvname)
+
+    # allow no puts before a value has been collected
+    registered = self.get(pvname)
+
+    # if the value is registered
+    if registered is not None:
+        if self._protocol == "ca":
+            self._pv_registry[pvname]["pv"].put(value, timeout=timeout)
+
+        elif self._protocol == "pva":
+            self._context.put(
+                f"{self._prefix}:{pvname}", value, throw=False, timeout=timeout
+            )
+
+    else:
+        logger.debug(f"No initial value set for {pvname}.")
+</code></pre>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-method">
+<h3 class="doc doc-heading" id="lume_epics.client.controller.Controller.put_image">
+<code class="highlight language-python">
+put_image
+(self, pvname, image_array=None, x_min=None, x_max=None, y_min=None, y_max=None, timeout=1.0)
+
+        </code>
+</h3>
+<div class="doc doc-contents">
+<p>Assign the value of a image process variable. Allows updates to individual attributes.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pvname</code></td>
+<td><code>str</code></td>
+<td>
+<p>Name of the process variable</p>
+</td>
+<td><em>required</em></td>
+</tr>
+<tr>
+<td><code>image_array</code></td>
+<td><code>ndarray</code></td>
+<td>
+<p>Value to assing to process variable.</p>
+</td>
+<td><code>None</code></td>
+</tr>
+<tr>
+<td><code>x_min</code></td>
+<td><code>float</code></td>
+<td>
+<p>Minimum x value</p>
+</td>
+<td><code>None</code></td>
+</tr>
+<tr>
+<td><code>x_max</code></td>
+<td><code>float</code></td>
+<td>
+<p>Maximum x value</p>
+</td>
+<td><code>None</code></td>
+</tr>
+<tr>
+<td><code>y_min</code></td>
+<td><code>float</code></td>
+<td>
+<p>Minimum y value</p>
+</td>
+<td><code>None</code></td>
+</tr>
+<tr>
+<td><code>y_max</code></td>
+<td><code>float</code></td>
+<td>
+<p>Maximum y value</p>
+</td>
+<td><code>None</code></td>
+</tr>
+<tr>
+<td><code>timeout</code></td>
+<td><code>float</code></td>
+<td>
+<p>Operation timeout in seconds</p>
+</td>
+<td><code>1.0</code></td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>lume_epics/client/controller.py</code></summary>
+<pre class="highlight"><code class="language-python">def put_image(
+    self,
+    pvname,
+    image_array: np.ndarray = None,
+    x_min: float = None,
+    x_max: float = None,
+    y_min: float = None,
+    y_max: float = None,
+    timeout: float = 1.0,
+) -&gt; None:
+    """Assign the value of a image process variable. Allows updates to individual attributes.
+
+    Args:
+        pvname (str): Name of the process variable
+
+        image_array (np.ndarray): Value to assing to process variable.
+
+        x_min (float): Minimum x value
+
+        x_max (float): Maximum x value
+
+        y_min (float): Minimum y value
+
+        y_max (float): Maximum y value
+
+        timeout (float): Operation timeout in seconds
+
+    """
+    self._set_up_pv_monitor(pvname)
+
+    # allow no puts before a value has been collected
+    registered = self.get_image(pvname)
+
+    # if the value is registered
+    if registered is not None:
+        if self._protocol == "ca":
+
+            if image_array is not None:
+                self._pv_registry[f"{pvname}:ArrayData_RBV"]["pv"].put(
+                    image_array.flatten(), timeout=timeout
+                )
+
+            if x_min:
+                self._pv_registry[f"{pvname}:MinX_RBV"]["pv"].put(
+                    x_min, timeout=timeout
+                )
+
+            if x_max:
+                self._pv_registry[f"{pvname}:MaxX_RBV"]["pv"].put(
+                    x_max, timeout=timeout
+                )
+
+            if y_min:
+                self._pv_registry[f"{pvname}:MinY_RBV"]["pv"].put(
+                    y_min, timeout=timeout
+                )
+
+            if y_max:
+                self._pv_registry[f"{pvname}:MaxY_RBV"]["pv"].put(
+                    y_max, timeout=timeout
+                )
+
+        elif self._protocol == "pva":
+
+            # compose normative type
+            pv = self._pv_registry[pvname]
+            pv_array = pv["value"]
+
+            if image_array:
+                image_array.attrib = pv_array.attrib
+
+            else:
+                image_array = pv_array
+
+            if x_min:
+                image_array.attrib.x_min = x_min
+
+            if x_max:
+                image_array.attrib.x_max = x_max
+
+            if y_min:
+                image_array.attrib.y_min = y_min
+
+            if y_max:
+                image_array.attrib.y_max = y_max
+
+            self._context.put(pvname, image_array, throw=False, timeout=timeout)
+
+    else:
+        logger.debug(f"No initial value set for {pvname}.")
+</code></pre>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div></div>
+</div>
+</div>
+<footer class="col-md-12">
+<hr/>
+<p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+</footer>
+<script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+<script defer="" src="../js/base.js"></script>
+<div aria-hidden="true" aria-labelledby="keyboardModalLabel" class="modal" id="mkdocs_keyboard_modal" role="dialog" tabindex="-1">
+<div class="modal-dialog">
+<div class="modal-content">
+<div class="modal-header">
+<h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+<button class="close" data-dismiss="modal" type="button"><span aria-hidden="true">×</span><span class="sr-only">Close</span></button>
+</div>
+<div class="modal-body">
+<table class="table">
+<thead>
+<tr>
+<th style="width: 20%;">Keys</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="help shortcut"><kbd>?</kbd></td>
+<td>Open this help</td>
+</tr>
+<tr>
+<td class="next shortcut"><kbd>n</kbd></td>
+<td>Next page</td>
+</tr>
+<tr>
+<td class="prev shortcut"><kbd>p</kbd></td>
+<td>Previous page</td>
+</tr>
+<tr>
+<td class="search shortcut"><kbd>s</kbd></td>
+<td>Search</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="modal-footer">
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>

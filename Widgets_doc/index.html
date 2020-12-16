@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        <link rel="canonical" href="https://slaclab.github.io/lume-epics/Widgets_doc/">
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>Widgets - lume-epics</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+
+        <script src="../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../js/bootstrap.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">lume-epics</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbar-collapse">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="navitem">
+                                <a href=".." class="nav-link">Overview</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../Install/" class="nav-link">Install</a>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">Tutorial <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../BokehServer/" class="dropdown-item">Bokeh Server</a>
+</li>
+                                    
+<li>
+    <a href="../Jupyter/" class="dropdown-item">Jupyter Notebook Demo</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="navitem active">
+                                <a href="./" class="nav-link">Widgets</a>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">Documentation <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../Layout/" class="dropdown-item">Layout</a>
+</li>
+                                    
+  <li class="dropdown-submenu">
+    <a href="#" class="dropdown-item">Client</a>
+    <ul class="dropdown-menu">
+            
+<li>
+    <a href="../Controller/" class="dropdown-item">Controller</a>
+</li>
+            
+<li>
+    <a href="../Monitors/" class="dropdown-item">Monitors</a>
+</li>
+            
+<li>
+    <a href="../Widgets/" class="dropdown-item">Widgets</a>
+</li>
+    </ul>
+  </li>
+                                    
+<li>
+    <a href="../Model/" class="dropdown-item">Model</a>
+</li>
+                                    
+<li>
+    <a href="../Server/" class="dropdown-item">Server</a>
+</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ml-auto">
+                            <li class="nav-item">
+                                <a rel="prev" href="../Jupyter/" class="nav-link">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a rel="next" href="../Layout/" class="nav-link">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="https://github.com/slaclab/lume-epics/edit/master/docs/Widgets_doc.md" class="nav-link"><i class="fa fa-github"></i> Edit on GitHub</a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-light navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-toggle="collapse" data-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-secondary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-level="1"><a href="#widgets" class="nav-link">Widgets</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#control-widgets" class="nav-link">Control widgets</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#display-widgets" class="nav-link">Display widgets</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="widgets">Widgets</h1>
+<p><code>Lume-epics</code> is packaged along with several widgets that can be used alongside a <code>lume-epics</code> controller to interact with the model process variables over EPICS. These widgets have bokeh attributes, which may be embedded into bokeh page layouts during client construction.</p>
+<p>All widgets accept a <code>lume-epics</code> controller, a prefix, and a<code>lume-model</code> variable or a list of variables for construction.</p>
+<h2 id="control-widgets">Control widgets</h2>
+<p>These widgets are used for manipulating process variable values.</p>
+<h3 id="sliders">Sliders</h3>
+<p>Sliders are used for setting process variable values along a continuous range. A utility function (<code>build_sliders.py</code>) has been provided that returns a list of slider widgets. The associated bokeh widget for rendering may be accessed on any slider by the <code>.slider</code> attribute.</p>
+<p>An example implementation, including registered callbacks for continual value syncing with the server is included below:</p>
+<pre><code class="language-python">from bokeh.io import curdoc
+from bokeh import palettes
+from bokeh.layouts import column, row
+
+from lume_epics.client.controller import Controller
+from lume_model.utils import load_variables
+from lume_epics.client.widgets.controls import build_sliders
+
+# use example variables packaged with lume-epics
+prefix = &quot;test&quot;
+variable_filename = &quot;examples/variables.pickle&quot;
+
+# load variables
+input_variables, output_variables = load_variables(variable_filename)
+
+# set up controller
+controller = Controller(&quot;ca&quot;, input_variables, output_variables, prefix)
+
+# convert ot list for slider use
+input_variables = list(input_variable.values())
+
+# build sliders
+sliders = build_sliders(input_variables, controller, prefix)
+
+# render
+curdoc().title = &quot;Demo App&quot;
+curdoc().add_root(
+            column([slider.bokeh_slider for slider in sliders])
+        )
+
+for slider in sliders:
+    curdoc().add_periodic_callback(slider.update, 250)
+</code></pre>
+<h3 id="entry-table">Entry table</h3>
+<p>The entry table is used for single value updates to process variables. Bulk modification can also be submitted using the entry table. The table is composed of labels and entry fields. The entry table is also packaged with a clear button, for clearing the entered values from the fields, and a submit button for sending the values to the process variables.</p>
+<pre><code class="language-python">from bokeh.io import curdoc
+from bokeh import palettes
+from bokeh.layouts import column, row
+
+from lume_epics.client.controller import Controller
+from lume_model.utils import load_variables
+from lume_epics.client.widgets.controls import EntryTable
+
+# use example variables packaged with lume-epics
+prefix = &quot;test&quot;
+variable_filename = &quot;examples/variables.pickle&quot;
+
+# load variables
+input_variables, output_variables = load_variables(variable_filename)
+
+# set up controller
+controller = Controller(&quot;ca&quot;, input_variables, output_variables, prefix)
+
+# conver to list for use with table
+input_variables = list(input_variable.values())
+
+# build entry table
+entry_table = EntryTable(input_variables, controller, prefix)
+
+# render
+curdoc().title = &quot;Demo App&quot;
+curdoc().add_root(
+            row(entry_table.table, column(entry_table.submit, entry_table.clear))
+        )
+</code></pre>
+<h2 id="display-widgets">Display widgets</h2>
+<h3 id="imageplot">ImagePlot</h3>
+<p>Image plots are used for displaying image process variables. The image plot requires a manual call of the <code>build_plot</code> function which accepts a bokeh colormap or palette for rendering. The image update callback must be registed in order to sync with the server.</p>
+<pre><code class="language-python">from bokeh.io import curdoc
+from bokeh import palettes
+from bokeh.layouts import column, row
+
+from lume_epics.client.controller import Controller
+from lume_model.utils import load_variables
+from lume_epics.client.widgets.plots import ImagePlot
+
+# use example variables packaged with lume-epics
+prefix = &quot;test&quot;
+variable_filename = &quot;examples/variables.pickle&quot;
+
+# load variables
+input_variables, output_variables = load_variables(variable_filename)
+
+# set up controller
+controller = Controller(&quot;ca&quot;, input_variables, output_variables, prefix)
+
+# select our image output variable to render
+image_output = [output_variables[&quot;output1&quot;]]
+
+# create image plot
+image_plot = ImagePlot(image_output, controller, prefix)
+
+pal = palettes.viridis(256)
+color_mapper = LinearColorMapper(palette=pal, low=0, high=256)
+
+image_plot.build_plot(color_mapper=color_mapper)
+
+# render
+curdoc().title = &quot;Demo App&quot;
+curdoc().add_root(column(image_plot.plot))
+
+# add image update callback
+curdoc().add_periodic_callback(image_plot.update, 250)
+</code></pre>
+<h3 id="striptool">Striptool</h3>
+<p>The striptool includes a dropdown field for toggling between process variables. The striptool includes a selection toggle and a reset button, which may be rendered along with the plot.</p>
+<pre><code class="language-python">from bokeh.io import curdoc
+from bokeh import palettes
+from bokeh.layouts import column, row
+
+from lume_epics.client.controller import Controller
+from lume_model.utils import load_variables
+from lume_epics.client.widgets.plots import Striptool
+
+# use example variables packaged with lume-epics
+prefix = &quot;test&quot;
+variable_filename = &quot;examples/variables.pickle&quot;
+
+# load variables
+input_variables, output_variables = load_variables(variable_filename)
+
+# set up controller
+controller = Controller(&quot;ca&quot;, input_variables, output_variables, prefix)
+
+striptool = Striptool([output_variables[&quot;output2&quot;], output_variables[&quot;output3&quot;]], controller, prefix)
+
+# render
+curdoc().title = &quot;Demo App&quot;
+curdoc().add_root(row(striptool.plot,  striptool.selection, striptool.reset_button))
+
+# add striptool update callback
+curdoc().add_periodic_callback(striptool.update, 250)
+
+</code></pre>
+<h3 id="valuetable">ValueTable</h3>
+<p>The <code>ValueTable</code> widget is used for displaying process variables and their current values.</p>
+<pre><code class="language-python">from bokeh.io import curdoc
+from bokeh import palettes
+from bokeh.layouts import column, row
+
+from lume_epics.client.controller import Controller
+from lume_model.utils import load_variables
+from lume_epics.client.widgets.table import ValueTable
+
+# use example variables packaged with lume-epics
+prefix = &quot;test&quot;
+variable_filename = &quot;examples/variables.pickle&quot;
+
+# load variables
+input_variables, output_variables = load_variables(variable_filename)
+
+# set up controller
+controller = Controller(&quot;ca&quot;, input_variables, output_variables, prefix)
+
+value_table = ValueTable([output_variables[&quot;output2&quot;], output_variables[&quot;output3&quot;]], controller)
+
+# render
+curdoc().title = &quot;Demo App&quot;
+curdoc().add_root(value_table.table)
+
+# add striptool update callback
+curdoc().add_periodic_callback(value_table.update, 250)
+
+</code></pre></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js" defer></script>
+
+        <div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

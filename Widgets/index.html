@@ -1,0 +1,1467 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://slaclab.github.io/lume-epics/Widgets/" rel="canonical"/>
+<link href="../img/favicon.ico" rel="shortcut icon"/>
+<title>Widgets - lume-epics</title>
+<link href="../css/bootstrap.min.css" rel="stylesheet"/>
+<link href="../css/font-awesome.min.css" rel="stylesheet"/>
+<link href="../css/base.css" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet"/>
+<script defer="" src="../js/jquery-1.10.2.min.js"></script>
+<script defer="" src="../js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+</head>
+<body>
+<div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+<div class="container">
+<a class="navbar-brand" href="..">lume-epics</a>
+<!-- Expander button -->
+<button class="navbar-toggler" data-target="#navbar-collapse" data-toggle="collapse" type="button">
+<span class="navbar-toggler-icon"></span>
+</button>
+<!-- Expanded navigation -->
+<div class="navbar-collapse collapse" id="navbar-collapse">
+<!-- Main navigation -->
+<ul class="nav navbar-nav">
+<li class="navitem">
+<a class="nav-link" href="..">Overview</a>
+</li>
+<li class="navitem">
+<a class="nav-link" href="../Install/">Install</a>
+</li>
+<li class="dropdown">
+<a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">Tutorial <b class="caret"></b></a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../BokehServer/">Bokeh Server</a>
+</li>
+<li>
+<a class="dropdown-item" href="../Jupyter/">Jupyter Notebook Demo</a>
+</li>
+</ul>
+</li>
+<li class="navitem">
+<a class="nav-link" href="../Widgets_doc/">Widgets</a>
+</li>
+<li class="dropdown active">
+<a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">Documentation <b class="caret"></b></a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../Layout/">Layout</a>
+</li>
+<li class="dropdown-submenu">
+<a class="dropdown-item" href="#">Client</a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../Controller/">Controller</a>
+</li>
+<li>
+<a class="dropdown-item" href="../Monitors/">Monitors</a>
+</li>
+<li>
+<a class="dropdown-item active" href="./">Widgets</a>
+</li>
+</ul>
+</li>
+<li>
+<a class="dropdown-item" href="../Model/">Model</a>
+</li>
+<li>
+<a class="dropdown-item" href="../Server/">Server</a>
+</li>
+</ul>
+</li>
+</ul>
+<ul class="nav navbar-nav ml-auto">
+<li class="nav-item">
+<a class="nav-link" href="../Monitors/" rel="prev">
+<i class="fa fa-arrow-left"></i> Previous
+                                </a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="../Model/" rel="next">
+                                    Next <i class="fa fa-arrow-right"></i>
+</a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="https://github.com/slaclab/lume-epics/edit/master/docs/Widgets.md"><i class="fa fa-github"></i> Edit on GitHub</a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="container">
+<div class="row">
+<div class="col-md-3"><div class="navbar-light navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+<div class="navbar-header">
+<button class="navbar-toggler collapsed" data-target="#toc-collapse" data-toggle="collapse" title="Table of Contents" type="button">
+<span class="fa fa-angle-down"></span>
+</button>
+</div>
+<div class="navbar-collapse collapse card bg-secondary" id="toc-collapse">
+<ul class="nav flex-column">
+<li class="nav-item" data-level="1"><a class="nav-link" href="#widgets">Widgets</a>
+<ul class="nav flex-column">
+<li class="nav-item" data-level="2"><a class="nav-link" href="#lume_epics.client.widgets">lume_epics.client.widgets</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="2"><a class="nav-link" href="#lume_epics.client.widgets.controls">controls</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="2"><a class="nav-link" href="#lume_epics.client.widgets.plots">plots</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-level="2"><a class="nav-link" href="#lume_epics.client.widgets.tables">tables</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div></div>
+<div class="col-md-9" role="main">
+<h1 id="widgets">Widgets</h1>
+<div class="doc doc-object doc-module">
+<h2 class="hidden-toc" href="#lume_epics.client.widgets" id="lume_epics.client.widgets" style="visibility: hidden; position: absolute;">
+</h2>
+<div class="doc doc-contents first">
+<div class="doc doc-children">
+<div class="doc doc-object doc-module">
+<h2 class="doc doc-heading" id="lume_epics.client.widgets.controls">
+<code>controls</code>
+</h2>
+<div class="doc doc-contents">
+<p>The controls module contains tools for constructing bokeh control widgets.
+Controls may be built for lume-model ScalarInputVariables.</p>
+<div class="doc doc-children">
+<div class="doc doc-object doc-class">
+<h3 class="doc doc-heading" id="lume_epics.client.widgets.controls.EntryTable">
+<code>EntryTable</code>
+</h3>
+<div class="doc doc-contents">
+<p>Table of process variable names and values.</p>
+<p>!!! attriibutes
+    pv_monitors (Dict[str, PVScalar]): Monitors associated with process variables.</p>
+<pre><code>output_values (dict): Dict mapping process variable name to current value.
+
+labels (dict): Dict mapping process variable name to labels.
+
+source (ColumnDataSource): Data source for populating bokeh table.
+
+labels (Dict[list, list]): Dictionary mapping pvname to label
+</code></pre>
+<div class="doc doc-children">
+<div class="doc doc-object doc-method">
+<h4 class="doc doc-heading" id="lume_epics.client.widgets.controls.EntryTable.__init__">
+<code class="highlight language-python">
+__init__
+(self, variables, controller, row_height=50, button_aspect_ratio=6.0, labels={})
+
+        </code>
+<span class="doc doc-properties">
+<small class="doc doc-property doc-property-special"><code>special</code></small>
+</span>
+</h4>
+<div class="doc doc-contents">
+<p>Initialize table.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>variables</code></td>
+<td><code>List[lume_model.variables.ScalarInputVariable]</code></td>
+<td>
+<p>List of variables to display.</p>
+</td>
+<td><em>required</em></td>
+</tr>
+<tr>
+<td><code>controller</code></td>
+<td><code>Controller</code></td>
+<td>
+<p>Controller object for accessing process variables.</p>
+</td>
+<td><em>required</em></td>
+</tr>
+<tr>
+<td><code>row_height</code></td>
+<td><code>int</code></td>
+<td>
+<p>Height to render row</p>
+</td>
+<td><code>50</code></td>
+</tr>
+<tr>
+<td><code>button_aspect_ratio</code></td>
+<td><code>float</code></td>
+<td>
+<p>Aspect ratio for rendering buttons.</p>
+</td>
+<td><code>6.0</code></td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>lume_epics/client/widgets/controls.py</code></summary>
+<pre class="highlight"><code class="language-python">def __init__(
+    self,
+    variables: List[ScalarInputVariable],
+    controller: Controller,
+    row_height: int = 50,
+    button_aspect_ratio: float = 6.0,
+    labels: dict = {},
+) -&gt; None:
+    """
+    Initialize table.
+
+    Args:
+        variables (List[ScalarVariable]): List of variables to display.
+
+        controller (Controller): Controller object for accessing process variables.
+
+        row_height (int): Height to render row
+
+        button_aspect_ratio (float): Aspect ratio for rendering buttons.
+
+
+    """
+    self.controller = controller
+
+    self._button_aspect_ratio = button_aspect_ratio
+
+    # add labels
+    self._labels = labels
+
+    # be sure to surface units in the table
+    self.unit_map = {}
+    self.text_inputs = {}
+
+    grid_layout = []
+
+    for variable in variables:
+
+        label_base = labels.get(variable.name, variable.name)
+
+        # check if units assigned
+        if "units" in variable.__fields_set__ and variable.units:
+            self._labels[variable.name] = label_base + f" ({variable.units})"
+
+        else:
+            self._labels[variable.name] = label_base
+
+        entry_title = Paragraph(
+            text=self._labels[variable.name],
+            align="start",
+            sizing_mode="scale_both",
+        )
+
+        self.text_inputs[variable.name] = TextInput(
+            name=variable.name, sizing_mode="scale_both"
+        )
+
+        # create columns
+        grid_layout.append([entry_title, self.text_inputs[variable.name]])
+
+    # set up table
+    self.table = gridplot(grid_layout, sizing_mode="scale_both")
+
+    # Set up buttons
+    self.clear_button = Button(
+        label="Clear",
+        sizing_mode="scale_both",
+        aspect_ratio=self._button_aspect_ratio,
+    )
+    self.clear_button.on_click(self.clear)
+    self.submit_button = Button(
+        label="Submit",
+        sizing_mode="scale_both",
+        aspect_ratio=self._button_aspect_ratio,
+    )
+    self.submit_button.on_click(self.submit)
+    self.button_row = row(
+        self.clear_button, self.submit_button, sizing_mode="scale_both"
+    )
+</code></pre>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-method">
+<h4 class="doc doc-heading" id="lume_epics.client.widgets.controls.EntryTable.clear">
+<code class="highlight language-python">
+clear
+(self)
+
+        </code>
+</h4>
+<div class="doc doc-contents">
+<p>Function to clear all entered values</p>
+<details class="quote">
+<summary>Source code in <code>lume_epics/client/widgets/controls.py</code></summary>
+<pre class="highlight"><code class="language-python">def clear(self) -&gt; None:
+    """
+    Function to clear all entered values
+    """
+    for _, text_input in self.text_inputs.items():
+        text_input.value_input = ""
+</code></pre>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-method">
+<h4 class="doc doc-heading" id="lume_epics.client.widgets.controls.EntryTable.submit">
+<code class="highlight language-python">
+submit
+(self)
+
+        </code>
+</h4>
+<div class="doc doc-contents">
+<p>Function to submit values entered into table</p>
+<details class="quote">
+<summary>Source code in <code>lume_epics/client/widgets/controls.py</code></summary>
+<pre class="highlight"><code class="language-python">def submit(self) -&gt; None:
+    """
+    Function to submit values entered into table
+    """
+    for variable_name, text_input in self.text_inputs.items():
+        if text_input.value_input != "":
+            self.controller.put(variable_name, text_input.value_input)
+</code></pre>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="doc doc-object doc-class">
+<h3 class="doc doc-heading" id="lume_epics.client.widgets.controls.EpicsSlider">
+<code>EpicsSlider</code>
+</h3>
+<div class="doc doc-contents">
+<p>EPICS based Slider used for building bokeh sliders and synchronizing process variable values.</p>
+<div class="doc doc-children">
+<div class="doc doc-object doc-method">
+<h4 class="doc doc-heading" id="lume_epics.client.widgets.controls.EpicsSlider.build_slider">
+<code class="highlight language-python">
+build_slider
+(self)
+
+        </code>
+</h4>
+<div class="doc doc-contents">
+<p>Utility function for building a slider.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>variable</code></td>
+<td><code>ScalarInputVariable</code></td>
+<td>
+<p>Variable associated with the slider.</p>
+</td>
+<td><em>required</em></td>
+</tr>
+<tr>
+<td><code>controller</code></td>
+<td><code>Controller</code></td>
+<td>
+<p>Controller object for getting process variable values.</p>
+</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>lume_epics/client/widgets/controls.py</code></summary>
+<pre class="highlight"><code class="language-python">def build_slider(self):
+    """
+    Utility function for building a slider.
+
+    Args:
+        variable (ScalarInputVariable): Variable associated with the slider.
+
+        controller (Controller): Controller object for getting process variable values.
+
+    """
+    title = self.variable.name
+    if "units" in self.variable.__fields_set__:
+        title += " (" + self.variable.units + ")"
+
+    self.pvname = self.variable.name
+    step = (self.variable.value_range[1] - self.variable.value_range[0]) / 100.0
+
+    # construct slider
+    self.bokeh_slider = Slider(
+        title=title,
+        value=self.variable.value_range[0],
+        start=self.variable.value_range[0],
+        end=self.variable.value_range[1],
+        step=step,
+        format="0[.]0000",
+    )
+
+    # set up callback
+    self.bokeh_slider.on_change(
+        "value",
+        partial(set_pv_from_slider, pvname=self.pvname, controller=self.controller),
+    )
+</code></pre>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-method">
+<h4 class="doc doc-heading" id="lume_epics.client.widgets.controls.EpicsSlider.update">
+<code class="highlight language-python">
+update
+(self)
+
+        </code>
+</h4>
+<div class="doc doc-contents">
+<p>Updates bokeh slider with the process variable value.</p>
+<details class="quote">
+<summary>Source code in <code>lume_epics/client/widgets/controls.py</code></summary>
+<pre class="highlight"><code class="language-python">def update(self):
+    """
+    Updates bokeh slider with the process variable value.
+
+    """
+    self.bokeh_slider.value = self.controller.get_value(self.pvname)
+</code></pre>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h3 class="doc doc-heading" id="lume_epics.client.widgets.controls.build_sliders">
+<code class="highlight language-python">
+build_sliders
+(variables, controller)
+
+        </code>
+</h3>
+<div class="doc doc-contents">
+<p>Build sliders for a list of variables.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>variables</code></td>
+<td><code>List[lume_model.variables.ScalarInputVariable]</code></td>
+<td>
+<p>List of variables for which to build sliders.</p>
+</td>
+<td><em>required</em></td>
+</tr>
+<tr>
+<td><code>controller</code></td>
+<td><code>Controller</code></td>
+<td>
+<p>Controller object for getting process variable values.</p>
+</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>lume_epics/client/widgets/controls.py</code></summary>
+<pre class="highlight"><code class="language-python">def build_sliders(
+    variables: List[ScalarInputVariable], controller: Controller,
+) -&gt; List[Slider]:
+    """
+    Build sliders for a list of variables.
+
+    Args:
+        variables (List[ScalarInputVariable]): List of variables for which to build sliders.
+
+        controller (Controller): Controller object for getting process variable values.
+
+    """
+    sliders = []
+
+    for variable in variables:
+        slider = EpicsSlider(variable, controller,)
+        sliders.append(slider)
+
+    return sliders
+</code></pre>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h3 class="doc doc-heading" id="lume_epics.client.widgets.controls.set_pv_from_slider">
+<code class="highlight language-python">
+set_pv_from_slider
+(attr, old, new, pvname, controller)
+
+        </code>
+</h3>
+<div class="doc doc-contents">
+<p>Callback function for updating process variables on slider change.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>attr</code></td>
+<td><code>str</code></td>
+<td>
+<p>Attribute to update.</p>
+</td>
+<td><em>required</em></td>
+</tr>
+<tr>
+<td><code>old</code></td>
+<td><code>float</code></td>
+<td>
+<p>Prior slider value.</p>
+</td>
+<td><em>required</em></td>
+</tr>
+<tr>
+<td><code>new</code></td>
+<td><code>float</code></td>
+<td>
+<p>New value assigned by slider.</p>
+</td>
+<td><em>required</em></td>
+</tr>
+<tr>
+<td><code>pvname</code></td>
+<td><code>str</code></td>
+<td>
+<p>Name of the process variable.</p>
+</td>
+<td><em>required</em></td>
+</tr>
+<tr>
+<td><code>controller</code></td>
+<td><code>Controller</code></td>
+<td>
+<p>Controller object for interacting with process
+variable values.</p>
+</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>lume_epics/client/widgets/controls.py</code></summary>
+<pre class="highlight"><code class="language-python">def set_pv_from_slider(
+    attr: str, old: float, new: float, pvname: str, controller: Controller,
+) -&gt; None:
+    """
+    Callback function for updating process variables on slider change.
+
+    Args:
+        attr (str): Attribute to update.
+
+        old (float): Prior slider value.
+
+        new (float): New value assigned by slider.
+
+        pvname (str): Name of the process variable.
+
+        controller (Controller): Controller object for interacting with process
+            variable values.
+
+    """
+    controller.put(pvname, new)
+</code></pre>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="doc doc-object doc-module">
+<h2 class="doc doc-heading" id="lume_epics.client.widgets.plots">
+<code>plots</code>
+</h2>
+<div class="doc doc-contents">
+<p>The plots module contains bokeh figure based widgets. These widgets are initialized with
+variables and a lume_epics.client.controller.Controller for interfacing with the EPICS
+process variables.</p>
+<div class="doc doc-children">
+<div class="doc doc-object doc-class">
+<h3 class="doc doc-heading" id="lume_epics.client.widgets.plots.ImagePlot">
+<code>ImagePlot</code>
+</h3>
+<div class="doc doc-contents">
+<p>Object for viewing and updating an image plot.</p>
+<p><strong>Attributes:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>live_variable</code></td>
+<td><code>str</code></td>
+<td>
+<p>Current variable to be displayed</p>
+</td>
+</tr>
+<tr>
+<td><code>source</code></td>
+<td><code>ColumnDataSource</code></td>
+<td>
+<p>Data source for the viewer.</p>
+</td>
+</tr>
+<tr>
+<td><code>pv_monitors</code></td>
+<td><code>PVImage</code></td>
+<td>
+<p>Monitors for the process variables.</p>
+</td>
+</tr>
+<tr>
+<td><code>plot</code></td>
+<td><code>Figure</code></td>
+<td>
+<p>Bokeh figure object for rendering.</p>
+</td>
+</tr>
+<tr>
+<td><code>img_obj</code></td>
+<td><code>GlyphRenderer</code></td>
+<td>
+<p>Bokeh glyph renderer for displaying image.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Examples:</strong></p>
+<pre><code>
+# controller initialized to use Channel Access
+controller = Controller("ca")
+
+value_table = ImagePlot(
+        [output_variables["image_variable"]],
+        controller,
+    )
+</code></pre>
+<div class="doc doc-children">
+<div class="doc doc-object doc-method">
+<h4 class="doc doc-heading" id="lume_epics.client.widgets.plots.ImagePlot.__init__">
+<code class="highlight language-python">
+__init__
+(self, variables, controller, x_range=None, y_range=None, color_mapper=None, palette=None)
+
+        </code>
+<span class="doc doc-properties">
+<small class="doc doc-property doc-property-special"><code>special</code></small>
+</span>
+</h4>
+<div class="doc doc-contents">
+<p>Initialize monitors, current process variable, and data source.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>variables</code></td>
+<td><code>List[lume_model.variables.ImageVariable]</code></td>
+<td>
+<p>List of image variables to include in plot</p>
+</td>
+<td><em>required</em></td>
+</tr>
+<tr>
+<td><code>controller</code></td>
+<td><code>Controller</code></td>
+<td>
+<p>Controller object for getting pv values</p>
+</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>lume_epics/client/widgets/plots.py</code></summary>
+<pre class="highlight"><code class="language-python">def __init__(
+    self,
+    variables: List[ImageVariable],
+    controller: Controller,
+    x_range: List[float] = None,
+    y_range: List[float] = None,
+    color_mapper: ColorMapper = None,
+    palette: tuple = None,
+) -&gt; None:
+    """
+    Initialize monitors, current process variable, and data source.
+
+    Args:
+        variables (List[ImageVariable]): List of image variables to include in plot
+
+        controller (Controller): Controller object for getting pv values
+
+    """
+    self.pv_monitors = {}
+    self._x_range = x_range
+    self._y_range = y_range
+
+    if color_mapper is None and palette is None:
+        raise Exception("Must provide color mapper or palette")
+
+    self._color_mapper = color_mapper
+    self._palette = palette
+
+    for variable in variables:
+        self.pv_monitors[variable.name] = PVImage(variable, controller)
+
+    self.live_variable = list(self.pv_monitors.keys())[0]
+
+    image_data = DEFAULT_IMAGE_DATA
+
+    image_data["image"][0] = np.flipud(image_data["image"][0].T)
+
+    self.source = ColumnDataSource(image_data)
+    self.build_plot()
+</code></pre>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-method">
+<h4 class="doc doc-heading" id="lume_epics.client.widgets.plots.ImagePlot.build_plot">
+<code class="highlight language-python">
+build_plot
+(self)
+
+        </code>
+</h4>
+<div class="doc doc-contents">
+<p>Creates the plot object.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>palette</code></td>
+<td><code>Optional[tuple]</code></td>
+<td>
+<p>Bokeh color palette to use for plot.</p>
+</td>
+<td><em>required</em></td>
+</tr>
+<tr>
+<td><code>color_mapper</code></td>
+<td><code>Optional[ColorMapper]</code></td>
+<td>
+<p>Bokeh color mapper for rendering
+plot.</p>
+</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>lume_epics/client/widgets/plots.py</code></summary>
+<pre class="highlight"><code class="language-python">def build_plot(self,) -&gt; None:
+    """
+    Creates the plot object.
+
+    Args:
+        palette (Optional[tuple]): Bokeh color palette to use for plot.
+
+        color_mapper (Optional[ColorMapper]): Bokeh color mapper for rendering
+            plot.
+
+    """
+    # create plot
+    self.plot = figure(
+        tooltips=[("x", "$x"), ("y", "$y"), ("value", "@image")],
+        sizing_mode="scale_both",
+        x_range=self._x_range,
+        y_range=self._y_range,
+    )
+
+    if self._color_mapper:
+        self.plot.image(
+            name="image_plot",
+            image="image",
+            x="x",
+            y="y",
+            dw="dw",
+            dh="dh",
+            source=self.source,
+            color_mapper=self._color_mapper,
+        )
+
+    elif self._palette:
+        self.plot.image(
+            name="image_plot",
+            image="image",
+            x="x",
+            y="y",
+            dw="dw",
+            dh="dh",
+            source=self.source,
+            palette=self._palette,
+        )
+
+    else:
+        raise Exception(
+            "Must provide palette or color mapper during ImagePlot construction."
+        )
+
+    axis_labels = self.pv_monitors[self.live_variable].axis_labels
+    axis_units = self.pv_monitors[self.live_variable].axis_units
+
+    x_axis_label = axis_labels[0]
+    y_axis_label = axis_labels[1]
+
+    if axis_units:
+        x_axis_label += " (" + axis_units[0] + ")"
+        y_axis_label += " (" + axis_units[1] + ")"
+
+    self.plot.xaxis.axis_label = x_axis_label
+    self.plot.yaxis.axis_label = y_axis_label
+</code></pre>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-method">
+<h4 class="doc doc-heading" id="lume_epics.client.widgets.plots.ImagePlot.update">
+<code class="highlight language-python">
+update
+(self, live_variable=None)
+
+        </code>
+</h4>
+<div class="doc doc-contents">
+<p>Callback which updates the plot to reflect updated process variable values or
+new process variable.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>live_variable</code></td>
+<td><code>str</code></td>
+<td>
+<p>Variable to display</p>
+</td>
+<td><code>None</code></td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>lume_epics/client/widgets/plots.py</code></summary>
+<pre class="highlight"><code class="language-python">def update(self, live_variable: str = None) -&gt; None:
+    """
+    Callback which updates the plot to reflect updated process variable values or
+    new process variable.
+
+    Args:
+        live_variable (str): Variable to display
+    """
+    # update internal pv trackinng
+    if live_variable:
+        self.live_variable = live_variable
+
+    # update axis and labels
+    axis_labels = self.pv_monitors[self.live_variable].axis_labels
+    axis_units = self.pv_monitors[self.live_variable].axis_units
+
+    x_axis_label = axis_labels[0]
+    y_axis_label = axis_labels[1]
+
+    if axis_units:
+        x_axis_label += " (" + axis_units[0] + ")"
+        y_axis_label += " (" + axis_units[1] + ")"
+
+    self.plot.xaxis.axis_label = x_axis_label
+    self.plot.yaxis.axis_label = y_axis_label
+
+    # get image data
+    image_data = self.pv_monitors[self.live_variable].poll()
+    image_data["image"][0] = np.flipud(image_data["image"][0].T)
+
+    self.source.data.update(image_data)
+</code></pre>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="doc doc-object doc-class">
+<h3 class="doc doc-heading" id="lume_epics.client.widgets.plots.Striptool">
+<code>Striptool</code>
+</h3>
+<div class="doc doc-contents">
+<p>View for striptool display.</p>
+<p><strong>Attributes:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>live_variable</code></td>
+<td><code>str</code></td>
+<td>
+<p>Variable to be displayed.</p>
+</td>
+</tr>
+<tr>
+<td><code>source</code></td>
+<td><code>ColumnDataSource</code></td>
+<td>
+<p>Data source for the striptool view.</p>
+</td>
+</tr>
+<tr>
+<td><code>pv_monitors</code></td>
+<td><code>PVScalarMonitor</code></td>
+<td>
+<p>Monitors for the tracked process variables.</p>
+</td>
+</tr>
+<tr>
+<td><code>plot</code></td>
+<td><code>Figure</code></td>
+<td>
+<p>Bokeh figure object.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="doc doc-children">
+<div class="doc doc-object doc-method">
+<h4 class="doc doc-heading" id="lume_epics.client.widgets.plots.Striptool.__init__">
+<code class="highlight language-python">
+__init__
+(self, variables, controller, limit=None, aspect_ratio=1.05)
+
+        </code>
+<span class="doc doc-properties">
+<small class="doc doc-property doc-property-special"><code>special</code></small>
+</span>
+</h4>
+<div class="doc doc-contents">
+<p>Set up monitors, current process variable, and data source.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>variables</code></td>
+<td><code>List[lume_model.variables.ScalarVariable]</code></td>
+<td>
+<p>List of variables to display with striptool</p>
+</td>
+<td><em>required</em></td>
+</tr>
+<tr>
+<td><code>controller</code></td>
+<td><code>Controller</code></td>
+<td>
+<p>Controller object for getting process variable values</p>
+</td>
+<td><em>required</em></td>
+</tr>
+<tr>
+<td><code>limit</code></td>
+<td><code>int</code></td>
+<td>
+<p>Maximimum steps for striptool to render</p>
+</td>
+<td><code>None</code></td>
+</tr>
+<tr>
+<td><code>aspect_ratio</code></td>
+<td><code>float</code></td>
+<td>
+<p>Ratio of width to height</p>
+</td>
+<td><code>1.05</code></td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>lume_epics/client/widgets/plots.py</code></summary>
+<pre class="highlight"><code class="language-python">def __init__(
+    self,
+    variables: List[ScalarVariable],
+    controller: Controller,
+    limit: int = None,
+    aspect_ratio: float = 1.05,
+) -&gt; None:
+    """
+    Set up monitors, current process variable, and data source.
+
+    Args:
+        variables (List[ScalarVariable]): List of variables to display with striptool
+
+        controller (Controller): Controller object for getting process variable values
+
+        limit (int): Maximimum steps for striptool to render
+
+        aspect_ratio (float): Ratio of width to height
+
+    """
+    self.pv_monitors = {}
+
+    for variable in variables:
+        self.pv_monitors[variable.name] = PVTimeSeries(variable, controller)
+
+    self.live_variable = list(self.pv_monitors.keys())[0]
+
+    ts = []
+    ys = []
+    self.source = ColumnDataSource(dict(x=ts, y=ys))
+    self.reset_button = Button(label="Reset")
+    self.reset_button.on_click(self._reset_values)
+    self._aspect_ratio = aspect_ratio
+    self._limit = limit
+    self.selection = Select(
+        title="Variable to plot:",
+        value=self.live_variable,
+        options=list(self.pv_monitors.keys()),
+    )
+    self.selection.on_change("value", self.update_selection)
+    self.build_plot()
+</code></pre>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-method">
+<h4 class="doc doc-heading" id="lume_epics.client.widgets.plots.Striptool.build_plot">
+<code class="highlight language-python">
+build_plot
+(self)
+
+        </code>
+</h4>
+<div class="doc doc-contents">
+<p>Creates the plot object.</p>
+<details class="quote">
+<summary>Source code in <code>lume_epics/client/widgets/plots.py</code></summary>
+<pre class="highlight"><code class="language-python">def build_plot(self) -&gt; None:
+    """
+    Creates the plot object.
+    """
+    self.plot = figure(sizing_mode="scale_both", aspect_ratio=self._aspect_ratio)
+    self.plot.line(x="x", y="y", line_width=2, source=self.source)
+    self.plot.yaxis.axis_label = self.live_variable
+
+    # as its scales, the plot uses all definedformats
+    self.plot.xaxis.formatter = DatetimeTickFormatter(
+        minutes="%H:%M:%S",
+        minsec="%H:%M:%S",
+        seconds="%H:%M:%S",
+        microseconds="%H:%M:%S",
+        milliseconds="%H:%M:%S",
+    )
+
+    self.plot.xaxis.major_label_orientation = "vertical"
+
+    # add units to label
+    if self.pv_monitors[self.live_variable].units:
+        self.plot.yaxis.axis_label += (
+            f" ({self.pv_monitors[self.live_variable].units})"
+        )
+
+    self.plot.xaxis.axis_label = "time (sec)"
+</code></pre>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-method">
+<h4 class="doc doc-heading" id="lume_epics.client.widgets.plots.Striptool.update">
+<code class="highlight language-python">
+update
+(self)
+
+        </code>
+</h4>
+<div class="doc doc-contents">
+<p>Callback to update the plot to reflect updated process variable values or to
+display a new process variable.</p>
+<details class="quote">
+<summary>Source code in <code>lume_epics/client/widgets/plots.py</code></summary>
+<pre class="highlight"><code class="language-python">def update(self) -&gt; None:
+    """
+    Callback to update the plot to reflect updated process variable values or to
+    display a new process variable.
+
+
+    """
+
+    ts, ys = self.pv_monitors[self.live_variable].poll()
+    if self._limit is not None and len(ts) &gt; self._limit:
+        ts = ts[-self._limit :]
+        ys = ys[-self._limit :]
+
+    self.source.data = dict(x=ts, y=ys)
+</code></pre>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-method">
+<h4 class="doc doc-heading" id="lume_epics.client.widgets.plots.Striptool.update_selection">
+<code class="highlight language-python">
+update_selection
+(self, attr, old, new)
+
+        </code>
+</h4>
+<div class="doc doc-contents">
+<p>Bokeh callback for assigning new live process variable.</p>
+<details class="quote">
+<summary>Source code in <code>lume_epics/client/widgets/plots.py</code></summary>
+<pre class="highlight"><code class="language-python">def update_selection(self, attr, old, new):
+    """
+    Bokeh callback for assigning new live process variable.
+    """
+    self.live_variable = new
+</code></pre>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="doc doc-object doc-module">
+<h2 class="doc doc-heading" id="lume_epics.client.widgets.tables">
+<code>tables</code>
+</h2>
+<div class="doc doc-contents">
+<p>This module contains table widgets for displaying the values of lume-model scalar
+variables.</p>
+<div class="doc doc-children">
+<div class="doc doc-object doc-class">
+<h3 class="doc doc-heading" id="lume_epics.client.widgets.tables.ValueTable">
+<code>ValueTable</code>
+</h3>
+<div class="doc doc-contents">
+<p>Table of process variable names and values.</p>
+<p>!!! attriibutes
+    _pv_monitors (Dict[str, PVScalar]): Monitors associated with process variables.</p>
+<pre><code>_output_values (dict): Dict mapping process variable name to current value.
+
+_source (ColumnDataSource): Data source for populating bokeh table.
+
+_labels (Dict[str, str]): Dictionary mapping pvname to label
+
+_unit_map (Dict[str, str]): Dictionary mapping pvname to units
+
+table (DataTable): Bokeh data table
+</code></pre>
+<div class="doc doc-children">
+<div class="doc doc-object doc-method">
+<h4 class="doc doc-heading" id="lume_epics.client.widgets.tables.ValueTable.__init__">
+<code class="highlight language-python">
+__init__
+(self, variables, controller, labels={}, sig_figs=5)
+
+        </code>
+<span class="doc doc-properties">
+<small class="doc doc-property doc-property-special"><code>special</code></small>
+</span>
+</h4>
+<div class="doc doc-contents">
+<p>Initialize table.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>variables</code></td>
+<td><code>List[lume_model.variables.ScalarVariable]</code></td>
+<td>
+<p>List of variables to display.</p>
+</td>
+<td><em>required</em></td>
+</tr>
+<tr>
+<td><code>controller</code></td>
+<td><code>Controller</code></td>
+<td>
+<p>Controller object for accessing process variables.</p>
+</td>
+<td><em>required</em></td>
+</tr>
+<tr>
+<td><code>labels</code></td>
+<td><code>Dict[str, str]</code></td>
+<td>
+<p>Dictionary mapping pvname to label</p>
+</td>
+<td><code>{}</code></td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+<summary>Source code in <code>lume_epics/client/widgets/tables.py</code></summary>
+<pre class="highlight"><code class="language-python">def __init__(
+    self,
+    variables: List[ScalarVariable],
+    controller: Controller,
+    labels: Dict[str, str] = {},
+    sig_figs: int = 5,
+) -&gt; None:
+    """
+    Initialize table.
+
+    Args:
+        variables (List[ScalarVariable]): List of variables to display.
+
+        controller (Controller): Controller object for accessing process variables.
+
+        labels (Dict[list, list]): Dictionary mapping pvname to label
+
+    """
+    # only creating pvs for non-image pvs
+    self._pv_monitors = {}
+    self._output_values = {}
+    self._labels = {}
+    self._sig_figs = sig_figs
+
+    # be sure to surface units in the table
+    self._unit_map = {}
+
+    for variable in variables:
+        self._pv_monitors[variable.name] = PVScalar(variable, controller)
+        v = DEFAULT_SCALAR_VALUE
+
+        # format to sig figs
+        v = format(float("{:.{p}g}".format(v, p=self._sig_figs)))
+        self._output_values[variable.name] = v
+
+        label_base = labels.get(variable.name, variable.name)
+
+        # check if units assigned
+        if "units" in variable.__fields_set__ and variable.units:
+            self._labels[variable.name] = label_base + f" ({variable.units})"
+
+        else:
+            self._labels[variable.name] = label_base
+
+    self.create_table()
+</code></pre>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-method">
+<h4 class="doc doc-heading" id="lume_epics.client.widgets.tables.ValueTable.create_table">
+<code class="highlight language-python">
+create_table
+(self)
+
+        </code>
+</h4>
+<div class="doc doc-contents">
+<p>Creates the bokeh table and populates variable data.</p>
+<details class="quote">
+<summary>Source code in <code>lume_epics/client/widgets/tables.py</code></summary>
+<pre class="highlight"><code class="language-python">def create_table(self) -&gt; None:
+    """
+    Creates the bokeh table and populates variable data.
+    """
+    x_vals = [self._labels[var] for var in self._output_values.keys()]
+    y_vals = list(self._output_values.values())
+
+    table_data = dict(x=x_vals, y=y_vals)
+    self._source = ColumnDataSource(table_data)
+    columns = [
+        TableColumn(
+            field="x", title="Outputs", formatter=StringFormatter(font_style="bold")
+        ),
+        TableColumn(field="y", title="Current Value"),
+    ]
+
+    self.table = DataTable(
+        source=self._source,
+        columns=columns,
+        sizing_mode="stretch_both",
+        index_position=None,
+    )
+</code></pre>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-method">
+<h4 class="doc doc-heading" id="lume_epics.client.widgets.tables.ValueTable.update">
+<code class="highlight language-python">
+update
+(self)
+
+        </code>
+</h4>
+<div class="doc doc-contents">
+<p>Callback function to update data source to reflect updated values.</p>
+<details class="quote">
+<summary>Source code in <code>lume_epics/client/widgets/tables.py</code></summary>
+<pre class="highlight"><code class="language-python">def update(self) -&gt; None:
+    """
+    Callback function to update data source to reflect updated values.
+    """
+    for variable in self._pv_monitors:
+        v = self._pv_monitors[variable].poll()
+
+        # format to sig figs
+        v = format(float("{:.{p}g}".format(v, p=self._sig_figs)))
+        self._output_values[variable] = v
+
+    x_vals = [self._labels[var] for var in self._output_values.keys()]
+    y_vals = list(self._output_values.values())
+    self._source.data = dict(x=x_vals, y=y_vals)
+</code></pre>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div></div>
+</div>
+</div>
+<footer class="col-md-12">
+<hr/>
+<p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+</footer>
+<script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+<script defer="" src="../js/base.js"></script>
+<div aria-hidden="true" aria-labelledby="keyboardModalLabel" class="modal" id="mkdocs_keyboard_modal" role="dialog" tabindex="-1">
+<div class="modal-dialog">
+<div class="modal-content">
+<div class="modal-header">
+<h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+<button class="close" data-dismiss="modal" type="button"><span aria-hidden="true">×</span><span class="sr-only">Close</span></button>
+</div>
+<div class="modal-body">
+<table class="table">
+<thead>
+<tr>
+<th style="width: 20%;">Keys</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="help shortcut"><kbd>?</kbd></td>
+<td>Open this help</td>
+</tr>
+<tr>
+<td class="next shortcut"><kbd>n</kbd></td>
+<td>Next page</td>
+</tr>
+<tr>
+<td class="prev shortcut"><kbd>p</kbd></td>
+<td>Previous page</td>
+</tr>
+<tr>
+<td class="search shortcut"><kbd>s</kbd></td>
+<td>Search</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="modal-footer">
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>

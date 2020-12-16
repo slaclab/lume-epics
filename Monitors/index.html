@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        <link rel="canonical" href="https://slaclab.github.io/lume-epics/Monitors/">
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>Monitors - lume-epics</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+
+        <script src="../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../js/bootstrap.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">lume-epics</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbar-collapse">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="navitem">
+                                <a href=".." class="nav-link">Overview</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../Install/" class="nav-link">Install</a>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">Tutorial <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../BokehServer/" class="dropdown-item">Bokeh Server</a>
+</li>
+                                    
+<li>
+    <a href="../Jupyter/" class="dropdown-item">Jupyter Notebook Demo</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="navitem">
+                                <a href="../Widgets_doc/" class="nav-link">Widgets</a>
+                            </li>
+                            <li class="dropdown active">
+                                <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">Documentation <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../Layout/" class="dropdown-item">Layout</a>
+</li>
+                                    
+  <li class="dropdown-submenu">
+    <a href="#" class="dropdown-item">Client</a>
+    <ul class="dropdown-menu">
+            
+<li>
+    <a href="../Controller/" class="dropdown-item">Controller</a>
+</li>
+            
+<li>
+    <a href="./" class="dropdown-item active">Monitors</a>
+</li>
+            
+<li>
+    <a href="../Widgets/" class="dropdown-item">Widgets</a>
+</li>
+    </ul>
+  </li>
+                                    
+<li>
+    <a href="../Model/" class="dropdown-item">Model</a>
+</li>
+                                    
+<li>
+    <a href="../Server/" class="dropdown-item">Server</a>
+</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ml-auto">
+                            <li class="nav-item">
+                                <a rel="prev" href="../Controller/" class="nav-link">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a rel="next" href="../Widgets/" class="nav-link">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="https://github.com/slaclab/lume-epics/edit/master/docs/Monitors.md" class="nav-link"><i class="fa fa-github"></i> Edit on GitHub</a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-light navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-toggle="collapse" data-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-secondary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-level="1"><a href="#monitors" class="nav-link">Monitors</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#lume_epics.client.monitors" class="nav-link">lume_epics.client.monitors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#lume_epics.client.monitors.PVImage" class="nav-link">PVImage</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#lume_epics.client.monitors.PVScalar" class="nav-link">PVScalar</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#lume_epics.client.monitors.PVTimeSeries" class="nav-link">PVTimeSeries</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="monitors">Monitors</h1>
+<div class="doc doc-object doc-module">
+<h2 class="hidden-toc" href="#lume_epics.client.monitors" id="lume_epics.client.monitors" style="visibility: hidden; position: absolute;">
+        </h2>
+<div class="doc doc-contents first">
+<p>Monitors interface with widgets to surface process variable information. They are
+initialized using a lume-model variable and a controller used to access values over
+EPICs.</p>
+<div class="doc doc-children">
+<div class="doc doc-object doc-class">
+<h2 class="doc doc-heading" id="lume_epics.client.monitors.PVImage">
+
+        <code>PVImage</code>
+
+
+      </h2>
+<div class="doc doc-contents ">
+<p>Monitor for updating and formatting image data.</p>
+<p><strong>Attributes:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>variable</code></td>
+<td><code>ImageVariable</code></td>
+<td>
+<p>Image process variable to be displayed.</p>
+</td>
+</tr>
+<tr>
+<td><code>controller</code></td>
+<td><code>Controller</code></td>
+<td>
+<p>Controller object for accessing process variable.</p>
+</td>
+</tr>
+<tr>
+<td><code>pvname</code></td>
+<td><code>str</code></td>
+<td>
+<p>Name of the process variable to access.</p>
+</td>
+</tr>
+<tr>
+<td><code>axis_units</code></td>
+<td><code>str</code></td>
+<td>
+<p>Units associated with the image axes.</p>
+</td>
+</tr>
+<tr>
+<td><code>axis_labels</code></td>
+<td><code>str</code></td>
+<td>
+<p>Labels associated with the image axes.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="doc doc-children">
+<div class="doc doc-object doc-method">
+<h3 class="doc doc-heading" id="lume_epics.client.monitors.PVImage.__init__">
+
+        <code class="highlight language-python">
+__init__
+(self, variable, controller)
+
+        </code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-special"><code>special</code></small>
+  </span>
+
+      </h3>
+<div class="doc doc-contents ">
+<p>Initialize monitor for an image variable.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>variable</code></td>
+<td><code>ImageVariable</code></td>
+<td>
+<p>Image process variable to be displayed.</p>
+</td>
+<td><em>required</em></td>
+</tr>
+<tr>
+<td><code>controller</code></td>
+<td><code>Controller</code></td>
+<td>
+<p>Controller object for accessing process variable.</p>
+</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+          <summary>Source code in <code>lume_epics/client/monitors.py</code></summary>
+          <pre class="highlight"><code class="language-python">def __init__(self, variable: ImageVariable, controller: Controller,) -&gt; None:
+    """Initialize monitor for an image variable.
+
+    Args:
+        variable (ImageVariable): Image process variable to be displayed.
+
+        controller (Controller): Controller object for accessing process variable.
+
+    """
+    self.units = None
+    # check if units has been set
+    if "units" in variable.__fields_set__:
+        self.units = variable.units.split(":")
+
+    self.pvname = variable.name
+    self.controller = controller
+    self.axis_labels = variable.axis_labels
+    self.axis_units = variable.axis_units
+</code></pre>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-method">
+<h3 class="doc doc-heading" id="lume_epics.client.monitors.PVImage.poll">
+
+        <code class="highlight language-python">
+poll
+(self)
+
+        </code>
+
+
+      </h3>
+<div class="doc doc-contents ">
+<p>Collects image data and builds image data dictionary.</p>
+<details class="quote">
+          <summary>Source code in <code>lume_epics/client/monitors.py</code></summary>
+          <pre class="highlight"><code class="language-python">def poll(self) -&gt; Dict[str, list]:
+    """Collects image data and builds image data dictionary.
+
+    """
+
+    return self.controller.get_image(self.pvname)
+</code></pre>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="doc doc-object doc-class">
+<h2 class="doc doc-heading" id="lume_epics.client.monitors.PVScalar">
+
+        <code>PVScalar</code>
+
+
+      </h2>
+<div class="doc doc-contents ">
+<p>Monitor for scalar process variables.</p>
+<p><strong>Attributes:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>variable</code></td>
+<td><code>ScalarVariable</code></td>
+<td>
+<p>Variable to monitor for value.</p>
+</td>
+</tr>
+<tr>
+<td><code>controller</code></td>
+<td><code>Controller</code></td>
+<td>
+<p>Controller object for accessing process variable.</p>
+</td>
+</tr>
+<tr>
+<td><code>units</code></td>
+<td><code>str</code></td>
+<td>
+<p>Units associated with the variable.</p>
+</td>
+</tr>
+<tr>
+<td><code>pvname</code></td>
+<td><code>str</code></td>
+<td>
+<p>Name of the process variable to access.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="doc doc-children">
+<div class="doc doc-object doc-method">
+<h3 class="doc doc-heading" id="lume_epics.client.monitors.PVScalar.__init__">
+
+        <code class="highlight language-python">
+__init__
+(self, variable, controller)
+
+        </code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-special"><code>special</code></small>
+  </span>
+
+      </h3>
+<div class="doc doc-contents ">
+<p>Initializes monitor attributes.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>variable</code></td>
+<td><code>ScalarVariable</code></td>
+<td>
+<p>Variable to monitor for value.</p>
+</td>
+<td><em>required</em></td>
+</tr>
+<tr>
+<td><code>controller</code></td>
+<td><code>Controller</code></td>
+<td>
+<p>Controller object for accessing process variable.</p>
+</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+          <summary>Source code in <code>lume_epics/client/monitors.py</code></summary>
+          <pre class="highlight"><code class="language-python">def __init__(self, variable: ScalarVariable, controller: Controller,) -&gt; None:
+    """Initializes monitor attributes.
+
+    Args:
+        variable (ScalarVariable):  Variable to monitor for value.
+
+        controller (Controller): Controller object for accessing process variable.
+    """
+    self.units = None
+    # check if units has been set
+    if "units" in variable.__fields_set__:
+        self.units = variable.units
+    self.pvname = variable.name
+    self.controller = controller
+</code></pre>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-method">
+<h3 class="doc doc-heading" id="lume_epics.client.monitors.PVScalar.poll">
+
+        <code class="highlight language-python">
+poll
+(self)
+
+        </code>
+
+
+      </h3>
+<div class="doc doc-contents ">
+<p>Poll variable for value,</p>
+<details class="quote">
+          <summary>Source code in <code>lume_epics/client/monitors.py</code></summary>
+          <pre class="highlight"><code class="language-python">def poll(self) -&gt; Tuple[np.ndarray]:
+    """
+    Poll variable for value,
+
+    """
+    return self.controller.get_value(self.pvname)
+</code></pre>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="doc doc-object doc-class">
+<h2 class="doc doc-heading" id="lume_epics.client.monitors.PVTimeSeries">
+
+        <code>PVTimeSeries</code>
+
+
+      </h2>
+<div class="doc doc-contents ">
+<p>Monitor for time series variables.</p>
+<p><strong>Attributes:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>time</code></td>
+<td><code>np.ndarray</code></td>
+<td>
+<p>Array of times sampled.</p>
+</td>
+</tr>
+<tr>
+<td><code>data</code></td>
+<td><code>np.ndarray</code></td>
+<td>
+<p>Array of sampled data.</p>
+</td>
+</tr>
+<tr>
+<td><code>variable</code></td>
+<td><code>ScalarVariable</code></td>
+<td>
+<p>Variable monitored for time series.</p>
+</td>
+</tr>
+<tr>
+<td><code>controller</code></td>
+<td><code>Controller</code></td>
+<td>
+<p>Controller object for accessing process variable.</p>
+</td>
+</tr>
+<tr>
+<td><code>units</code></td>
+<td><code>str</code></td>
+<td>
+<p>Units associated with the variable</p>
+</td>
+</tr>
+<tr>
+<td><code>pvname</code></td>
+<td><code>str</code></td>
+<td>
+<p>Name of the process variable to access</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="doc doc-children">
+<div class="doc doc-object doc-method">
+<h3 class="doc doc-heading" id="lume_epics.client.monitors.PVTimeSeries.__init__">
+
+        <code class="highlight language-python">
+__init__
+(self, variable, controller)
+
+        </code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-special"><code>special</code></small>
+  </span>
+
+      </h3>
+<div class="doc doc-contents ">
+<p>Initializes monitor attributes.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>variable</code></td>
+<td><code>ScalarVariable</code></td>
+<td>
+<p>Variable to monitor for time series</p>
+</td>
+<td><em>required</em></td>
+</tr>
+<tr>
+<td><code>controller</code></td>
+<td><code>Controller</code></td>
+<td>
+<p>Controller object for accessing process variable.</p>
+</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+<details class="quote">
+          <summary>Source code in <code>lume_epics/client/monitors.py</code></summary>
+          <pre class="highlight"><code class="language-python">def __init__(self, variable: ScalarVariable, controller: Controller,) -&gt; None:
+    """Initializes monitor attributes.
+
+    Args:
+        variable (ScalarVariable): Variable to monitor for time series
+
+        controller (Controller): Controller object for accessing process variable.
+
+    """
+    self.pvname = variable.name
+    self.tstart = time.time()
+    self.time = np.array([])
+    self.data = np.array([])
+
+    self.units = None
+    # check if units has been set
+    if "units" in variable.__fields_set__:
+        self.units = variable.units
+
+    self.controller = controller
+</code></pre>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-method">
+<h3 class="doc doc-heading" id="lume_epics.client.monitors.PVTimeSeries.poll">
+
+        <code class="highlight language-python">
+poll
+(self)
+
+        </code>
+
+
+      </h3>
+<div class="doc doc-contents ">
+<p>Collects image data via appropriate protocol and returns time and data.</p>
+<details class="quote">
+          <summary>Source code in <code>lume_epics/client/monitors.py</code></summary>
+          <pre class="highlight"><code class="language-python">def poll(self) -&gt; Tuple[np.ndarray]:
+    """
+    Collects image data via appropriate protocol and returns time and data.
+
+    """
+    t = datetime.now()
+
+    v = self.controller.get_value(self.pvname)
+
+    self.time = np.append(self.time, t)
+    self.data = np.append(self.data, v)
+
+    return self.time, self.data
+</code></pre>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js" defer></script>
+
+        <div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
