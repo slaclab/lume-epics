@@ -19,25 +19,9 @@ def image_vars(model):
 
 @pytest.fixture(scope="session")
 def image_plot(ca_controller, server, model, image_vars):
-    image_plot = ImagePlot(image_vars, ca_controller)
-
-    image_plot.build_plot(palette=YlGn3)
+    image_plot = ImagePlot(image_vars, ca_controller, palette=YlGn3)
 
     return image_plot
-
-
-def test_image_plot_missing_build_params(image_plot):
-
-    # missing palette or color mapper
-    with pytest.raises(Exception):
-        image_plot.build_plot()
-
-    # successful test with color_mapper
-    color_mapper = LinearColorMapper(palette=YlGn3, low=0, high=256)
-    image_plot.build_plot(color_mapper=color_mapper)
-
-    # successful test with palette
-    image_plot.build_plot(palette=YlGn3)
 
 
 def test_image_plot_update(image_plot, image_vars, prefix, server, ca_controller):
