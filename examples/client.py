@@ -37,11 +37,9 @@ input_variables = list(input_variables.values())
 sliders = build_sliders(input_variables, controller,)
 
 # create image plot
-image_plot = ImagePlot(image_output, controller)
-
 pal = palettes.viridis(256)
 color_mapper = LinearColorMapper(palette=pal, low=0, high=256)
-image_plot.build_plot(color_mapper=color_mapper)
+image_plot = ImagePlot(image_output, controller, color_mapper=color_mapper)
 
 striptool = Striptool(
     [output_variables["output2"], output_variables["output3"]], controller

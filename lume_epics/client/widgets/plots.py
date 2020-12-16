@@ -60,6 +60,8 @@ class ImagePlot:
         controller: Controller,
         x_range: List[float] = None,
         y_range: List[float] = None,
+        color_mapper: ColorMapper = None,
+        palette: tuple = None,
     ) -> None:
         """
         Initialize monitors, current process variable, and data source.
@@ -74,6 +76,12 @@ class ImagePlot:
         self._x_range = x_range
         self._y_range = y_range
 
+        if color_mapper is None and palette is None:
+            raise Exception("Must provdie color mapper or palette")
+
+        self._color_mapper = color_mapper
+        self._palette = palette
+
         for variable in variables:
             self.pv_monitors[variable.name] = PVImage(variable, controller)
 
@@ -84,10 +92,9 @@ class ImagePlot:
         image_data["image"][0] = np.flipud(image_data["image"][0].T)
 
         self.source = ColumnDataSource(image_data)
+        self.build_plot()
 
-    def build_plot(
-        self, palette: tuple = None, color_mapper: ColorMapper = None
-    ) -> None:
+    def build_plot(self,) -> None:
         """
         Creates the plot object.
 
@@ -107,7 +114,7 @@ class ImagePlot:
         )
         self.plot.x_range.range_padding = self.plot.y_range.range_padding = 0
 
-        if color_mapper:
+        if self._color_mapper:
             self.plot.image(
                 name="image_plot",
                 image="image",
@@ -116,10 +123,10 @@ class ImagePlot:
                 dw="dw",
                 dh="dh",
                 source=self.source,
-                color_mapper=color_mapper,
+                color_mapper=self._color_mapper,
             )
 
-        elif palette:
+        elif self._palette:
             self.plot.image(
                 name="image_plot",
                 image="image",
@@ -128,7 +135,7 @@ class ImagePlot:
                 dw="dw",
                 dh="dh",
                 source=self.source,
-                palette=palette,
+                palette=self._palette,
             )
 
         else:
