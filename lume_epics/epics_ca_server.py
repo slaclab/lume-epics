@@ -2,7 +2,7 @@ import copy
 import logging
 import multiprocessing
 import time
-import signal 
+import signal
 from typing import Dict
 
 from lume_model.variables import Variable, InputVariable, OutputVariable
@@ -19,8 +19,6 @@ from typing import Dict, Mapping, Union, List
 logger = logging.getLogger(__name__)
 
 
-
-
 class CAServer(multiprocessing.Process):
     """
     Process-based implementation of Channel Access server.
@@ -35,16 +33,20 @@ class CAServer(multiprocessing.Process):
         exit_event (multiprocessing.Event): Event indicating shutdown
 
     """
+
     protocol = "ca"
 
-    def __init__(self,
-                 prefix: str,
-                 input_variables: Dict[str, InputVariable], 
-                 output_variables: Dict[str, OutputVariable],
-                 in_queue: multiprocessing.Queue, 
-                 out_queue: multiprocessing.Queue, 
-                 running_indicator: multiprocessing.Value,
-                 *args, **kwargs) -> None:
+    def __init__(
+        self,
+        prefix: str,
+        input_variables: Dict[str, InputVariable],
+        output_variables: Dict[str, OutputVariable],
+        in_queue: multiprocessing.Queue,
+        out_queue: multiprocessing.Queue,
+        running_indicator: multiprocessing.Value,
+        *args,
+        **kwargs,
+    ) -> None:
         """Initialize server process.
 
         Args:
@@ -72,21 +74,18 @@ class CAServer(multiprocessing.Process):
         self._providers = {}
         self._running = running_indicator
 
-
     def update_pv(self, pvname, value) -> None:
         """Adds update to input process variable to the input queue.
 
         Args:
             pvname (str): Name of process variable
 
-            value (Union[np.ndarray, float]): Value to set 
+            value (Union[np.ndarray, float]): Value to set
 
         """
         val = value
         pvname = pvname.replace(f"{self._prefix}:", "")
-        self._in_queue.put(
-            {"protocol": self.protocol, "pvname": pvname, "value": val}
-        )
+        self._in_queue.put({"protocol": self.protocol, "pvname": pvname, "value": val})
 
     def setup_server(self) -> None:
         """Configure and start server.
@@ -102,7 +101,9 @@ class CAServer(multiprocessing.Process):
 
         # create all process variables using the process variables stored in
         # pvdb with the given prefix
-        pvdb, self._child_to_parent_map = build_pvdb(self._input_variables, self._output_variables)
+        pvdb, self._child_to_parent_map = build_pvdb(
+            self._input_variables, self._output_variables
+        )
         self.ca_server.createPV(self._prefix + ":", pvdb)
 
         # set up driver for handing read and write requests to process variables
@@ -114,7 +115,11 @@ class CAServer(multiprocessing.Process):
 
         logger.info("CA server started")
 
-    def update_pvs(self, input_variables: List[InputVariable], output_variables: List[OutputVariable]):
+    def update_pvs(
+        self,
+        input_variables: List[InputVariable],
+        output_variables: List[OutputVariable],
+    ):
         """Update process variables over Channel Access.
 
         Args:
@@ -135,8 +140,8 @@ class CAServer(multiprocessing.Process):
         while not self.exit_event.is_set():
             try:
                 data = self._out_queue.get_nowait()
-                inputs = data.get('input_variables', [])
-                outputs = data.get('output_variables', [])
+                inputs = data.get("input_variables", [])
+                outputs = data.get("output_variables", [])
                 self.update_pvs(inputs, outputs)
             except Empty:
                 time.sleep(0.01)
@@ -145,17 +150,17 @@ class CAServer(multiprocessing.Process):
         self.server_thread.stop()
         self._running.value = False
         logger.info("Channel access server stopped.")
-        
 
     def shutdown(self):
-        """Safely shutdown the server process. 
+        """Safely shutdown the server process.
 
         """
         self.exit_event.set()
 
 
-def build_pvdb(input_variables: List[InputVariable],
-               output_variables: List[OutputVariable]) -> tuple:
+def build_pvdb(
+    input_variables: List[InputVariable], output_variables: List[OutputVariable]
+) -> tuple:
     """Utility function for building dictionary (pvdb) used to initialize the channel
     access server.
 
@@ -187,9 +192,13 @@ def build_pvdb(input_variables: List[InputVariable],
             if variable.value.ndim == 2:
                 color_mode = 0
 
-            elif variable.value:
+            elif variable.value.ndim == 3:
+                color_mode = 2
+
+            else:
                 raise Exception(
-                    "Color mode cannot be inferred from image shape.")
+                    f"Color mode cannot be inferred from image shape {variable.value.ndim}."
+                )
 
             # assign default PVS
             pvdb.update(
@@ -246,28 +255,87 @@ def build_pvdb(input_variables: List[InputVariable],
                 }
             )
 
-            child_to_parent_map.update({f"{variable.name}:{child}":variable.name for child in ["NDimensions_RBV","Dimensions_RBV", "ArraySizeX_RBV","ArraySizeY_RBV", "ArraySize_RBV", "ArrayData_RBV", "MinX_RBV","MinY_RBV", "MaxX_RBV", "MaxY_RBV", "ColorMode_RBV"]})
+            child_to_parent_map.update(
+                {
+                    f"{variable.name}:{child}": variable.name
+                    for child in [
+                        "NDimensions_RBV",
+                        "Dimensions_RBV",
+                        "ArraySizeX_RBV",
+                        "ArraySizeY_RBV",
+                        "ArraySize_RBV",
+                        "ArrayData_RBV",
+                        "MinX_RBV",
+                        "MinY_RBV",
+                        "MaxX_RBV",
+                        "MaxY_RBV",
+                        "ColorMode_RBV",
+                    ]
+                }
+            )
 
             if "units" in variable.__fields_set__:
                 pvdb[f"{variable.name}:ArrayData_RBV"]["unit"] = variable.units
 
-            # placeholder for color images, not yet implemented
+            # handle rgb arrays
             if variable.value.ndim > 2:
                 pvdb[f"{variable.name}:ArraySizeZ_RBV"] = {
                     "type": "int",
                     "value": variable.value.shape[2],
                 }
 
-        else:
-            pvdb[variable.name] = variable.dict(
-                exclude_unset=True, by_alias=True
-            )
+        elif variable.variable_type == "scalar":
+            pvdb[variable.name] = variable.dict(exclude_unset=True, by_alias=True)
             if variable.value_range is not None:
                 pvdb[variable.name]["hilim"] = variable.value_range[1]
                 pvdb[variable.name]["lolim"] = variable.value_range[0]
 
             if variable.units is not None:
                 pvdb[variable.name]["unit"] = variable.units
+
+        elif variable.variable_type == "array":
+
+            # assign default PVS
+            pvdb.update(
+                {
+                    f"{variable.name}:NDimensions_RBV": {
+                        "type": "float",
+                        "prec": variable.precision,
+                        "value": variable.value.ndim,
+                    },
+                    f"{variable.name}:Dimensions_RBV": {
+                        "type": "int",
+                        "prec": variable.precision,
+                        "count": variable.value.ndim,
+                        "value": variable.value.shape,
+                    },
+                    f"{variable.name}:ArrayData_RBV": {
+                        "type": "float",
+                        "prec": variable.precision,
+                        "count": int(np.prod(variable.value.shape)),
+                        "value": variable.value.flatten(),
+                    },
+                    f"{variable.name}:ArraySize_RBV": {
+                        "type": "int",
+                        "value": int(np.prod(variable.value.shape)),
+                    },
+                }
+            )
+
+            child_to_parent_map.update(
+                {
+                    f"{variable.name}:{child}": variable.name
+                    for child in [
+                        "NDimensions_RBV",
+                        "Dimensions_RBV",
+                        "ArraySize_RBV",
+                        "ArrayData_RBV",
+                    ]
+                }
+            )
+
+            if "units" in variable.__fields_set__:
+                pvdb[f"{variable.name}:ArrayData_RBV"]["unit"] = variable.units
 
     return pvdb, child_to_parent_map
 
@@ -314,21 +382,23 @@ class CADriver(Driver):
         if model_var_name in self.server._output_variables:
             logger.warning(
                 "Cannot update variable %s. Output variables can only be updated via surrogate model callback.",
-                pvname)
+                pvname,
+            )
             return False
 
         if model_var_name in self.server._input_variables:
 
-            # handle image variables
             if self.server._input_variables[model_var_name].is_constant:
                 logger.debug("Unable to update constant variable %s", model_var_name)
-            
+
             else:
                 self.setParam(pvname, value)
                 self.updatePVs()
                 logger.debug(
                     "Channel Access process variable %s updated with value %s",
-                    pvname, value)
+                    pvname,
+                    value,
+                )
 
                 self.server.update_pv(pvname=pvname, value=value)
                 return True
@@ -351,7 +421,8 @@ class CADriver(Driver):
                 if variable.variable_type == "image":
                     logger.debug(
                         "Channel Access image process variable %s updated.",
-                        variable.name)
+                        variable.name,
+                    )
                     self.setParam(
                         variable.name + ":ArrayData_RBV", variable.value.flatten()
                     )
@@ -360,10 +431,28 @@ class CADriver(Driver):
                     self.setParam(variable.name + ":MaxX_RBV", variable.x_max)
                     self.setParam(variable.name + ":MaxY_RBV", variable.y_max)
 
-                else:
+                elif variable.variable_type == "scalar":
                     logger.debug(
                         "Channel Access process variable %s updated wth value %s.",
-                        variable.name, variable.value)
+                        variable.name,
+                        variable.value,
+                    )
                     self.setParam(variable.name, variable.value)
+
+                elif variable.variable_type == "array":
+                    logger.debug(
+                        "Channel Access image process variable %s updated.",
+                        variable.name,
+                    )
+                    self.setParam(
+                        variable.name + ":ArrayData_RBV", variable.value.flatten()
+                    )
+
+                else:
+                    logger.debug(
+                        "No instructions for handling variable %s of type %s",
+                        variable.name,
+                        variable.variable_type,
+                    )
 
         self.updatePVs()
