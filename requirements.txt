@@ -4,5 +4,5 @@ p4p
 numpy
 bokeh
 click
-lume-model>=0.8
+lume-model>=0.10
 nose>=1.1.2
