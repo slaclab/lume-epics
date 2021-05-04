@@ -6,7 +6,7 @@ from bokeh import palettes
 
 from lume_epics.client.controller import Controller
 
-from lume_epics.client.widgets.tables import ValueTable 
+from lume_epics.client.widgets.tables import ValueTable
 from lume_epics.client.widgets.controls import build_sliders, EntryTable
 from lume_epics.client.widgets.plots import Striptool, ImagePlot
 
@@ -19,10 +19,10 @@ def striptool_update_callback():
     Calls striptool update with the current global process variable.
     """
     global current_striptool_pv
-    striptool.update(live_variable = current_striptool_pv)
+    striptool.update(live_variable=current_striptool_pv)
 
 
-class LayoutBuilder():
+class LayoutBuilder:
     """
     Class used for building a layout from a configuration file.
 
@@ -36,22 +36,32 @@ class LayoutBuilder():
 
     def __init__(self, ncol_widgets: int):
         self._ncol_widgets = ncol_widgets
-        self._input_header = Div(text="<h3 style='text-align:center;'>Live Model Inputs</h1>", sizing_mode="scale_both", margin=(0,0,0,0))
-        self._output_header = Div(text="<h3 style='text-align:center;'>Live Model Outputs</h1>", sizing_mode="scale_both", margin=(0,0,0,0))
+        self._input_header = Div(
+            text="<h3 style='text-align:center;'>Live Model Inputs</h1>",
+            sizing_mode="scale_both",
+            margin=(0, 0, 0, 0),
+        )
+        self._output_header = Div(
+            text="<h3 style='text-align:center;'>Live Model Outputs</h1>",
+            sizing_mode="scale_both",
+            margin=(0, 0, 0, 0),
+        )
         self._input_layout = []
         self._output_layout = []
-
 
     def add_input(self, layout_item, title: str = None) -> None:
         """Add bokeh item to the input layout.
 
-        Args: 
+        Args:
             layout_item: Bokeh object to be added to inputs
             title (str): Optional title for the item
         """
 
         if title:
-            title_div = Div(text=f"<p style='text-align:center;'>{title}</p>", sizing_mode="scale_both")
+            title_div = Div(
+                text=f"<p style='text-align:center;'>{title}</p>",
+                sizing_mode="scale_both",
+            )
             layout_item = column(title_div, layout_item, sizing_mode="scale_both")
 
         self._input_layout.append(layout_item)
@@ -59,17 +69,19 @@ class LayoutBuilder():
     def add_output(self, layout_item, title: str = None) -> None:
         """Add bokeh item to the output layout.
 
-        Args: 
+        Args:
             layout_item: Bokeh object to be added to outputs
             title (str): Optional title for the item
         """
 
         if title:
-            title_div = Div(text=f"<p style='text-align:center;'>{title}</p>", sizing_mode="scale_both")
+            title_div = Div(
+                text=f"<p style='text-align:center;'>{title}</p>",
+                sizing_mode="scale_both",
+            )
             layout_item = column(title_div, layout_item, sizing_mode="scale_both")
 
         self._output_layout.append(layout_item)
-
 
     def add_input_stack(self, layout_items: list, title: str = None) -> None:
         """Add stacked items as an input layout item.
@@ -80,14 +92,17 @@ class LayoutBuilder():
 
         """
         layout_item = column(layout_items)
-        
+
         if title:
-            title_div = Div(text=f"p style='text-align:center;'>{title}</p>", sizing_mode="scale_both")
-            layout_item = column(title_div, layout_item, sizing_mode = "scale_both")
+            title_div = Div(
+                text=f"p style='text-align:center;'>{title}</p>",
+                sizing_mode="scale_both",
+            )
+            layout_item = column(title_div, layout_item, sizing_mode="scale_both")
 
         self._input_layout.append(layout_item)
 
-    def add_output_stack(self, layout_items:list, title: str = None) -> None:
+    def add_output_stack(self, layout_items: list, title: str = None) -> None:
         """Add stacked items as an output layout item.
 
         Args:
@@ -95,10 +110,14 @@ class LayoutBuilder():
             title (str): Optional title for the stack
         """
         layout_item = column(layout_items)
-        
+
         if title:
-            title_div = Div(text=f"p style='text-align:center;'>{title}</h1>", sizing_mode="scale_both", margin=(0,0,0,0))
-            layout_item = column(title_div, layout_item, sizing_mode = "scale_both")
+            title_div = Div(
+                text=f"p style='text-align:center;'>{title}</h1>",
+                sizing_mode="scale_both",
+                margin=(0, 0, 0, 0),
+            )
+            layout_item = column(title_div, layout_item, sizing_mode="scale_both")
 
         else:
             self._output_layout.append(layout_item)
@@ -107,16 +126,31 @@ class LayoutBuilder():
         """Builds layout for rendering with bokeh document.
 
         """
-        input_grid = gridplot(self._input_layout,  ncols=self._ncol_widgets, sizing_mode="scale_both")
-        output_grid = gridplot(self._output_layout, ncols=self._ncol_widgets, sizing_mode="scale_both")
+        input_grid = gridplot(
+            self._input_layout, ncols=self._ncol_widgets, sizing_mode="scale_both"
+        )
+        output_grid = gridplot(
+            self._output_layout, ncols=self._ncol_widgets, sizing_mode="scale_both"
+        )
 
-        built_layout = [self._input_header, input_grid, self._output_header, output_grid]
+        built_layout = [
+            self._input_header,
+            input_grid,
+            self._output_header,
+            output_grid,
+        ]
         return layout(built_layout, name="layout", sizing_mode="scale_both")
 
 
-
-def render_from_yaml(config_file, prefix: str, protocol: str, read_only=False, striptool_limit=50, ncol_widgets=5):
-    """Renders a bokeh layout from the configuration file. Returns layout and callbacks. 
+def render_from_yaml(
+    config_file,
+    prefix: str,
+    protocol: str,
+    read_only=False,
+    striptool_limit=50,
+    ncol_widgets=5,
+):
+    """Renders a bokeh layout from the configuration file. Returns layout and callbacks.
 
     Args:
         config_file: Opened configuration file
@@ -169,7 +203,7 @@ def render_from_yaml(config_file, prefix: str, protocol: str, read_only=False, s
             variable_output_images.append(variable)
 
     # set up controller
-    controller = Controller(protocol)
+    controller = Controller(protocol, input_variables, output_variables, prefix)
 
     # track callbacks
     callbacks = []
@@ -177,13 +211,12 @@ def render_from_yaml(config_file, prefix: str, protocol: str, read_only=False, s
     # track all inputs
     input_value_vars = constant_scalars + variable_input_scalars
 
-
     layout_builder = LayoutBuilder(ncol_widgets)
 
     # add images
     current_row = []
     for variable in variable_input_images + constant_images:
-        image = ImagePlot([variable], controller, prefix)
+        image = ImagePlot([variable], controller)
         image.build_plot(pal)
         layout_builder.add_input(image.plot, title=variable.name)
         callbacks.append(image.update)
@@ -192,13 +225,13 @@ def render_from_yaml(config_file, prefix: str, protocol: str, read_only=False, s
     if read_only:
         striptools = []
         for variable in variable_input_scalars:
-            striptool = Striptool([variable], controller, prefix, limit=striptool_limit)
+            striptool = Striptool([variable], controller, limit=striptool_limit)
             layout_builder.add_input(striptool.plot, title=variable.name)
             callbacks.append(striptool.update)
 
     # build sliders and value entry table
     else:
-        sliders = build_sliders(variable_input_scalars, controller, prefix)
+        sliders = build_sliders(variable_input_scalars, controller)
 
         slider_stack = []
         for slider in sliders:
@@ -208,29 +241,28 @@ def render_from_yaml(config_file, prefix: str, protocol: str, read_only=False, s
         layout_builder.add_input_stack(slider_stack)
 
         # build value entry
-        value_entry = EntryTable(input_value_vars, controller, prefix)
+        value_entry = EntryTable(input_value_vars, controller)
 
         layout_builder.add_input_stack([value_entry.table, value_entry.button_row])
 
     table_row = []
 
     # add value table callback
-    value_table = ValueTable(input_value_vars, controller, prefix)
+    value_table = ValueTable(input_value_vars, controller)
     layout_builder.add_input(value_table.table)
     callbacks.append(value_table.update)
 
-
     # add output value table callback
-    output_value_table = ValueTable(variable_output_scalars, controller, prefix)
+    output_value_table = ValueTable(variable_output_scalars, controller)
 
     if read_only:
-        value_table.table.autosize_mode="fit_columns"
+        value_table.table.autosize_mode = "fit_columns"
 
     layout_builder.add_output(output_value_table.table)
     callbacks.append(output_value_table.update)
 
     for variable in variable_output_images:
-        image = ImagePlot([variable], controller, prefix)
+        image = ImagePlot([variable], controller)
         image.build_plot(pal)
         layout_builder.add_output(image.plot, title=variable.name)
         callbacks.append(image.update)
@@ -240,14 +272,18 @@ def render_from_yaml(config_file, prefix: str, protocol: str, read_only=False, s
 
         for variable in variable_output_scalars:
 
-            striptool = Striptool([variable], controller, prefix, limit=striptool_limit)
+            striptool = Striptool([variable], controller, limit=striptool_limit)
             layout_builder.add_output(striptool.plot, title=variable.name)
             callbacks.append(striptool.update)
-            
-    else:
-        output_striptool = Striptool(variable_output_scalars, controller, prefix, limit=striptool_limit)
 
-        layout_builder.add_output_stack([output_striptool.selection, output_striptool.plot])
+    else:
+        output_striptool = Striptool(
+            variable_output_scalars, controller, limit=striptool_limit
+        )
+
+        layout_builder.add_output_stack(
+            [output_striptool.selection, output_striptool.plot]
+        )
 
         # add the update callback
         callbacks.append(output_striptool.update)
