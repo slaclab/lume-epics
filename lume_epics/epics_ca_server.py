@@ -310,7 +310,7 @@ def build_pvdb(
                         "value": variable.value.shape,
                     },
                     f"{variable.name}:ArrayData_RBV": {
-                        "type": "float",
+                        "type": variable.value_type,
                         "prec": variable.precision,
                         "count": int(np.prod(variable.value.shape)),
                         "value": variable.value.flatten(),
@@ -321,6 +321,8 @@ def build_pvdb(
                     },
                 }
             )
+
+            print(pvdb)
 
             child_to_parent_map.update(
                 {

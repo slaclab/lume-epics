@@ -116,9 +116,14 @@ class PVAServer(multiprocessing.Process):
                 initial = nd_array
 
             elif variable.variable_type == "array":
-                nd_array = variable.value.view(NTNDArrayData)
-                nt = NTNDArray()
-                initial = nd_array
+                if variable.value_type == "str":
+                    nt = NTScalar("as")
+                    initial = variable.value
+
+                else:
+                    nd_array = variable.value.view(NTNDArrayData)
+                    nt = NTNDArray()
+                    initial = nd_array
 
             else:
                 raise ValueError(
@@ -155,14 +160,20 @@ class PVAServer(multiprocessing.Process):
                 initial = nd_array
 
             elif variable.variable_type == "array":
-                nd_array = variable.value.view(NTNDArrayData)
-                nt = NTNDArray()
-                initial = nd_array
 
+                if variable.value_type == "string":
+                    nt = NTScalar("as")
+                    initial = variable.value
+
+                else:
+                    nd_array = variable.value.view(NTNDArrayData)
+                    nt = NTNDArray()
+                    initial = nd_array
             else:
                 raise ValueError(
                     "Unsupported variable type provided: %s", variable.variable_type
                 )
+
             pv = SharedPV(nt=nt, initial=initial)
             self._providers[pvname] = pv
 
@@ -218,8 +229,11 @@ class PVAServer(multiprocessing.Process):
                     logger.debug(
                         "pvAccess array process variable %s updated.", variable.name
                     )
-                    nd_array = variable.value.view(NTNDArrayData)
-                    value = nd_array
+                    if variable.value_type == "str":
+                        value = variable.value
+
+                    else:
+                        value = variable.value.view(NTNDArrayData)
 
                 # do not build attribute pvs
                 else:
