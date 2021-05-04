@@ -44,6 +44,7 @@ image_plot = ImagePlot(image_output, controller, color_mapper=color_mapper)
 striptool = Striptool(
     [output_variables["output2"], output_variables["output3"]], controller
 )
+
 entry_table = EntryTable(input_variables, controller)
 value_table = ValueTable(input_variables, controller)
 
