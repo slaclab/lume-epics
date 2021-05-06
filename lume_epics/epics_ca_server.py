@@ -104,6 +104,7 @@ class CAServer(multiprocessing.Process):
         pvdb, self._child_to_parent_map = build_pvdb(
             self._input_variables, self._output_variables
         )
+
         self.ca_server.createPV(self._prefix + ":", pvdb)
 
         # set up driver for handing read and write requests to process variables
@@ -322,8 +323,6 @@ def build_pvdb(
                 }
             )
 
-            print(pvdb)
-
             child_to_parent_map.update(
                 {
                     f"{variable.name}:{child}": variable.name
@@ -446,6 +445,7 @@ class CADriver(Driver):
                         "Channel Access image process variable %s updated.",
                         variable.name,
                     )
+
                     self.setParam(
                         variable.name + ":ArrayData_RBV", variable.value.flatten()
                     )
