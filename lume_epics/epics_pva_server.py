@@ -79,7 +79,7 @@ class PVAServer(multiprocessing.Process):
         Args:
             pvname (str): Name of process variable
 
-            value (Union[np.ndarray, float]): Value to set 
+            value (Union[np.ndarray, float]): Value to set
 
         """
         # Hack for now to get the pickable value
@@ -114,6 +114,17 @@ class PVAServer(multiprocessing.Process):
                 }
                 nt = NTNDArray()
                 initial = nd_array
+
+            elif variable.variable_type == "array":
+                if variable.value_type == "str":
+                    nt = NTScalar("as")
+                    initial = variable.value
+
+                else:
+                    nd_array = variable.value.view(NTNDArrayData)
+                    nt = NTNDArray()
+                    initial = nd_array
+
             else:
                 raise ValueError(
                     "Unsupported variable type provided: %s", variable.variable_type
@@ -147,10 +158,22 @@ class PVAServer(multiprocessing.Process):
 
                 nt = NTNDArray()
                 initial = nd_array
+
+            elif variable.variable_type == "array":
+
+                if variable.value_type == "string":
+                    nt = NTScalar("as")
+                    initial = variable.value
+
+                else:
+                    nd_array = variable.value.view(NTNDArrayData)
+                    nt = NTNDArray()
+                    initial = nd_array
             else:
                 raise ValueError(
                     "Unsupported variable type provided: %s", variable.variable_type
                 )
+
             pv = SharedPV(nt=nt, initial=initial)
             self._providers[pvname] = pv
 
@@ -162,7 +185,7 @@ class PVAServer(multiprocessing.Process):
 
         # update configuration
         for key in self.pva_server.conf():
-            self._conf[key]= self.pva_server.conf()[key]
+            self._conf[key] = self.pva_server.conf()[key]
 
         logger.info("pvAccess server started")
 
@@ -201,6 +224,17 @@ class PVAServer(multiprocessing.Process):
                         "y_max": variable.y_max,
                     }
                     value = nd_array
+
+                elif variable.variable_type == "array":
+                    logger.debug(
+                        "pvAccess array process variable %s updated.", variable.name
+                    )
+                    if variable.value_type == "str":
+                        value = variable.value
+
+                    else:
+                        value = variable.value.view(NTNDArrayData)
+
                 # do not build attribute pvs
                 else:
                     logger.debug(
@@ -236,7 +270,7 @@ class PVAServer(multiprocessing.Process):
         logger.info("pvAccess server stopped.")
 
     def shutdown(self):
-        """Safely shutdown the server process. 
+        """Safely shutdown the server process.
 
         """
         self.exit_event.set()
@@ -244,7 +278,7 @@ class PVAServer(multiprocessing.Process):
 
 class PVAccessInputHandler:
     """
-    Handler object that defines the callbacks to execute on put operations to input 
+    Handler object that defines the callbacks to execute on put operations to input
     process variables.
     """
 
@@ -279,4 +313,3 @@ class PVAccessInputHandler:
             self.server.update_pv(pvname=self.pvname, value=op.value())
         # mark server operation as complete
         op.done()
-
