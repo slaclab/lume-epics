@@ -98,6 +98,10 @@ class Controller:
         for variable in {**input_pvs, **output_pvs}.values():
             if variable.variable_type == "image":
                 self.get_image(variable.name)
+
+            elif variable.variable_type == "array":
+                self.get_array(variable.name)
+
             else:
                 self.get_value(variable.name)
 
@@ -265,6 +269,33 @@ class Controller:
         else:
             return DEFAULT_IMAGE_DATA
 
+    def get_array(self, pvname) -> dict:
+        """Gets array data via controller protocol.
+
+        Args:
+            pvname (str): Image process variable name
+
+        """
+        array = None
+        if self._protocol == "ca":
+            array_flat = self.get(f"{pvname}:ArrayData_RBV")
+            shape = self.get(f"{pvname}:ArraySize_RBV")
+
+            if all([array_def is not None for array_def in [array_flat, shape]]):
+
+                array = np.array(array_flat).reshape(shape)
+
+        elif self._protocol == "pva":
+            # context returns numpy array with WRITEABLE=False
+            # copy to manipulate array below
+
+            array = self.get(array)
+
+        if array is not None:
+            return array
+        else:
+            return np.array([])
+
     def put(self, pvname, value: float, timeout=1.0) -> None:
         """Assign the value of a scalar process variable.
 
@@ -381,6 +412,44 @@ class Controller:
                     image_array.attrib.y_max = y_max
 
                 self._context.put(pvname, image_array, throw=False, timeout=timeout)
+
+        else:
+            logger.debug(f"No initial value set for {pvname}.")
+
+    def put_array(
+        self, pvname, array: np.ndarray = None, timeout: float = 1.0,
+    ) -> None:
+        """Assign the value of an array process variable. Allows updates to individual attributes.
+
+        Args:
+            pvname (str): Name of the process variable
+
+            array (np.ndarray): Value to assing to process variable.
+
+            timeout (float): Operation timeout in seconds
+
+        """
+        self._set_up_pv_monitor(pvname)
+
+        # allow no puts before a value has been collected
+        registered = self.get_array(pvname)
+
+        # if the value is registered
+        if registered is not None:
+            if self._protocol == "ca":
+
+                if array is not None:
+                    self._pv_registry[f"{pvname}:ArrayData_RBV"]["pv"].put(
+                        array.flatten(), timeout=timeout
+                    )
+
+            elif self._protocol == "pva":
+
+                # compose normative type
+                pv = self._pv_registry[pvname]
+                array = pv["value"]
+
+                self._context.put(pvname, array, throw=False, timeout=timeout)
 
         else:
             logger.debug(f"No initial value set for {pvname}.")
