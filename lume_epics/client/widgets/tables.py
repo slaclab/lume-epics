@@ -90,7 +90,9 @@ class ValueTable:
         self._source = ColumnDataSource(table_data)
         columns = [
             TableColumn(
-                field="x", title="Outputs", formatter=StringFormatter(font_style="bold")
+                field="x",
+                title="Variable",
+                formatter=StringFormatter(font_style="bold"),
             ),
             TableColumn(field="y", title="Current Value"),
         ]
