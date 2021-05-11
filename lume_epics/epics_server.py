@@ -13,28 +13,29 @@ from .epics_pva_server import PVAServer
 from .epics_ca_server import CAServer
 
 logger = logging.getLogger(__name__)
+multiprocessing.set_start_method("fork")
 
 
 class Server:
     """
     Server for EPICS process variables. Can be optionally initialized with only
-    pvAccess or Channel Access protocols; but, defaults to serving over both. 
+    pvAccess or Channel Access protocols; but, defaults to serving over both.
 
     Attributes:
         model (SurrogateModel): SurrogateModel class to be served
 
         input_variables (List[Variable]): List of lume-model variables passed to model.
 
-        ouput_variables (List[Variable]): List of lume-model variables to use as 
+        ouput_variables (List[Variable]): List of lume-model variables to use as
             outputs.
 
-        ca_server (SimpleServer): Server class that interfaces between the Channel 
+        ca_server (SimpleServer): Server class that interfaces between the Channel
             Access client and the driver.
 
-        ca_driver (CADriver): Class used by server to handle to process variable 
+        ca_driver (CADriver): Class used by server to handle to process variable
             read/write requests.
 
-        pva_server (P4PServer): Threaded p4p server used for serving pvAccess 
+        pva_server (P4PServer): Threaded p4p server used for serving pvAccess
             variables.
 
         exit_event (Event): Threading exit event marking server shutdown.
@@ -79,9 +80,8 @@ class Server:
         self.prefix = prefix
         self.protocols = protocols
 
-        model = model_class(**model_kwargs)
-        self.input_variables = model.input_variables
-
+        self.model = model_class(**model_kwargs)
+        self.input_variables = self.model.input_variables
 
         # update inputs for starting value to be the default
         for variable in self.input_variables.values():
@@ -90,8 +90,8 @@ class Server:
 
         model_input = list(self.input_variables.values())
 
-        self.input_variables = model.input_variables
-        self.output_variables = model.evaluate(model_input)
+        self.input_variables = self.model.input_variables
+        self.output_variables = self.model.evaluate(model_input)
         self.output_variables = {
             variable.name: variable for variable in self.output_variables
         }
@@ -105,17 +105,16 @@ class Server:
 
         self.comm_thread = threading.Thread(
             target=self.run_comm_thread,
-            args=(model_class,),
             kwargs={
                 "model_kwargs": model_kwargs,
                 "in_queue": self.in_queue,
-                "out_queues": self.out_queues
-            }
+                "out_queues": self.out_queues,
+            },
         )
 
         # track running servers
-        self._ca_running = multiprocessing.Value('b', False)
-        self._pva_running = multiprocessing.Value('b', False)
+        self._ca_running = multiprocessing.Value("b", False)
+        self._pva_running = multiprocessing.Value("b", False)
 
         # initialize channel access server
         if "ca" in protocols:
@@ -139,8 +138,8 @@ class Server:
                 output_variables=self.output_variables,
                 in_queue=self.in_queue,
                 out_queue=self.out_queues["pva"],
-                running_indicator = self._pva_running,
-                conf_proxy = self._pva_conf,
+                running_indicator=self._pva_running,
+                conf_proxy=self._pva_conf,
             )
 
     def __enter__(self):
@@ -154,44 +153,49 @@ class Server:
         """
         self.stop()
 
-    def run_comm_thread(self, model_class, model_kwargs={}, in_queue: multiprocessing.Queue=None,
-                        out_queues: Dict[str, multiprocessing.Queue]=None):
+    def run_comm_thread(
+        self,
+        model_kwargs={},
+        in_queue: multiprocessing.Queue = None,
+        out_queues: Dict[str, multiprocessing.Queue] = None,
+    ):
         """Handles communications between pvAccess server, Channel Access server, and model.
-        
+
         Arguments:
             model_class: Model class to be executed.
 
             model_kwargs (dict): Dictionary of model keyword arguments.
 
-            in_queue (multiprocessing.Queue): 
+            in_queue (multiprocessing.Queue):
 
             out_queues (Dict[str: multiprocessing.Queue]): Maps protocol to output assignment queue.
 
 
         """
-        model = model_class(**model_kwargs)
+        model = self.model
 
         while not self.exit_event.is_set():
             try:
                 data = in_queue.get(timeout=0.1)
                 self.input_variables[data["pvname"]].value = data["value"]
+
                 for protocol, queue in out_queues.items():
                     if protocol == data["protocol"]:
                         continue
+
                     queue.put(
-                        {"input_variables":
-                            [self.input_variables[data["pvname"]]]
-                        }
+                        {"input_variables": [self.input_variables[data["pvname"]]]}
                     )
 
                 # update output variable state
                 model_input = list(self.input_variables.values())
                 predicted_output = model.evaluate(model_input)
                 for protocol, queue in out_queues.items():
-                    queue.put({"output_variables": predicted_output},
-                              timeout=0.1)
+                    queue.put({"output_variables": predicted_output}, timeout=0.1)
+
             except Empty:
                 continue
+
             except Full:
                 logger.error(f"{protocol} queue is full.")
 
@@ -200,7 +204,7 @@ class Server:
     def start(self, monitor: bool = True) -> None:
         """Starts server using set server protocol(s).
 
-        Args: 
+        Args:
             monitor (bool): Indicates whether to run the server in the background
                 or to continually monitor. If monitor = False, the server must be
                 explicitly stopped using server.stop()
@@ -232,7 +236,7 @@ class Server:
 
         if "ca" in self.protocols:
             self.ca_process.shutdown()
-            
+
         if "pva" in self.protocols:
             self.pva_process.shutdown()
 
