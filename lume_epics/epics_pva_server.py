@@ -41,8 +41,8 @@ class PVAServer(multiprocessing.Process):
         output_variables: List[OutputVariable],
         in_queue: multiprocessing.Queue,
         out_queue: multiprocessing.Queue,
-        running_indicator: multiprocessing.Value,
         conf_proxy: DictProxy,
+        running_indicator=multiprocessing.Value,
         *args,
         **kwargs,
     ) -> None:
@@ -71,7 +71,9 @@ class PVAServer(multiprocessing.Process):
         self._out_queue = out_queue
         self._providers = {}
         self._conf = conf_proxy
-        self._running = running_indicator
+        self._running_indicator = running_indicator
+
+        self._cached_values = {}
 
     def update_pv(self, pvname: str, value: Union[np.ndarray, float]) -> None:
         """Adds update to input process variable to the input queue.
@@ -85,7 +87,13 @@ class PVAServer(multiprocessing.Process):
         # Hack for now to get the pickable value
         val = value.raw.value
         pvname = pvname.replace(f"{self._prefix}:", "")
-        self._in_queue.put({"protocol": self.protocol, "pvname": pvname, "value": val})
+
+        self._cached_values.update({"pvname": val})
+
+        # only update if not running
+        if not self._running_indicator:
+            self._in_queue.put({"protocol": self.protocol, "pvs": self._cached_values})
+            self._cached_values = {}
 
     def setup_server(self) -> None:
         """Configure and start server.
@@ -229,8 +237,8 @@ class PVAServer(multiprocessing.Process):
                     logger.debug(
                         "pvAccess array process variable %s updated.", variable.name
                     )
-                    if variable.value_type == "str":
-                        value = variable.value
+                    if variable.value_type == "string":
+                        value = list(variable.value)
 
                     else:
                         value = variable.value.view(NTNDArrayData)
@@ -252,7 +260,6 @@ class PVAServer(multiprocessing.Process):
 
         """
         self.setup_server()
-        self._running.value = True
 
         # mark running
         while not self.exit_event.is_set():
@@ -261,12 +268,18 @@ class PVAServer(multiprocessing.Process):
                 inputs = data.get("input_variables", [])
                 outputs = data.get("output_variables", [])
                 self.update_pvs(inputs, outputs)
+
+                # check cached values
+                if len(self._cached_values) > 0 and not self._running_indicator:
+                    self._in_queue.put(
+                        {"protocol": self.protocol, "pvs": self._cached_values}
+                    )
+
             except Empty:
                 time.sleep(0.01)
                 logger.debug("out queue empty")
 
         self.pva_server.stop()
-        self._running.value = False
         logger.info("pvAccess server stopped.")
 
     def shutdown(self):
@@ -308,7 +321,7 @@ class PVAccessInputHandler:
 
         """
         # update input values and global input process variable state
-        if not self.is_constant:
+        if not self.is_constant and op.value() is not None:
             pv.post(op.value())
             self.server.update_pv(pvname=self.pvname, value=op.value())
         # mark server operation as complete
