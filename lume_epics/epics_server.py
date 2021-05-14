@@ -103,18 +103,18 @@ class Server:
 
         self.exit_event = Event()
 
+        self._running_indicator = multiprocessing.Value("b", False)
+
+        # we use the running marker to make sure pvs + ca don't just keep adding queue elements
         self.comm_thread = threading.Thread(
             target=self.run_comm_thread,
             kwargs={
                 "model_kwargs": model_kwargs,
                 "in_queue": self.in_queue,
                 "out_queues": self.out_queues,
+                "running_indicator": self._running_indicator,
             },
         )
-
-        # track running servers
-        self._ca_running = multiprocessing.Value("b", False)
-        self._pva_running = multiprocessing.Value("b", False)
 
         # initialize channel access server
         if "ca" in protocols:
@@ -124,7 +124,7 @@ class Server:
                 output_variables=self.output_variables,
                 in_queue=self.in_queue,
                 out_queue=self.out_queues["ca"],
-                running_indicator=self._ca_running,
+                running_indicator=self._running_indicator,
             )
 
         # initialize pvAccess server
@@ -138,8 +138,8 @@ class Server:
                 output_variables=self.output_variables,
                 in_queue=self.in_queue,
                 out_queue=self.out_queues["pva"],
-                running_indicator=self._pva_running,
                 conf_proxy=self._pva_conf,
+                running_indicator=self._running_indicator,
             )
 
     def __enter__(self):
@@ -155,6 +155,8 @@ class Server:
 
     def run_comm_thread(
         self,
+        *,
+        running_indicator: multiprocessing.Value,
         model_kwargs={},
         in_queue: multiprocessing.Queue = None,
         out_queues: Dict[str, multiprocessing.Queue] = None,
@@ -170,21 +172,33 @@ class Server:
 
             out_queues (Dict[str: multiprocessing.Queue]): Maps protocol to output assignment queue.
 
+            running_marker (multiprocessing.Value): multiprocessing marker for whether comm thread computing or not
 
         """
         model = self.model
 
         while not self.exit_event.is_set():
             try:
-                data = in_queue.get(timeout=0.1)
-                self.input_variables[data["pvname"]].value = data["value"]
 
+                data = in_queue.get(timeout=0.1)
+
+                # mark running
+                running_indicator.value = True
+
+                for pv in data["pvs"]:
+                    self.input_variables[pv].value = data["pvs"][pv]
+
+                # sync pva/ca
                 for protocol, queue in out_queues.items():
                     if protocol == data["protocol"]:
                         continue
 
                     queue.put(
-                        {"input_variables": [self.input_variables[data["pvname"]]]}
+                        {
+                            "input_variables": [
+                                self.input_variables[pv] for pv in data["pvs"]
+                            ]
+                        }
                     )
 
                 # update output variable state
@@ -192,6 +206,8 @@ class Server:
                 predicted_output = model.evaluate(model_input)
                 for protocol, queue in out_queues.items():
                     queue.put({"output_variables": predicted_output}, timeout=0.1)
+
+                running_indicator.value = False
 
             except Empty:
                 continue
