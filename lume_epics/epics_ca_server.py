@@ -4,7 +4,6 @@ import multiprocessing
 import time
 import signal
 from typing import Dict
-
 from lume_model.variables import Variable, InputVariable, OutputVariable
 import numpy as np
 from pcaspy import Driver, SimpleServer
@@ -72,7 +71,10 @@ class CAServer(multiprocessing.Process):
         self._in_queue = in_queue
         self._out_queue = out_queue
         self._providers = {}
-        self._running = running_indicator
+        self._running_indicator = running_indicator
+
+        # cached pv values
+        self._cached_values = {}
 
     def update_pv(self, pvname, value) -> None:
         """Adds update to input process variable to the input queue.
@@ -85,7 +87,13 @@ class CAServer(multiprocessing.Process):
         """
         val = value
         pvname = pvname.replace(f"{self._prefix}:", "")
-        self._in_queue.put({"protocol": self.protocol, "pvname": pvname, "value": val})
+
+        self._cached_values.update({pvname: val})
+
+        # only update if not running
+        if not self._running_indicator.value:
+            self._in_queue.put({"protocol": self.protocol, "pvs": self._cached_values})
+            self._cached_values = {}
 
     def setup_server(self) -> None:
         """Configure and start server.
@@ -137,7 +145,6 @@ class CAServer(multiprocessing.Process):
 
         """
         self.setup_server()
-        self._running.value = True
         while not self.exit_event.is_set():
             try:
                 data = self._out_queue.get_nowait()
@@ -149,7 +156,7 @@ class CAServer(multiprocessing.Process):
                 logger.debug("out queue empty")
 
         self.server_thread.stop()
-        self._running.value = False
+        #        self.server_thread.join()
         logger.info("Channel access server stopped.")
 
     def shutdown(self):
@@ -385,6 +392,10 @@ class CADriver(Driver):
                 "Cannot update variable %s. Output variables can only be updated via surrogate model callback.",
                 pvname,
             )
+            return False
+
+        if value is None:
+            logger.debug(f"None value provided for {pvname}")
             return False
 
         if model_var_name in self.server._input_variables:

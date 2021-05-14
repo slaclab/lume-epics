@@ -196,9 +196,12 @@ class Controller:
 
         """
         self._set_up_pv_monitor(pvname)
+
         pv = self._pv_registry.get(pvname, None)
+
         if pv:
             return pv["value"]
+
         return None
 
     def get_value(self, pvname):
@@ -289,7 +292,7 @@ class Controller:
             # context returns numpy array with WRITEABLE=False
             # copy to manipulate array below
 
-            array = self.get(array)
+            array = self.get(pvname)
 
         if array is not None:
             return array
