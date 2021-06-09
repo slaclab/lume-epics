@@ -35,7 +35,7 @@ def test_entry_table_sumbit(value, entry_table, entry_inputs, prefix, server):
 
     entry_table.submit()
 
-    time.sleep(0.5)
+    time.sleep(0.1)
 
     for input_var in entry_inputs:
         if not input_var.is_constant:
