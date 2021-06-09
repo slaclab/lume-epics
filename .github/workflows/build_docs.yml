@@ -8,6 +8,7 @@ on:
       - github-actions
 jobs:
   build:
+    if: ${{ github.repository == 'slaclab/lume-epics' }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -31,4 +32,4 @@ jobs:
           conda install --file dev-requirements.txt
           conda install --file docs-requirements.txt
           mkdocs build
-        #  mkdocs gh-deploy --force
+          mkdocs gh-deploy --force
