@@ -35,6 +35,8 @@ def test_entry_table_sumbit(value, entry_table, entry_inputs, prefix, server):
 
     entry_table.submit()
 
+    time.sleep(0.1)
+
     for input_var in entry_inputs:
         if not input_var.is_constant:
             val = epics.caget(f"{prefix}:{input_var.name}")
