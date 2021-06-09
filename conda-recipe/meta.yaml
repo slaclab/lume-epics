@@ -23,7 +23,7 @@ requirements:
     - numpy
     - bokeh
     - click
-    - lume-model>=0.10
+    - lume-model>=0.11
     - nose>=1.1.2
 
 test:
@@ -39,6 +39,6 @@ about:
   license: SLAC Open
   license_family: OTHER
   license_file: LICENSE
-  summary: Lume-epics is a dedicated API for serving LUME model variables with EPICS. 
+  summary: Lume-epics is a dedicated API for serving LUME model variables with EPICS.
   doc_url: https://slaclab.github.io/lume-epics/
   dev_url: https://github.com/slaclab/lume-epics
