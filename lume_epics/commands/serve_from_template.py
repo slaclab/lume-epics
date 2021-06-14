@@ -16,19 +16,14 @@ def serve_from_template(filename, prefix, serve_ca, serve_pva):
     protocols = []
     if serve_ca:
         protocols.append("ca")
-    
+
     if serve_pva:
         protocols.append("pva")
 
-    prefix = "test"
-    server = Server(
-        model_class,
-        prefix,
-        model_kwargs=model_kwargs,
-        protocols = protocols
-    )
+    server = Server(model_class, prefix, model_kwargs=model_kwargs, protocols=protocols)
 
     server.start(monitor=True)
+
 
 if __name__ == "__main__":
     serve_from_template()
