@@ -16,6 +16,7 @@ nav:
       - Widgets: Widgets.md
     - Model: Model.md
     - Server: Server.md
+    - EPICS: EPICS.md
 plugins:
   - mkdocstrings:
       default_handler: python
