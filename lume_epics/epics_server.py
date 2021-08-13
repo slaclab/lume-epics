@@ -9,6 +9,7 @@ from queue import Full, Empty
 
 from lume_model.variables import Variable, InputVariable, OutputVariable
 from lume_model.models import SurrogateModel
+from lume_epics import EPICS_ENV_VARS
 from .epics_pva_server import PVAServer
 from .epics_ca_server import CAServer
 
@@ -48,6 +49,7 @@ class Server:
         prefix: str,
         protocols: List[str] = ["pva", "ca"],
         model_kwargs: dict = {},
+        epics_config: dict = {},
     ) -> None:
         """Create OnlineSurrogateModel instance in the main thread and
         initialize output variables by running with the input process variable
@@ -76,7 +78,11 @@ class Server:
                 '(pvAccess) and "ca" (Channel Access).'
             )
 
-        # need these to be global to access from threads
+        # Update epics configuration
+        for var in EPICS_ENV_VARS:
+            if epics_config.get(var):
+                os.environ[var] = epics_config[var]
+
         self.prefix = prefix
         self.protocols = protocols
 
