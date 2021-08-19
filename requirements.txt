@@ -2,7 +2,7 @@ pcaspy
 pyepics
 p4p
 numpy
-bokeh>=2.3.3
+bokeh
 click
 lume-model>=0.13
 nose>=1.1.2
