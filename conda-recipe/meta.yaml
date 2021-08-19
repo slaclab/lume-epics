@@ -12,10 +12,10 @@ source:
 
 requirements:
   host:
-    - python
+    - python >=3.6
     - setuptools
   run:
-    - python
+    - python >=3.6
     - epics-base
     - pyepics
     - pcaspy
@@ -23,7 +23,7 @@ requirements:
     - numpy
     - bokeh
     - click
-    - lume-model>=0.11
+    - lume-model>=0.13
     - nose>=1.1.2
 
 test:
