@@ -7,10 +7,19 @@ from typing import Dict
 from lume_model.variables import Variable, InputVariable, OutputVariable
 import numpy as np
 from pcaspy import Driver, SimpleServer
-from pcaspy.tools import ServerThread
+from epics import caget
+from epics.ca import CAThread
+import epics
+import os
+import pcaspy
+from epics import camonitor
 from queue import Full, Empty, Queue
-
+from epics.multiproc import CAProcess
 from typing import Dict, Mapping, Union, List
+from functools import partial
+
+# os.environ["PYEPICS_LIBCA"] = "/Users/jgarra/opt/anaconda3/envs/lume-epics/epics/lib/darwin-x86/libca.dylib"
+
 
 # Each server must have their outQueue in which the comm server will set the inputs and outputs vars to be updated
 # Comm server must also provide one inQueue in which it will receive inputs from Servers
@@ -18,7 +27,41 @@ from typing import Dict, Mapping, Union, List
 logger = logging.getLogger(__name__)
 
 
-class CAServer(multiprocessing.Process):
+# Thread running server processing loop
+class CAServerThread(CAThread):
+    """
+    A helper class to run server in a thread.
+    The following snippet runs the server for 4 seconds and quit::
+        server = SimpleServer()
+        server_thread = ServerThread(server)
+        server_thread.start()
+        time.sleep(4)
+        server_thread.stop()
+    """
+
+    def __init__(self, server):
+        """
+        :param server: :class:`pcaspy.SimpleServer` object
+        """
+        super(CAThread, self).__init__()
+        self.server = server
+        self.running = True
+
+    def run(self):
+        """
+        Start the server processing
+        """
+        while self.running:
+            self.server.process(0.1)
+
+    def stop(self):
+        """
+        Stop the server processing
+        """
+        self.running = False
+
+
+class CAServer(CAProcess):
     """
     Process-based implementation of Channel Access server.
 
@@ -44,6 +87,7 @@ class CAServer(multiprocessing.Process):
         out_queue: multiprocessing.Queue,
         running_indicator: multiprocessing.Value,
         *args,
+        read_only: bool = False,
         **kwargs,
     ) -> None:
         """Initialize server process.
@@ -72,9 +116,11 @@ class CAServer(multiprocessing.Process):
         self._out_queue = out_queue
         self._providers = {}
         self._running_indicator = running_indicator
+        self._read_only = read_only
 
         # cached pv values
         self._cached_values = {}
+        self._monitors = {}
 
     def update_pv(self, pvname, value) -> None:
         """Adds update to input process variable to the input queue.
@@ -85,10 +131,21 @@ class CAServer(multiprocessing.Process):
             value (Union[np.ndarray, float]): Value to set
 
         """
-        val = value
         pvname = pvname.replace(f"{self._prefix}:", "")
 
-        self._cached_values.update({pvname: val})
+        self._cached_values.update({pvname: value})
+
+        # only update if not running
+        if not self._running_indicator.value:
+            self._in_queue.put({"protocol": self.protocol, "pvs": self._cached_values})
+            self._cached_values = {}
+
+    def _monitor_callback(self, pvname=None, value=None, **kwargs) -> None:
+        """Callback executed on value change events.s
+
+        """
+        var_name = pvname.replace(f"{self._prefix}:", "")
+        self._cached_values.update({var_name: value})
 
         # only update if not running
         if not self._running_indicator.value:
@@ -109,9 +166,17 @@ class CAServer(multiprocessing.Process):
 
         # create all process variables using the process variables stored in
         # pvdb with the given prefix
-        pvdb, self._child_to_parent_map = build_pvdb(
-            self._input_variables, self._output_variables
-        )
+        if not self._read_only:
+            pvdb, self._child_to_parent_map = build_pvdb(
+                self._input_variables, self._output_variables
+            )
+
+        # if this is read-only, set up the monitors for the variables
+        else:
+            # clear cache
+            pvdb, self._child_to_parent_map = build_pvdb({}, self._output_variables)
+            for var_name, var in self._input_variables.items():
+                self._monitors[var_name] = epics.pv.get_pv(f"{self._prefix}:{var_name}")
 
         self.ca_server.createPV(self._prefix + ":", pvdb)
 
@@ -119,7 +184,7 @@ class CAServer(multiprocessing.Process):
         self.ca_driver = CADriver(server=self)
 
         # start the server thread
-        self.server_thread = ServerThread(self.ca_server)
+        self.server_thread = CAServerThread(self.ca_server)
         self.server_thread.start()
 
         logger.info("CA server started")
@@ -137,7 +202,11 @@ class CAServer(multiprocessing.Process):
             output_variables (List[OutputVariable]): List of lume-model output variables.
 
         """
+        # if not self._read_only:
         variables = input_variables + output_variables
+        # else:
+        #     variables = output_variables
+
         self.ca_driver.update_pvs(variables)
 
     def run(self) -> None:
@@ -156,7 +225,6 @@ class CAServer(multiprocessing.Process):
                 logger.debug("out queue empty")
 
         self.server_thread.stop()
-        #        self.server_thread.join()
         logger.info("Channel access server stopped.")
 
     def shutdown(self):
