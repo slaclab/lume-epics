@@ -1,0 +1,16 @@
+record(ai, "test:input1")
+{
+   field(PINI, "YES")
+   field(VAL,  1)
+   field(PREC, 3)
+   field(HOPR, 256)
+   field(LOPR, 0)
+}
+record(ai, "test:input2")
+{
+   field(PINI, "YES")
+   field(VAL,  2)
+   field(PREC, 3)
+   field(HOPR, 256)
+   field(LOPR, 0)
+}
