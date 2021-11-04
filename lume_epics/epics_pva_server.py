@@ -6,15 +6,17 @@ import numpy as np
 import time
 import signal
 from typing import List, Union
-
+from functools import partial
 from lume_model.variables import InputVariable, OutputVariable
+from p4p.client.thread import Context
 from p4p.nt import NTScalar, NTNDArray
 from p4p.server.thread import SharedPV
 from p4p.server import Server as P4PServer
 from p4p.nt.ndarray import ntndarray as NTNDArrayData
 from p4p.server.raw import ServOpWrap
 
-
+p4p_logger = logging.getLogger("p4p")
+p4p_logger.setLevel("DEBUG")
 # Each server must have their outQueue in which the comm server will set the inputs and outputs vars to be updated
 # Comm server must also provide one inQueue in which it will receive inputs from Servers
 
@@ -27,8 +29,17 @@ class PVAServer(multiprocessing.Process):
 
     Attributes:
         pva_server (P4PServer): p4p server instance
-
         exit_event (multiprocessing.Event): Event indicating shutdown
+        _prefix (str): Process variable prefix string
+        _input_variables (List[InputVariable]): List of input variables
+        _output_variables (List[OutputVariable]): List of output variables
+        _in_queue (multiprocessing.Queue): input variable queue
+        _out_queue (multiprocessing.Queue): output variable update queue
+        _providers (dict): Dictionary mapping pvname to p4p provider
+        _running_indicator (multiprocessing.Value): Boolean indicator of running model execution
+        _read_only (bool): Boolean indicator of whether read-only server
+        _monitors (dict): Dictionary of monitor objects for read-only server
+        _cached_values (dict): Dict for caching values while model executes
 
     """
 
@@ -41,8 +52,8 @@ class PVAServer(multiprocessing.Process):
         output_variables: List[OutputVariable],
         in_queue: multiprocessing.Queue,
         out_queue: multiprocessing.Queue,
-        conf_proxy: DictProxy,
-        running_indicator=multiprocessing.Value,
+        running_indicator: multiprocessing.Value,
+        read_only: bool = False,
         *args,
         **kwargs,
     ) -> None:
@@ -59,6 +70,10 @@ class PVAServer(multiprocessing.Process):
 
             out_queue (multiprocessing.Queue): Queue for tracking updates to output variables
 
+            running_indicator (multiprocessing.Value): Boolean indicator indicating running model execution
+
+            read_only (bool): Boolean indicator of whether read-only server
+
         """
 
         super().__init__(*args, **kwargs)
@@ -70,9 +85,10 @@ class PVAServer(multiprocessing.Process):
         self._in_queue = in_queue
         self._out_queue = out_queue
         self._providers = {}
-        self._conf = conf_proxy
         self._running_indicator = running_indicator
-
+        self._read_only = read_only
+        # monitors for read only
+        self._monitors = {}
         self._cached_values = {}
 
     def update_pv(self, pvname: str, value: Union[np.ndarray, float]) -> None:
@@ -85,13 +101,27 @@ class PVAServer(multiprocessing.Process):
 
         """
         # Hack for now to get the pickable value
-        val = value.raw.value
+        value = value.raw.value
         pvname = pvname.replace(f"{self._prefix}:", "")
 
-        self._cached_values.update({"pvname": val})
+        self._cached_values.update({pvname: val})
 
         # only update if not running
-        if not self._running_indicator:
+        if not self._running_indicator.value:
+            self._in_queue.put({"protocol": self.protocol, "pvs": self._cached_values})
+            self._cached_values = {}
+
+    def _monitor_callback(self, pvname, V) -> None:
+        """Callback function used for updating read_only process variables.
+
+        """
+        val = V.raw.value
+        pvname = pvname.replace(f"{self._prefix}:", "")
+
+        self._cached_values.update({pvname: val})
+
+        # only update if not running
+        if not self._running_indicator.value:
             self._in_queue.put({"protocol": self.protocol, "pvs": self._cached_values})
             self._cached_values = {}
 
@@ -99,50 +129,63 @@ class PVAServer(multiprocessing.Process):
         """Configure and start server.
 
         """
+        # initialize context
+        if self._read_only:
+            self._context = Context("pva")
+
         # ignore interrupt in subprocess
         signal.signal(signal.SIGINT, signal.SIG_IGN)
 
         logger.info("Initializing pvAccess server")
         # initialize global inputs
+
         for variable in self._input_variables.values():
             pvname = f"{self._prefix}:{variable.name}"
 
-            # prepare scalar variable types
-            if variable.variable_type == "scalar":
-                nt = NTScalar("d")
-                initial = variable.value
-            # prepare image variable types
-            elif variable.variable_type == "image":
-                nd_array = variable.value.view(NTNDArrayData)
-                nd_array.attrib = {
-                    "x_min": variable.x_min,
-                    "y_min": variable.y_min,
-                    "x_max": variable.x_max,
-                    "y_max": variable.y_max,
-                }
-                nt = NTNDArray()
-                initial = nd_array
+            if not self._read_only:
 
-            elif variable.variable_type == "array":
-                if variable.value_type == "str":
-                    nt = NTScalar("as")
+                # prepare scalar variable types
+                if variable.variable_type == "scalar":
+                    nt = NTScalar("d")
                     initial = variable.value
 
-                else:
+                # prepare image variable types
+                elif variable.variable_type == "image":
                     nd_array = variable.value.view(NTNDArrayData)
+                    nd_array.attrib = {
+                        "x_min": variable.x_min,
+                        "y_min": variable.y_min,
+                        "x_max": variable.x_max,
+                        "y_max": variable.y_max,
+                    }
                     nt = NTNDArray()
                     initial = nd_array
 
-            else:
-                raise ValueError(
-                    "Unsupported variable type provided: %s", variable.variable_type
-                )
+                elif variable.variable_type == "array":
+                    if variable.value_type == "str":
+                        nt = NTScalar("as")
+                        initial = variable.value
 
-            handler = PVAccessInputHandler(
-                pvname=pvname, is_constant=variable.is_constant, server=self
-            )
-            pv = SharedPV(handler=handler, nt=nt, initial=initial)
-            self._providers[pvname] = pv
+                    else:
+                        nd_array = variable.value.view(NTNDArrayData)
+                        nt = NTNDArray()
+                        initial = nd_array
+
+                else:
+                    raise ValueError(
+                        "Unsupported variable type provided: %s", variable.variable_type
+                    )
+
+                handler = PVAccessInputHandler(
+                    pvname=pvname, is_constant=variable.is_constant, server=self
+                )
+                pv = SharedPV(handler=handler, nt=nt, initial=initial)
+                self._providers[pvname] = pv
+
+            else:
+                self._monitors[pvname] = self._context.monitor(
+                    pvname, partial(self._monitor_callback, pvname)
+                )
 
         # use default handler for the output process variables
         # updates to output pvs are handled from post calls within the input
@@ -190,10 +233,6 @@ class PVAServer(multiprocessing.Process):
 
         # initialize pva server
         self.pva_server = P4PServer(providers=[self._providers])
-
-        # update configuration
-        for key in self.pva_server.conf():
-            self._conf[key] = self.pva_server.conf()[key]
 
         logger.info("pvAccess server started")
 
@@ -270,15 +309,16 @@ class PVAServer(multiprocessing.Process):
                 self.update_pvs(inputs, outputs)
 
                 # check cached values
-                if len(self._cached_values) > 0 and not self._running_indicator:
+                if len(self._cached_values) > 0 and not self._running_indicator.value:
                     self._in_queue.put(
                         {"protocol": self.protocol, "pvs": self._cached_values}
                     )
 
             except Empty:
-                time.sleep(0.01)
+                time.sleep(0.1)
                 logger.debug("out queue empty")
 
+        self._context.close()
         self.pva_server.stop()
         logger.info("pvAccess server stopped.")
 

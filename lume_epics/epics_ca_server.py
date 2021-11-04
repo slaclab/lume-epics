@@ -6,19 +6,24 @@ import signal
 from typing import Dict
 from lume_model.variables import Variable, InputVariable, OutputVariable
 import numpy as np
-from pcaspy import Driver, SimpleServer
+
+import os
+from queue import Full, Empty, Queue
+
 from epics import caget
 from epics.ca import CAThread
 import epics
-import os
-import pcaspy
 from epics import camonitor
-from queue import Full, Empty, Queue
 from epics.multiproc import CAProcess
+
+# initialize libca before pcaspy import
+if not epics.ca.libca:
+    epics.ca.initialize_libca()
+
+import pcaspy
+from pcaspy import Driver, SimpleServer
 from typing import Dict, Mapping, Union, List
 from functools import partial
-
-# os.environ["PYEPICS_LIBCA"] = "/Users/jgarra/opt/anaconda3/envs/lume-epics/epics/lib/darwin-x86/libca.dylib"
 
 
 # Each server must have their outQueue in which the comm server will set the inputs and outputs vars to be updated
@@ -31,12 +36,6 @@ logger = logging.getLogger(__name__)
 class CAServerThread(CAThread):
     """
     A helper class to run server in a thread.
-    The following snippet runs the server for 4 seconds and quit::
-        server = SimpleServer()
-        server_thread = ServerThread(server)
-        server_thread.start()
-        time.sleep(4)
-        server_thread.stop()
     """
 
     def __init__(self, server):
