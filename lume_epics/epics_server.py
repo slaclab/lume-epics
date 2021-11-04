@@ -21,6 +21,8 @@ from .epics_ca_server import CAServer
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+multiprocessing.set_start_method("spawn")
+
 
 class Server:
     """
