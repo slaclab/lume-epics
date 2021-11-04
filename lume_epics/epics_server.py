@@ -85,6 +85,11 @@ class Server:
                 '(pvAccess) and "ca" (Channel Access).'
             )
 
+        if read_only and len(protocols) > 1:
+            raise ValueError(
+                "Only single protocol may be provided for read-only server."
+            )
+
         # Update epics configuration
         for var in EPICS_ENV_VARS:
             if epics_config.get(var):
