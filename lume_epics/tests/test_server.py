@@ -23,7 +23,7 @@ from lume_epics.tests.conftest import PVA_CONFIG
 @pytest.mark.parametrize("value", [(1.0)])
 def test_constant_variable_ca(value, prefix, server, model):
 
-    os.environ["PYEPICS_LIBCA"] = get_lib('ca')
+    os.environ["PYEPICS_LIBCA"] = get_lib("ca")
 
     # check constant variable assignment
     for _, variable in model.input_variables.items():
@@ -42,15 +42,18 @@ def test_constant_variable_ca(value, prefix, server, model):
             else:
                 assert val == value
 
-@pytest.mark.skip(reason="Occasional undiagnosed failure with pvAccess server...")
+
+@pytest.mark.skip(
+    reason="pvAccess server requires spawn method disrupted by subprocess popen..."
+)
 @pytest.mark.parametrize("value", [(1.0)])
 def test_constant_variable_pva(value, prefix, server, model):
-    ctxt = Context("pva", conf=PVA_CONFIG, maxsize=2)
+    ctxt = Context("pva", conf=PVA_CONFIG)
 
-    #check constant variable assignment
+    # check constant variable assignment
     for _, variable in model.input_variables.items():
         pvname = f"{prefix}:{variable.name}"
-            
+
         if variable.variable_type == "scalar":
 
             count = 3
@@ -89,7 +92,7 @@ def test_constant_variable_pva(value, prefix, server, model):
                     ctxt = Context("pva", conf=PVA_CONFIG)
                     time.sleep(1)
                     count -= 1
-            
+
             if count == 0:
                 raise Exception("Failed gets.")
 

@@ -11,7 +11,7 @@ def image_variables(model):
     ]
 
 
-@pytest.mark.skip(reason="Skip until pytest-ordering is compatable with 3.8")
+# @pytest.mark.skip(reason="Skip until pytest-ordering is compatable with 3.8")
 # @pytest.mark.last
 @pytest.mark.parametrize("x_min,x_max,y_min,y_max", [(0, 10, 0, 5), (5, 10, 4, 5)])
 def test_controller_image_update_ca(
