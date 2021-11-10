@@ -1,6 +1,12 @@
 import time
 import logging
 import multiprocessing
+
+try:
+    multiprocessing.set_start_method("spawn")
+except:
+    pass
+
 import os
 from typing import Dict, Mapping, Union, List
 from threading import Thread
@@ -20,8 +26,6 @@ from .epics_ca_server import CAServer
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-
-# multiprocessing.set_start_method("spawn")
 
 
 class Server:
