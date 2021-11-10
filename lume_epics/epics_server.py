@@ -21,7 +21,7 @@ from .epics_ca_server import CAServer
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-multiprocessing.set_start_method("spawn")
+# multiprocessing.set_start_method("spawn")
 
 
 class Server:
@@ -173,8 +173,11 @@ class Server:
             )
 
             # add callback to monitors
-            for var in self.input_variables:
-                self._ca_monitors[var].add_callback(self.ca_process._monitor_callback)
+            if self._read_only:
+                for var in self.input_variables:
+                    self._ca_monitors[var].add_callback(
+                        self.ca_process._monitor_callback
+                    )
 
         # initialize pvAccess server
         if "pva" in protocols:

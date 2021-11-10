@@ -318,7 +318,8 @@ class PVAServer(multiprocessing.Process):
                 time.sleep(0.1)
                 logger.debug("out queue empty")
 
-        self._context.close()
+        if self._read_only:
+            self._context.close()
         self.pva_server.stop()
         logger.info("pvAccess server stopped.")
 
