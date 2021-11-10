@@ -221,23 +221,25 @@ output_variables = {
     )
 }
 
-from lume_epics.epics_server import Server
-from lume_model.utils import save_variables
+# must use main for server due to multiprocess spawning
+if __name__ == "__main"__:
+    from lume_epics.epics_server import Server
+    from lume_model.utils import save_variables
 
-# save variables
-save_variables(input_variables, output_variables, "example_variables.pickle")
+    # save variables
+    save_variables(input_variables, output_variables, "example_variables.pickle")
 
-prefix = "test"
-server = Server(
-            ExampleModel,
-            prefix,
-            model_kwargs = {"input_variables": input_variables, "output_variables": output_variables}
-        )
+    prefix = "test"
+    server = Server(
+                ExampleModel,
+                prefix,
+                model_kwargs = {"input_variables": input_variables, "output_variables": output_variables}
+            )
 
-# monitor = False does not loop in main thread and can be terminated
-# with server.stop()
-server.start(monitor=True)
-# Runs until keyboard interrupt.
+    # monitor = False does not loop in main thread and can be terminated
+    # with server.stop()
+    server.start(monitor=True)
+    # Runs until keyboard interrupt.
 ```
 
 

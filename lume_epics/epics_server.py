@@ -1,20 +1,31 @@
 import time
 import logging
-import threading
 import multiprocessing
-from typing import Dict, Mapping, Union, List
 
-from threading import Thread, Event, local
+try:
+    multiprocessing.set_start_method("spawn")
+except:
+    pass
+
+import os
+from typing import Dict, Mapping, Union, List
+from threading import Thread
 from queue import Full, Empty
 
 from lume_model.variables import Variable, InputVariable, OutputVariable
 from lume_model.models import SurrogateModel
+
+from epics import caget
+import epics
+
+from p4p.client.thread import Context
+
 from lume_epics import EPICS_ENV_VARS
 from .epics_pva_server import PVAServer
 from .epics_ca_server import CAServer
 
 logger = logging.getLogger(__name__)
-multiprocessing.set_start_method("fork")
+logger.setLevel(logging.DEBUG)
 
 
 class Server:
@@ -50,6 +61,7 @@ class Server:
         protocols: List[str] = ["pva", "ca"],
         model_kwargs: dict = {},
         epics_config: dict = {},
+        read_only: bool = False,
     ) -> None:
         """Create OnlineSurrogateModel instance in the main thread and
         initialize output variables by running with the input process variable
@@ -66,6 +78,7 @@ class Server:
 
             model_kwargs (dict): Kwargs to instantiate model.
 
+            read_only (bool): Indication whether this will be a read-only server
 
         """
         # check protocol conditions
@@ -76,6 +89,11 @@ class Server:
             raise ValueError(
                 'Invalid protocol provided. Protocol options are "pva" '
                 '(pvAccess) and "ca" (Channel Access).'
+            )
+
+        if read_only and len(protocols) > 1:
+            raise ValueError(
+                "Only single protocol may be provided for read-only server."
             )
 
         # Update epics configuration
@@ -89,10 +107,33 @@ class Server:
         self.model = model_class(**model_kwargs)
         self.input_variables = self.model.input_variables
 
-        # update inputs for starting value to be the default
-        for variable in self.input_variables.values():
-            if variable.value is None:
-                variable.value = variable.default
+        # track pv monitors
+        self._ca_monitors = {}
+
+        # NEED TO CHECK READ ONLY
+        if not read_only:
+            for variable in self.input_variables.values():
+                if variable.value is None:
+                    variable.value = variable.default
+
+        # if read_only, get initial values
+        elif "ca" in protocols and read_only:
+
+            for variable in self.input_variables.values():
+                logger.info("Getting value for %s via caget", variable.name)
+                variable.value = caget(f"{prefix}:{variable.name}")
+                # monitors must be created at outset as pv caching causes issues with pv callbacks defined in the ca_server
+                self._ca_monitors[variable.name] = epics.PV(
+                    f"{self.prefix}:{variable.name}", auto_monitor=True
+                )
+
+        elif "pva" in protocols and read_only:
+            context = Context("pva")
+            for variable in self.input_variables.values():
+                variable.value = context.get(f"{prefix}:{variable.name}")
+                variable.value = 1
+
+            context.close()
 
         model_input = list(self.input_variables.values())
 
@@ -107,12 +148,13 @@ class Server:
         for protocol in protocols:
             self.out_queues[protocol] = multiprocessing.Queue()
 
-        self.exit_event = Event()
+        self.exit_event = multiprocessing.Event()
 
         self._running_indicator = multiprocessing.Value("b", False)
+        self._read_only = read_only
 
         # we use the running marker to make sure pvs + ca don't just keep adding queue elements
-        self.comm_thread = threading.Thread(
+        self.comm_thread = Thread(
             target=self.run_comm_thread,
             kwargs={
                 "model_kwargs": model_kwargs,
@@ -131,21 +173,28 @@ class Server:
                 in_queue=self.in_queue,
                 out_queue=self.out_queues["ca"],
                 running_indicator=self._running_indicator,
+                read_only=self._read_only,
             )
+
+            # add callback to monitors
+            if self._read_only:
+                for var in self.input_variables:
+                    self._ca_monitors[var].add_callback(
+                        self.ca_process._monitor_callback
+                    )
 
         # initialize pvAccess server
         if "pva" in protocols:
 
             manager = multiprocessing.Manager()
-            self._pva_conf = manager.dict()
             self.pva_process = PVAServer(
                 prefix=self.prefix,
                 input_variables=self.input_variables,
                 output_variables=self.output_variables,
                 in_queue=self.in_queue,
                 out_queue=self.out_queues["pva"],
-                conf_proxy=self._pva_conf,
                 running_indicator=self._running_indicator,
+                read_only=self._read_only,
             )
 
     def __enter__(self):
@@ -258,8 +307,10 @@ class Server:
 
         if "ca" in self.protocols:
             self.ca_process.shutdown()
+            self.ca_process.join()
 
         if "pva" in self.protocols:
             self.pva_process.shutdown()
+            self.pva_process.join()
 
         logger.info("Server is stopped.")

@@ -89,32 +89,34 @@ if __name__ == "__main__":
 
 ## Create server
 
-Create a new file named `server.py`. Import the `DemoModel`, load the variables, and configure the server.
+Create a new file named `server.py`. Import the `DemoModel`, load the variables, and configure the server. Due to the multiprocess spawning of the application, the server must run inside the main conditional of the python script.
 
 ```python
 from examples.model import DemoModel
 from lume_epics.epics_server import Server
 from lume_model.utils import load_variables
 
-variable_filename = "variables.pickle"
-input_variables, output_variables = load_variables(variable_filename)
+# Server must run in main
+if __name__ == "__main__":
+    variable_filename = "variables.pickle"
+    input_variables, output_variables = load_variables(variable_filename)
 
-# pass the input + output variable to initialize the classs
-model_kwargs = {
-    "input_variables": input_variables,
-    "output_variables": output_variables
-}
+    # pass the input + output variable to initialize the classs
+    model_kwargs = {
+        "input_variables": input_variables,
+        "output_variables": output_variables
+    }
 
-prefix = "test"
-server = Server(
-    DemoModel,
-    input_variables,
-    output_variables,
-    prefix,
-    model_kwargs=model_kwargs
-)
-# monitor = False does not loop in main thread
-server.start(monitor=True)
+    prefix = "test"
+    server = Server(
+        DemoModel,
+        input_variables,
+        output_variables,
+        prefix,
+        model_kwargs=model_kwargs
+    )
+    # monitor = False does not loop in main thread
+    server.start(monitor=True)
 ```
 
 ## Set up the client
