@@ -6,10 +6,15 @@ with open("examples/files/demo_config.yml", "r") as f:
     input_variables, output_variables = variables_from_yaml(f)
 
 prefix = "test"
-server = Server(
-    DemoModel,
-    prefix,
-    model_kwargs={"input_variables": input_variables, "output_variables": output_variables},
-)
-# monitor = False does not loop in main thread
-server.start(monitor=True)
+
+if __name__ == "__main__":
+    server = Server(
+        DemoModel,
+        prefix,
+        model_kwargs={
+            "input_variables": input_variables,
+            "output_variables": output_variables,
+        },
+    )
+    # monitor = False does not loop in main thread
+    server.start(monitor=True)
