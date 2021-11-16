@@ -67,7 +67,14 @@ class Controller:
 
     """
 
-    def __init__(self, protocol: str, input_pvs: dict, output_pvs: dict, prefix):
+    def __init__(
+        self,
+        protocol: str,
+        input_pvs: dict,
+        output_pvs: dict,
+        prefix,
+        auto_monitor=True,
+    ):
         """
         Initializes controller. Stores protocol and creates context attribute if
         using pvAccess.
@@ -80,6 +87,10 @@ class Controller:
 
             output_pvs (dict): Dict mapping output variable names to variable
 
+            prefix (str): String prefix for fetching pvs
+
+            auto_monitor (bool): Indicate whether to use subscriptions for values
+
         """
         self._protocol = protocol
         self._pv_registry = defaultdict()
@@ -88,6 +99,7 @@ class Controller:
         self._prefix = prefix
         self.last_input_update = ""
         self.last_output_update = ""
+        self._auto_monitor = auto_monitor
 
         # initalize context for pva
         self._context = None
@@ -150,7 +162,7 @@ class Controller:
         if pvname in self._output_pvs:
             self.last_output_update = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
 
-    def _set_up_pv_monitor(self, pvname):
+    def _register(self, pvname):
         """Set up process variable monitor.
 
         Args:
@@ -165,27 +177,36 @@ class Controller:
             self._pv_registry[pvname] = {"pv": None, "value": None}
 
             # create the pv
-            pv_obj = PV(
-                f"{self._prefix}:{pvname}",
-                callback=self._ca_value_callback,
-                connection_callback=self._ca_connection_callback,
-            )
+            if self._auto_monitor:
+                pv_obj = PV(
+                    f"{self._prefix}:{pvname}",
+                    callback=self._ca_value_callback,
+                    connection_callback=self._ca_connection_callback,
+                )
+
+            else:
+                pv_obj = PV(
+                    f"{self._prefix}:{pvname}",
+                    connection_callback=self._ca_connection_callback,
+                )
 
             # update registry
             self._pv_registry[pvname]["pv"] = pv_obj
 
         elif self._protocol == "pva":
-            cb = partial(self._pva_value_callback, pvname)
             # populate registry s.t. initially disconnected will populate
             self._pv_registry[pvname] = {"pv": None, "value": None}
 
-            # create the monitor obj
-            mon_obj = self._context.monitor(
-                f"{self._prefix}:{pvname}", cb, notify_disconnect=True
-            )
+            if self._auto_monitor:
+                cb = partial(self._pva_value_callback, pvname)
 
-            # update registry with the monitor
-            self._pv_registry[pvname]["pv"] = mon_obj
+                # create the monitor obj
+                mon_obj = self._context.monitor(
+                    f"{self._prefix}:{pvname}", cb, notify_disconnect=True
+                )
+
+                # update registry with the monitor
+                self._pv_registry[pvname]["pv"] = mon_obj
 
     def get(self, pvname: str) -> np.ndarray:
         """
@@ -195,12 +216,22 @@ class Controller:
             pvname (str): Process variable name
 
         """
-        self._set_up_pv_monitor(pvname)
+        self._register(pvname)
+        if self._auto_monitor:
+            pv = self._pv_registry.get(pvname, None)
 
-        pv = self._pv_registry.get(pvname, None)
+            if pv:
+                return pv["value"]
 
-        if pv:
-            return pv["value"]
+        else:
+            if self._protocol == "pva":
+                return self._context.get(pvname)
+
+            elif self._protocol == "ca":
+                pv = self._pv_registry.get(pvname, None)
+
+                if pv:
+                    return pv["pv"].get()
 
         return None
 
@@ -305,12 +336,12 @@ class Controller:
         Args:
             pvname (str): Name of the process variable
 
-            value (float): Value to assing to process variable.
+            value (float): Value to assign to process variable.
 
             timeout (float): Operation timeout in seconds
 
         """
-        self._set_up_pv_monitor(pvname)
+        self._register(pvname)
 
         # allow no puts before a value has been collected
         registered = self.get(pvname)
@@ -356,7 +387,7 @@ class Controller:
             timeout (float): Operation timeout in seconds
 
         """
-        self._set_up_pv_monitor(pvname)
+        self._register(pvname)
 
         # allow no puts before a value has been collected
         registered = self.get_image(pvname)
@@ -432,7 +463,7 @@ class Controller:
             timeout (float): Operation timeout in seconds
 
         """
-        self._set_up_pv_monitor(pvname)
+        self._register(pvname)
 
         # allow no puts before a value has been collected
         registered = self.get_array(pvname)
