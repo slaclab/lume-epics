@@ -72,7 +72,7 @@ class Controller:
         protocol: str,
         input_pvs: dict,
         output_pvs: dict,
-        prefix,
+        prefix=None,
         auto_monitor=True,
     ):
         """
@@ -108,6 +108,12 @@ class Controller:
 
         # initialize controller
         for variable in {**input_pvs, **output_pvs}.values():
+            if prefix:
+                self._pvnames[variable.name] = f"{prefix}:variable.name"
+
+            else:
+                self._pvnames[variable.name] = variable.name
+
             if variable.variable_type == "image":
                 self.get_image(variable.name)
 
@@ -179,14 +185,14 @@ class Controller:
             # create the pv
             if self._auto_monitor:
                 pv_obj = PV(
-                    f"{self._prefix}:{pvname}",
+                    self._pvnames[pvname],
                     callback=self._ca_value_callback,
                     connection_callback=self._ca_connection_callback,
                 )
 
             else:
                 pv_obj = PV(
-                    f"{self._prefix}:{pvname}",
+                    self._pvnames[pvname],
                     connection_callback=self._ca_connection_callback,
                 )
 
@@ -202,7 +208,7 @@ class Controller:
 
                 # create the monitor obj
                 mon_obj = self._context.monitor(
-                    f"{self._prefix}:{pvname}", cb, notify_disconnect=True
+                    self._pvnames[pvname], cb, notify_disconnect=True
                 )
 
                 # update registry with the monitor
@@ -225,7 +231,7 @@ class Controller:
 
         else:
             if self._protocol == "pva":
-                return self._context.get(pvname)
+                return self._context.get(self._pvnames[pvname])
 
             elif self._protocol == "ca":
                 pv = self._pv_registry.get(pvname, None)
@@ -353,7 +359,7 @@ class Controller:
 
             elif self._protocol == "pva":
                 self._context.put(
-                    f"{self._prefix}:{pvname}", value, throw=False, timeout=timeout
+                    self._pvnames[pvname], value, throw=False, timeout=timeout
                 )
 
         else:
