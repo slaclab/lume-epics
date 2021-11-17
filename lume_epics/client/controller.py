@@ -9,11 +9,12 @@ import logging
 from datetime import datetime
 from collections import defaultdict
 from functools import partial
-from epics import PV
+
+from epics import PV, caget
 import threading
 import sys
 from p4p.client.thread import Context, Disconnected
-
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -100,6 +101,7 @@ class Controller:
         self.last_input_update = ""
         self.last_output_update = ""
         self._auto_monitor = auto_monitor
+        self._pvnames = {}
 
         # initalize context for pva
         self._context = None
@@ -109,18 +111,34 @@ class Controller:
         # initialize controller
         for variable in {**input_pvs, **output_pvs}.values():
             if prefix:
-                self._pvnames[variable.name] = f"{prefix}:variable.name"
+                pvname = f"{prefix}:{variable.name}"
 
             else:
-                self._pvnames[variable.name] = variable.name
+                pvname = variable.name
+            #  self._pvnames[variable.name] = variable.name
 
             if variable.variable_type == "image":
+                for image_el in [
+                    "ArrayData_RBV",
+                    "ArraySizeX_RBV",
+                    "ArraySizeY_RBV",
+                    "MinX_RBV",
+                    "MinY_RBV",
+                    "MaxX_RBV",
+                    "MaxY_RBV",
+                ]:
+                    self._pvnames[
+                        f"{variable.name}:{image_el}"
+                    ] = f"{pvname}:{image_el}"
+
                 self.get_image(variable.name)
 
             elif variable.variable_type == "array":
+                self._pvnames[variable.name] = pvname
                 self.get_array(variable.name)
 
             else:
+                self._pvnames[variable.name] = pvname
                 self.get_value(variable.name)
 
     def _ca_value_callback(self, pvname, value, *args, **kwargs):
@@ -223,6 +241,7 @@ class Controller:
 
         """
         self._register(pvname)
+
         if self._auto_monitor:
             pv = self._pv_registry.get(pvname, None)
 
@@ -237,7 +256,11 @@ class Controller:
                 pv = self._pv_registry.get(pvname, None)
 
                 if pv:
-                    return pv["pv"].get()
+                    try:
+                        val = pv["pv"].get(timeout=0.5)
+                        return val
+                    except:
+                        logger.error(f"unable to get {pvname}")
 
         return None
 
