@@ -13,7 +13,7 @@ import numpy as np
 from typing import List, Dict, Tuple
 
 from lume_epics.client.controller import Controller
-from lume_model.variables import ImageVariable, ScalarVariable
+from lume_model.variables import ImageVariable, ScalarVariable, Variable
 
 logger = logging.getLogger(__name__)
 
@@ -157,3 +157,37 @@ class PVScalar:
 
         """
         return self.controller.get_value(self.pvname)
+
+
+class PVTable:
+    """
+    Monitor for scalar process variables.
+
+    Attributes:
+        variable (ScalarVariable): Variable to monitor for value.
+
+        controller (Controller): Controller object for accessing process variable.
+
+        units (str): Units associated with the variable.
+
+        pvname (str): Name of the process variable to access.
+
+    """
+
+    def __init__(self, variables: List[Variable], controller: Controller,) -> None:
+        """Initializes monitor attributes.
+
+        Args:
+            variable (ScalarVariable):  Variable to monitor for value.
+
+            controller (Controller): Controller object for accessing process variable.
+        """
+        self.variable_names = [variable.name for variable in variables]
+        self.controller = controller
+
+    def poll(self) -> Tuple[np.ndarray]:
+        """
+        Poll variable for value,
+
+        """
+        return self.controller.get_many(self.variable_names)

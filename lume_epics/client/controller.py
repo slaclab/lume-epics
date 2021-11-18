@@ -9,7 +9,7 @@ import logging
 from datetime import datetime
 from collections import defaultdict
 from functools import partial
-
+import epics
 from epics import PV, caget
 import threading
 import sys
@@ -75,6 +75,7 @@ class Controller:
         output_pvs: dict,
         prefix=None,
         auto_monitor=True,
+        poll_period=0.1,
     ):
         """
         Initializes controller. Stores protocol and creates context attribute if
@@ -101,6 +102,7 @@ class Controller:
         self.last_input_update = ""
         self.last_output_update = ""
         self._auto_monitor = auto_monitor
+        self._poll_period = 1
         self._pvnames = {}
 
         # initalize context for pva
@@ -349,8 +351,6 @@ class Controller:
                 array = np.array(array_flat).reshape(shape)
 
         elif self._protocol == "pva":
-            # context returns numpy array with WRITEABLE=False
-            # copy to manipulate array below
 
             array = self.get(pvname)
 
@@ -358,6 +358,29 @@ class Controller:
             return array
         else:
             return np.array([])
+
+    def get_many(self, pvnames):
+        """Get values of many process variables.
+
+        Args:
+            pvnames (List[str]): List of process variable names
+
+        """
+        try:
+            if self._auto_monitor:
+                return {pvname: self.get(pvname) for pvname in pvnames}
+
+            else:
+                if self._protocol == "ca":
+                    vals = epics.caget_many(pvnames)
+                    return dict(zip(pvnames, vals))
+
+                elif self._protocol == "pva":
+                    vals = self._context.get(pvnames)
+                    return dict(zip(pvnames, vals))
+
+        except KeyboardInterrupt:
+            sys.exit()
 
     def put(self, pvname, value: float, timeout=1.0) -> None:
         """Assign the value of a scalar process variable.
