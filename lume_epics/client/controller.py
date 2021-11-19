@@ -9,8 +9,7 @@ import logging
 from datetime import datetime
 from collections import defaultdict
 from functools import partial
-import epics
-from epics import PV, caget
+from epics import PV, caget_many
 import threading
 import sys
 from p4p.client.thread import Context, Disconnected
@@ -372,7 +371,7 @@ class Controller:
 
             else:
                 if self._protocol == "ca":
-                    vals = epics.caget_many(pvnames)
+                    vals = caget_many(pvnames)
                     return dict(zip(pvnames, vals))
 
                 elif self._protocol == "pva":
