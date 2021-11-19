@@ -10,10 +10,8 @@ from datetime import datetime
 from collections import defaultdict
 from functools import partial
 from epics import PV, caget_many
-import threading
 import sys
 from p4p.client.thread import Context, Disconnected
-import os
 
 logger = logging.getLogger(__name__)
 
