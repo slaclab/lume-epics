@@ -72,7 +72,6 @@ class Controller:
         output_pvs: dict,
         prefix=None,
         auto_monitor=True,
-        poll_period=0.1,
     ):
         """
         Initializes controller. Stores protocol and creates context attribute if
@@ -99,7 +98,6 @@ class Controller:
         self.last_input_update = ""
         self.last_output_update = ""
         self._auto_monitor = auto_monitor
-        self._poll_period = 1
         self._pvnames = {}
 
         # initalize context for pva
