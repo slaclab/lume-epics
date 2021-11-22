@@ -8,12 +8,17 @@ EPICs.
 from datetime import datetime
 import time
 import logging
-
+import copy
 import numpy as np
 from typing import List, Dict, Tuple
 
 from lume_epics.client.controller import Controller
-from lume_model.variables import ImageVariable, ScalarVariable, Variable
+from lume_model.variables import (
+    ImageVariable,
+    ScalarVariable,
+    TableVariable,
+    ArrayVariable,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -161,7 +166,7 @@ class PVScalar:
 
 class PVTable:
     """
-    Monitor for scalar process variables.
+    Monitor for pvs organized as table
 
     Attributes:
         variable (ScalarVariable): Variable to monitor for value.
@@ -174,7 +179,7 @@ class PVTable:
 
     """
 
-    def __init__(self, variables: List[Variable], controller: Controller,) -> None:
+    def __init__(self, variable: TableVariable, controller: Controller,) -> None:
         """Initializes monitor attributes.
 
         Args:
@@ -182,12 +187,43 @@ class PVTable:
 
             controller (Controller): Controller object for accessing process variable.
         """
-        self.variable_names = [variable.name for variable in variables]
+        self._table_variable = variable
+        self._composing_variables = []
+        # table map shows how values are represented column, row structure
+        self.data = {}
+        self.output_structure = {}
+
+        for col, row_val in variable.table_data.items():
+            self.output_structure[col] = {}
+            if isinstance(row_val, dict):
+
+                # iterate over subdict
+                for row, val in row_val.items():
+                    if isinstance(val, ScalarVariable):
+                        self._composing_variables.append(val.name)
+                        self.data[val.name] = {"row": row, "col": col, "value": None}
+
+                    elif isinstance(val, float):
+                        {"row": row, "col": col, "value": val}
+
+            elif isinstance(row_val, ArrayVariable):
+                self._composing_variables.append(row_val.name)
+                self.data[val.name] = {"row": None, "col": col, "value": None}
+
         self.controller = controller
 
     def poll(self) -> Tuple[np.ndarray]:
         """
-        Poll variable for value,
+        Poll variable for value, arrange into tabular representation
 
         """
-        return self.controller.get_many(self.variable_names)
+
+        output = copy.deepcopy(self.output_structure)
+
+        vals = self.controller.get_many(self._composing_variables)
+
+        for pvname, val in vals.items():
+            self.data[pvname]["value"] = val
+            output[self.data[pvname]["col"]].update({self.data[pvname]["row"]: val})
+
+        return output

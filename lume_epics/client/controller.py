@@ -134,6 +134,19 @@ class Controller:
                 self._pvnames[variable.name] = pvname
                 self.get_array(variable.name)
 
+            elif variable.variable_type == "table":
+                for col, row_val in variable.table_data:
+                    if isinstance(row_val, dict):
+
+                        # iterate over subdict
+                        for row, val in row_val:
+                            self._composing_variables.append(val.name)
+                            self.data[val.name] = {
+                                "row": row,
+                                "col": col,
+                                "value": None,
+                            }
+
             else:
                 self._pvnames[variable.name] = pvname
                 self.get_value(variable.name)
