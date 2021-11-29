@@ -204,7 +204,7 @@ class PVTable:
                         self.data[val.name] = {"row": row, "col": col, "value": None}
 
                     elif isinstance(val, float):
-                        {"row": row, "col": col, "value": val}
+                        self.data[val.name] = {"row": row, "col": col, "value": val}
 
             elif isinstance(row_val, ArrayVariable):
                 self._composing_variables.append(row_val.name)
