@@ -128,11 +128,8 @@ class Controller:
                         f"{variable.name}:{image_el}"
                     ] = f"{pvname}:{image_el}"
 
-                self.get_image(variable.name)
-
             elif variable.variable_type == "array":
                 self._pvnames[variable.name] = pvname
-                self.get_array(variable.name)
 
             elif variable.variable_type == "table":
                 for col, row_val in variable.table_data:
@@ -149,7 +146,6 @@ class Controller:
 
             else:
                 self._pvnames[variable.name] = pvname
-                self.get_value(variable.name)
 
     def _ca_value_callback(self, pvname, value, *args, **kwargs):
         """Callback executed by Channel Access monitor.
