@@ -9,11 +9,9 @@ import logging
 from datetime import datetime
 from collections import defaultdict
 from functools import partial
-from epics import PV
-import threading
+from epics import PV, caget_many
 import sys
 from p4p.client.thread import Context, Disconnected
-
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +65,14 @@ class Controller:
 
     """
 
-    def __init__(self, protocol: str, input_pvs: dict, output_pvs: dict, prefix):
+    def __init__(
+        self,
+        protocol: str,
+        input_pvs: dict,
+        output_pvs: dict,
+        prefix=None,
+        auto_monitor=True,
+    ):
         """
         Initializes controller. Stores protocol and creates context attribute if
         using pvAccess.
@@ -80,6 +85,10 @@ class Controller:
 
             output_pvs (dict): Dict mapping output variable names to variable
 
+            prefix (str): String prefix for fetching pvs
+
+            auto_monitor (bool): Indicate whether to use subscriptions for values
+
         """
         self._protocol = protocol
         self._pv_registry = defaultdict()
@@ -88,6 +97,8 @@ class Controller:
         self._prefix = prefix
         self.last_input_update = ""
         self.last_output_update = ""
+        self._auto_monitor = auto_monitor
+        self._pvnames = {}
 
         # initalize context for pva
         self._context = None
@@ -96,14 +107,45 @@ class Controller:
 
         # initialize controller
         for variable in {**input_pvs, **output_pvs}.values():
-            if variable.variable_type == "image":
-                self.get_image(variable.name)
-
-            elif variable.variable_type == "array":
-                self.get_array(variable.name)
+            if prefix:
+                pvname = f"{prefix}:{variable.name}"
 
             else:
-                self.get_value(variable.name)
+                pvname = variable.name
+            #  self._pvnames[variable.name] = variable.name
+
+            if variable.variable_type == "image":
+                for image_el in [
+                    "ArrayData_RBV",
+                    "ArraySizeX_RBV",
+                    "ArraySizeY_RBV",
+                    "MinX_RBV",
+                    "MinY_RBV",
+                    "MaxX_RBV",
+                    "MaxY_RBV",
+                ]:
+                    self._pvnames[
+                        f"{variable.name}:{image_el}"
+                    ] = f"{pvname}:{image_el}"
+
+            elif variable.variable_type == "array":
+                self._pvnames[variable.name] = pvname
+
+            elif variable.variable_type == "table":
+                for col, row_val in variable.table_data:
+                    if isinstance(row_val, dict):
+
+                        # iterate over subdict
+                        for row, val in row_val:
+                            self._composing_variables.append(val.name)
+                            self.data[val.name] = {
+                                "row": row,
+                                "col": col,
+                                "value": None,
+                            }
+
+            else:
+                self._pvnames[variable.name] = pvname
 
     def _ca_value_callback(self, pvname, value, *args, **kwargs):
         """Callback executed by Channel Access monitor.
@@ -150,7 +192,7 @@ class Controller:
         if pvname in self._output_pvs:
             self.last_output_update = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
 
-    def _set_up_pv_monitor(self, pvname):
+    def _register(self, pvname):
         """Set up process variable monitor.
 
         Args:
@@ -165,27 +207,36 @@ class Controller:
             self._pv_registry[pvname] = {"pv": None, "value": None}
 
             # create the pv
-            pv_obj = PV(
-                f"{self._prefix}:{pvname}",
-                callback=self._ca_value_callback,
-                connection_callback=self._ca_connection_callback,
-            )
+            if self._auto_monitor:
+                pv_obj = PV(
+                    self._pvnames[pvname],
+                    callback=self._ca_value_callback,
+                    connection_callback=self._ca_connection_callback,
+                )
+
+            else:
+                pv_obj = PV(
+                    self._pvnames[pvname],
+                    connection_callback=self._ca_connection_callback,
+                )
 
             # update registry
             self._pv_registry[pvname]["pv"] = pv_obj
 
         elif self._protocol == "pva":
-            cb = partial(self._pva_value_callback, pvname)
             # populate registry s.t. initially disconnected will populate
             self._pv_registry[pvname] = {"pv": None, "value": None}
 
-            # create the monitor obj
-            mon_obj = self._context.monitor(
-                f"{self._prefix}:{pvname}", cb, notify_disconnect=True
-            )
+            if self._auto_monitor:
+                cb = partial(self._pva_value_callback, pvname)
 
-            # update registry with the monitor
-            self._pv_registry[pvname]["pv"] = mon_obj
+                # create the monitor obj
+                mon_obj = self._context.monitor(
+                    self._pvnames[pvname], cb, notify_disconnect=True
+                )
+
+                # update registry with the monitor
+                self._pv_registry[pvname]["pv"] = mon_obj
 
     def get(self, pvname: str) -> np.ndarray:
         """
@@ -195,12 +246,27 @@ class Controller:
             pvname (str): Process variable name
 
         """
-        self._set_up_pv_monitor(pvname)
+        self._register(pvname)
 
-        pv = self._pv_registry.get(pvname, None)
+        if self._auto_monitor:
+            pv = self._pv_registry.get(pvname, None)
 
-        if pv:
-            return pv["value"]
+            if pv:
+                return pv["value"]
+
+        else:
+            if self._protocol == "pva":
+                return self._context.get(self._pvnames[pvname])
+
+            elif self._protocol == "ca":
+                pv = self._pv_registry.get(pvname, None)
+
+                if pv:
+                    try:
+                        val = pv["pv"].get(timeout=0.5)
+                        return val
+                    except:
+                        logger.error(f"unable to get {pvname}")
 
         return None
 
@@ -289,8 +355,6 @@ class Controller:
                 array = np.array(array_flat).reshape(shape)
 
         elif self._protocol == "pva":
-            # context returns numpy array with WRITEABLE=False
-            # copy to manipulate array below
 
             array = self.get(pvname)
 
@@ -299,18 +363,41 @@ class Controller:
         else:
             return np.array([])
 
+    def get_many(self, pvnames):
+        """Get values of many process variables.
+
+        Args:
+            pvnames (List[str]): List of process variable names
+
+        """
+        try:
+            if self._auto_monitor:
+                return {pvname: self.get(pvname) for pvname in pvnames}
+
+            else:
+                if self._protocol == "ca":
+                    vals = caget_many(pvnames)
+                    return dict(zip(pvnames, vals))
+
+                elif self._protocol == "pva":
+                    vals = self._context.get(pvnames)
+                    return dict(zip(pvnames, vals))
+
+        except KeyboardInterrupt:
+            sys.exit()
+
     def put(self, pvname, value: float, timeout=1.0) -> None:
         """Assign the value of a scalar process variable.
 
         Args:
             pvname (str): Name of the process variable
 
-            value (float): Value to assing to process variable.
+            value (float): Value to assign to process variable.
 
             timeout (float): Operation timeout in seconds
 
         """
-        self._set_up_pv_monitor(pvname)
+        self._register(pvname)
 
         # allow no puts before a value has been collected
         registered = self.get(pvname)
@@ -322,7 +409,7 @@ class Controller:
 
             elif self._protocol == "pva":
                 self._context.put(
-                    f"{self._prefix}:{pvname}", value, throw=False, timeout=timeout
+                    self._pvnames[pvname], value, throw=False, timeout=timeout
                 )
 
         else:
@@ -356,7 +443,7 @@ class Controller:
             timeout (float): Operation timeout in seconds
 
         """
-        self._set_up_pv_monitor(pvname)
+        self._register(pvname)
 
         # allow no puts before a value has been collected
         registered = self.get_image(pvname)
@@ -432,7 +519,7 @@ class Controller:
             timeout (float): Operation timeout in seconds
 
         """
-        self._set_up_pv_monitor(pvname)
+        self._register(pvname)
 
         # allow no puts before a value has been collected
         registered = self.get_array(pvname)
