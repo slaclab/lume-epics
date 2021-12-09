@@ -1,0 +1,28 @@
+input_variables:
+  input1:
+    pvname: test:input1
+    protocol: ca
+    serve: false
+
+  input2:
+    pvname: test:input2
+    protocol: ca
+    serve: false
+
+output_variables:
+  output1:
+    pvname: test:output1
+    protocol: ca
+
+  output2:
+    pvname: test:output2
+    protocol: ca
+
+  output3:
+    pvname: test:output3
+    protocol: ca
+
+
+# serve: serve this variable as a pv
+# read_only: Preclude writing to pv
+# documentation, root for images
