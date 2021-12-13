@@ -12,15 +12,15 @@ input_variables:
 output_variables:
   output1:
     pvname: test:output1
-    protocol: ca
+    protocol: pva
 
   output2:
     pvname: test:output2
-    protocol: ca
+    protocol: pva
 
   output3:
     pvname: test:output3
-    protocol: ca
+    protocol: pva
 
 
 # serve: serve this variable as a pv

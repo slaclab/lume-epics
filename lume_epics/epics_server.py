@@ -70,7 +70,11 @@ class Server:
             model_class (SurrogateModel): Surrogate model class to be
             instantiated.
 
+            epics_config (dict): Dictionary describing EPICS configuration for model variables
+
             model_kwargs (dict): Kwargs to instantiate model.
+
+            epics_env (dict): Environment variables for EPICS configuration
 
         """
 
@@ -198,10 +202,10 @@ class Server:
 
         """
         model = self.model
+        inputs_initialized = 0
 
         while not self.exit_event.is_set():
             try:
-
                 data = in_queue.get(timeout=0.1)
 
                 # mark running
@@ -215,19 +219,30 @@ class Server:
                     if protocol == data["protocol"]:
                         continue
 
-                # queue.put(
-                #     {
-                #         "input_variables": [
-                #             self.input_variables[pv] for pv in data["pvs"] if pv in
-                #         ]
-                #     }
-                # )
+                    queue.put(
+                        {
+                            "input_variables": [
+                                self.input_variables[pv]
+                                for pv in data["pvs"]
+                                if pv in data["input_variables"]
+                            ]
+                        }
+                    )
+
+                # check no input values are None
+                if not any(
+                    [var.value is None for var in self.input_variables.values()]
+                ):
+                    inputs_initialized = 1
 
                 # update output variable state
-                model_input = list(self.input_variables.values())
-                predicted_output = model.evaluate(model_input)
-                for protocol, queue in out_queues.items():
-                    queue.put({"output_variables": predicted_output}, timeout=0.1)
+                if inputs_initialized:
+
+                    model_input = list(self.input_variables.values())
+                    predicted_output = model.evaluate(model_input)
+
+                    for protocol, queue in out_queues.items():
+                        queue.put({"output_variables": predicted_output}, timeout=0.1)
 
                 running_indicator.value = False
 

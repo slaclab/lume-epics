@@ -1,4 +1,5 @@
 import logging
+import copy
 import multiprocessing
 from multiprocessing.managers import DictProxy
 from queue import Full, Empty
@@ -29,17 +30,19 @@ class PVAServer(multiprocessing.Process):
 
     Attributes:
         pva_server (P4PServer): p4p server instance
-        exit_event (multiprocessing.Event): Event indicating shutdown
-        _prefix (str): Process variable prefix string
+        exit_event (multiprocessing.Event): Event indicating pvAccess server error and communicating to main
+        shutdown_event (multiprocessing.Event): Event indicating shutdown
         _input_variables (List[InputVariable]): List of input variables
         _output_variables (List[OutputVariable]): List of output variables
         _in_queue (multiprocessing.Queue): input variable queue
         _out_queue (multiprocessing.Queue): output variable update queue
         _providers (dict): Dictionary mapping pvname to p4p provider
         _running_indicator (multiprocessing.Value): Boolean indicator of running model execution
-        _read_only (bool): Boolean indicator of whether read-only server
         _monitors (dict): Dictionary of monitor objects for read-only server
         _cached_values (dict): Dict for caching values while model executes
+        _pvname_to_varname_map (dict): Mapping of pvname to variable name
+        _varname_to_pvname_map (dict): Mapping of variable name to pvame
+
 
     """
 
@@ -47,24 +50,23 @@ class PVAServer(multiprocessing.Process):
 
     def __init__(
         self,
-        prefix: str,
         input_variables: List[InputVariable],
         output_variables: List[OutputVariable],
+        epics_config: dict,
         in_queue: multiprocessing.Queue,
         out_queue: multiprocessing.Queue,
         running_indicator: multiprocessing.Value,
-        read_only: bool = False,
         *args,
         **kwargs,
     ) -> None:
         """Initialize server process.
 
         Args:
-            prefix (str): EPICS prefix for serving process variables
-
             input_variables (Dict[str, InputVariable]): Dictionary mapping pvname to lume-model input variable.
 
             output_variables (Dict[str, OutputVariable]):Dictionary mapping pvname to lume-model output variable.
+
+            epics_config (dict): Dictionary describing EPICS configuration for model variables
 
             in_queue (multiprocessing.Queue): Queue for tracking updates to input variables
 
@@ -72,24 +74,30 @@ class PVAServer(multiprocessing.Process):
 
             running_indicator (multiprocessing.Value): Boolean indicator indicating running model execution
 
-            read_only (bool): Boolean indicator of whether read-only server
-
         """
 
         super().__init__(*args, **kwargs)
         self.pva_server = None
         self.exit_event = multiprocessing.Event()
-        self._prefix = prefix
+        self.shutdown_event = multiprocessing.Event()
         self._input_variables = input_variables
         self._output_variables = output_variables
+        self._epics_config = epics_config
         self._in_queue = in_queue
         self._out_queue = out_queue
         self._providers = {}
         self._running_indicator = running_indicator
-        self._read_only = read_only
         # monitors for read only
         self._monitors = {}
         self._cached_values = {}
+
+        # utility maps
+        self._pvname_to_varname_map = {
+            config["pvname"]: var_name for var_name, config in epics_config.items()
+        }
+        self._varname_to_pvname_map = {
+            var_name: config["pvname"] for var_name, config in epics_config.items()
+        }
 
     def update_pv(self, pvname: str, value: Union[np.ndarray, float]) -> None:
         """Adds update to input process variable to the input queue.
@@ -102,9 +110,8 @@ class PVAServer(multiprocessing.Process):
         """
         # Hack for now to get the pickable value
         value = value.raw.value
-        pvname = pvname.replace(f"{self._prefix}:", "")
 
-        self._cached_values.update({pvname: val})
+        self._cached_values.update({pvname: value})
 
         # only update if not running
         if not self._running_indicator.value:
@@ -116,33 +123,77 @@ class PVAServer(multiprocessing.Process):
 
         """
         val = V.raw.value
-        pvname = pvname.replace(f"{self._prefix}:", "")
+        var_name = self._pvname_to_varname_map[pvname]
 
-        self._cached_values.update({pvname: val})
+        self._cached_values.update({var_name: val})
 
         # only update if not running
         if not self._running_indicator.value:
             self._in_queue.put({"protocol": self.protocol, "pvs": self._cached_values})
             self._cached_values = {}
 
+    def _initialize_model(self):
+        """ Initialize model
+        """
+
+        rep = {
+            "protocol": "pva",
+            "pvs": {
+                var_name: var.value for var_name, var in self._input_variables.items()
+            },
+        }
+
+        self._in_queue.put(rep)
+
     def setup_server(self) -> None:
         """Configure and start server.
 
         """
-        # initialize context
-        if self._read_only:
-            self._context = Context("pva")
+
+        self._context = Context()
+
+        # update value with stored defaults
+        for var_name in self._input_variables:
+            if self._epics_config[var_name]["serve"]:
+                self._input_variables[var_name].value = self._input_variables[
+                    var_name
+                ].default
+
+            else:
+
+                if self._context is None:
+                    self._context = Context("pva")
+
+                try:
+                    val = self._context.get(self._varname_to_pvname_map[var_name])
+                    val = val.raw.value
+                except:
+                    self.exit_event.set()
+                    raise ValueError(
+                        f"Unable to connect to {self._varname_to_pvname_map[var_name]}"
+                    )
+
+                self._input_variables[var_name].value = val
+
+        # update output variable values
+        self._initialize_model()
+        model_outputs = self._out_queue.get()
+        for output in model_outputs["output_variables"]:
+            self._output_variables[output.name] = output
+
+        variables = copy.deepcopy(self._input_variables)
+        variables.update(self._output_variables)
 
         # ignore interrupt in subprocess
         signal.signal(signal.SIGINT, signal.SIG_IGN)
 
         logger.info("Initializing pvAccess server")
+
         # initialize global inputs
+        for variable in variables.values():
+            pvname = self._varname_to_pvname_map[variable.name]
 
-        for variable in self._input_variables.values():
-            pvname = f"{self._prefix}:{variable.name}"
-
-            if not self._read_only:
+            if self._epics_config[variable.name]["serve"]:
 
                 # prepare scalar variable types
                 if variable.variable_type == "scalar":
@@ -176,60 +227,28 @@ class PVAServer(multiprocessing.Process):
                         "Unsupported variable type provided: %s", variable.variable_type
                     )
 
-                handler = PVAccessInputHandler(
-                    pvname=pvname, is_constant=variable.is_constant, server=self
-                )
-                pv = SharedPV(handler=handler, nt=nt, initial=initial)
-                self._providers[pvname] = pv
+                if variable.name in self._input_variables:
+                    handler = PVAccessInputHandler(
+                        pvname=pvname, is_constant=variable.is_constant, server=self
+                    )
 
-            else:
-                self._monitors[pvname] = self._context.monitor(
-                    pvname, partial(self._monitor_callback, pvname)
-                )
-
-        # use default handler for the output process variables
-        # updates to output pvs are handled from post calls within the input
-        # update
-        for variable in self._output_variables.values():
-            pvname = f"{self._prefix}:{variable.name}"
-            if variable.variable_type == "scalar":
-                nt = NTScalar()
-                initial = variable.value
-
-            elif variable.variable_type == "image":
-                nd_array = variable.value.view(NTNDArrayData)
-
-                # get image limits from model output
-                nd_array.attrib = {
-                    "x_min": np.float64(variable.x_min),
-                    "y_min": np.float64(variable.y_min),
-                    "x_max": np.float64(variable.x_max),
-                    "y_max": np.float64(variable.y_max),
-                }
-
-                nt = NTNDArray()
-                initial = nd_array
-
-            elif variable.variable_type == "array":
-
-                if variable.value_type == "string":
-                    nt = NTScalar("as")
-                    initial = variable.value
+                    pv = SharedPV(handler=handler, nt=nt, initial=initial)
 
                 else:
-                    nd_array = variable.value.view(NTNDArrayData)
-                    nt = NTNDArray()
-                    initial = nd_array
+                    pv = SharedPV(nt=nt, initial=initial)
+
+                self._providers[pvname] = pv
+
+            # if not serving pv, set up monitor
             else:
-                raise ValueError(
-                    "Unsupported variable type provided: %s", variable.variable_type
-                )
+                if variable.name in self._input_variables:
+                    self._monitors[pvname] = self._context.monitor(
+                        pvname, partial(self._monitor_callback, pvname)
+                    )
 
-            pv = SharedPV(nt=nt, initial=initial)
-            self._providers[pvname] = pv
-
-        else:
-            pass  # throw exception for incorrect data type
+                # in this case, externally hosted output variable
+                else:
+                    self._providers[pvname] = None
 
         # initialize pva server
         self.pva_server = P4PServer(providers=[self._providers])
@@ -251,12 +270,12 @@ class PVAServer(multiprocessing.Process):
         """
         variables = input_variables + output_variables
         for variable in variables:
+            pvname = self._varname_to_pvname_map[variable.name]
 
             if variable.name in self._input_variables and variable.is_constant:
                 logger.debug("Cannot update constant variable.")
 
             else:
-                pvname = f"{self._prefix}:{variable.name}"
                 if variable.variable_type == "image":
                     logger.debug(
                         "pvAccess image process variable %s updated.", variable.name
@@ -292,7 +311,17 @@ class PVAServer(multiprocessing.Process):
                     value = variable.value
 
             output_provider = self._providers[pvname]
-            output_provider.post(value)
+
+            if output_provider:
+                output_provider.post(value)
+
+            # in this case externally hosted
+            else:
+                try:
+                    self._context.put(pvname, value)
+                except:
+                    self.exit_event.set()
+                    self.shutdown()
 
     def run(self) -> None:
         """Start server process.
@@ -301,7 +330,7 @@ class PVAServer(multiprocessing.Process):
         self.setup_server()
 
         # mark running
-        while not self.exit_event.is_set():
+        while not self.shutdown_event.is_set():
             try:
                 data = self._out_queue.get_nowait()
                 inputs = data.get("input_variables", [])
@@ -318,8 +347,7 @@ class PVAServer(multiprocessing.Process):
                 time.sleep(0.1)
                 logger.debug("out queue empty")
 
-        if self._read_only:
-            self._context.close()
+        self._context.close()
         self.pva_server.stop()
         logger.info("pvAccess server stopped.")
 
@@ -327,7 +355,7 @@ class PVAServer(multiprocessing.Process):
         """Safely shutdown the server process.
 
         """
-        self.exit_event.set()
+        self.shutdown_event.set()
 
 
 class PVAccessInputHandler:

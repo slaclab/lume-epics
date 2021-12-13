@@ -220,12 +220,14 @@ class CAServer(CAProcess):
         external = []
         variables = copy.deepcopy(self._input_variables)
         variables.update(self._output_variables)
-        for var in variables:
-            if self._epics_config[var]["serve"]:
-                to_serve.append(var)
 
-            else:
-                external.append(var)
+        for var in variables:
+            if var in self._epics_config:
+                if self._epics_config[var]["serve"]:
+                    to_serve.append(var)
+
+                else:
+                    external.append(var)
 
         # build pvdb and child to parent map for area detector scheme
         pvdb, self._child_to_parent_map = build_pvdb(

@@ -26,7 +26,7 @@ image_output = [output_variables["output1"]]
 
 # set up controller
 controller = Controller(
-    "ca", input_variables, output_variables, prefix
+    "pva", input_variables, output_variables, prefix
 )  # can also use channel access
 
 # use all input variables for slider
