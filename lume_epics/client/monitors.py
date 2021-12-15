@@ -179,7 +179,7 @@ class PVTable:
 
     """
 
-    def __init__(self, variable: TableVariable, controller: Controller,) -> None:
+    def __init__(self, variable: TableVariable, controller: Controller) -> None:
         """Initializes monitor attributes.
 
         Args:
