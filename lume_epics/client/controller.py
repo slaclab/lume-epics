@@ -4,6 +4,7 @@ and process variables served over EPICS.
 """
 from typing import Union, List
 import numpy as np
+import time
 import copy
 import logging
 from datetime import datetime
@@ -72,6 +73,7 @@ class Controller:
         output_pvs: dict,
         prefix=None,
         auto_monitor=True,
+        monitor_poll_timeout=0.1,
     ):
         """
         Initializes controller. Stores protocol and creates context attribute if
@@ -89,6 +91,8 @@ class Controller:
 
             auto_monitor (bool): Indicate whether to use subscriptions for values
 
+            monitor_poll_timeout (float): timout for caget many polling
+
         """
         self._protocol = protocol
         self._pv_registry = defaultdict()
@@ -99,6 +103,7 @@ class Controller:
         self.last_output_update = ""
         self._auto_monitor = auto_monitor
         self._pvnames = {}
+        self._monitor_poll_timeout = monitor_poll_timeout
 
         # initalize context for pva
         self._context = None
@@ -146,6 +151,10 @@ class Controller:
 
             else:
                 self._pvnames[variable.name] = pvname
+
+            if not self._auto_monitor:
+                print(f"registering {pvname}")
+                self._register(pvname)
 
     def _ca_value_callback(self, pvname, value, *args, **kwargs):
         """Callback executed by Channel Access monitor.
@@ -219,6 +228,8 @@ class Controller:
                     self._pvnames[pvname],
                     connection_callback=self._ca_connection_callback,
                 )
+
+                print(f"Created {pvname}")
 
             # update registry
             self._pv_registry[pvname]["pv"] = pv_obj
@@ -376,8 +387,14 @@ class Controller:
 
             else:
                 if self._protocol == "ca":
-                    vals = caget_many(pvnames)
-                    return dict(zip(pvnames, vals))
+                    vals = {
+                        pvname: self._pv_registry[pvname]["pv"].get(
+                            timeout=self._monitor_poll_timeout
+                        )
+                        for pvname in pvnames
+                    }
+
+                    return vals
 
                 elif self._protocol == "pva":
                     vals = self._context.get(pvnames)
