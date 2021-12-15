@@ -153,7 +153,6 @@ class Controller:
                 self._pvnames[variable.name] = pvname
 
             if not self._auto_monitor:
-                print(f"registering {pvname}")
                 self._register(pvname)
 
     def _ca_value_callback(self, pvname, value, *args, **kwargs):
@@ -228,8 +227,6 @@ class Controller:
                     self._pvnames[pvname],
                     connection_callback=self._ca_connection_callback,
                 )
-
-                print(f"Created {pvname}")
 
             # update registry
             self._pv_registry[pvname]["pv"] = pv_obj
