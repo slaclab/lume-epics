@@ -95,7 +95,7 @@ class Server:
         if len(self._epics_config["ca"]) > 0:
             self._protocols.append("ca")
 
-        elif len(self._epics_config["pva"]) > 0:
+        if len(self._epics_config["pva"]) > 0:
             self._protocols.append("pva")
 
         # set up protocol based queues
@@ -211,23 +211,8 @@ class Server:
                 # mark running
                 running_indicator.value = True
 
-                for pv in data["pvs"]:
-                    self.input_variables[pv].value = data["pvs"][pv]
-
-                # sync pva/ca if duplicated
-                for protocol, queue in out_queues.items():
-                    if protocol == data["protocol"]:
-                        continue
-
-                    queue.put(
-                        {
-                            "input_variables": [
-                                self.input_variables[pv]
-                                for pv in data["pvs"]
-                                if pv in data["input_variables"]
-                            ]
-                        }
-                    )
+                for var in data["pvs"]:
+                    self.input_variables[var].value = data["pvs"][var]
 
                 # check no input values are None
                 if not any(
@@ -238,11 +223,31 @@ class Server:
                 # update output variable state
                 if inputs_initialized:
 
+                    # sync pva/ca if duplicated
+                    for protocol, queue in out_queues.items():
+                        if protocol != data["protocol"]:
+                            inputs = [
+                                self.input_variables[var]
+                                for var in data["pvs"]
+                                if self._epics_config[protocol].get(
+                                    self.input_variables[var].name
+                                )
+                                is not None
+                            ]
+
+                            if len(inputs):
+                                queue.put({"input_variables": inputs})
+
                     model_input = list(self.input_variables.values())
                     predicted_output = model.evaluate(model_input)
 
                     for protocol, queue in out_queues.items():
-                        queue.put({"output_variables": predicted_output}, timeout=0.1)
+                        outputs = [
+                            var
+                            for var in predicted_output
+                            if self._epics_config[protocol].get(var.name) is not None
+                        ]
+                        queue.put({"output_variables": outputs}, timeout=0.1)
 
                 running_indicator.value = False
 

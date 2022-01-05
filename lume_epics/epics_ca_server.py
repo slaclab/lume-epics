@@ -68,7 +68,7 @@ class CAServer(CAProcess):
 
         _input_variables (Dict[str, InputVariable]): Mapping of input variable name to variable
 
-        _ouptut_variables (Dict[str, InputVariable]): Mapping of output variable name to variable
+        _output_variables (Dict[str, InputVariable]): Mapping of output variable name to variable
 
         _server_thread (ServerThread): Thread for running the server
 
@@ -212,7 +212,7 @@ class CAServer(CAProcess):
         # update output variable values
         self._initialize_model()
         model_outputs = self._out_queue.get()
-        for output in model_outputs["output_variables"]:
+        for output in model_outputs.get("output_variables", []):
             self._output_variables[output.name] = output
 
         # differentiate between values to serve and not to serve

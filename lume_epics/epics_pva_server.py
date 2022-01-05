@@ -3,6 +3,7 @@ import copy
 import multiprocessing
 from multiprocessing.managers import DictProxy
 from queue import Full, Empty
+from lume_epics import model
 import numpy as np
 import time
 import signal
@@ -111,7 +112,8 @@ class PVAServer(multiprocessing.Process):
         # Hack for now to get the pickable value
         value = value.raw.value
 
-        self._cached_values.update({pvname: value})
+        varname = self._pvname_to_varname_map[pvname]
+        self._cached_values.update({varname: value})
 
         # only update if not running
         if not self._running_indicator.value:
@@ -123,9 +125,9 @@ class PVAServer(multiprocessing.Process):
 
         """
         val = V.raw.value
-        var_name = self._pvname_to_varname_map[pvname]
+        varname = self._pvname_to_varname_map[pvname]
 
-        self._cached_values.update({var_name: val})
+        self._cached_values.update({varname: val})
 
         # only update if not running
         if not self._running_indicator.value:
@@ -178,7 +180,7 @@ class PVAServer(multiprocessing.Process):
         # update output variable values
         self._initialize_model()
         model_outputs = self._out_queue.get()
-        for output in model_outputs["output_variables"]:
+        for output in model_outputs.get("output_variables", []):
             self._output_variables[output.name] = output
 
         variables = copy.deepcopy(self._input_variables)

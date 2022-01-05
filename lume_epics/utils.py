@@ -37,7 +37,11 @@ def config_from_yaml(config_file):
                     "serve": serve,
                 }
 
-            epics_configuration[protocol][variable] = {"pvname": pvname, "serve": serve}
+            else:
+                epics_configuration[protocol][variable] = {
+                    "pvname": pvname,
+                    "serve": serve,
+                }
 
     # Is this redundant? Do we need?
     if "output_variables" in config:
@@ -54,9 +58,16 @@ def config_from_yaml(config_file):
                 raise ValueError(f"No pvname provided for {variable}")
 
             if protocol == "both":
-                epics_configuration["ca"] = {"pvname": pvname, "serve": serve}
-                epics_configuration["pva"] = {"pvname": pvname, "serve": serve}
+                epics_configuration["ca"][variable] = {"pvname": pvname, "serve": serve}
+                epics_configuration["pva"][variable] = {
+                    "pvname": pvname,
+                    "serve": serve,
+                }
 
-            epics_configuration[protocol][variable] = {"pvname": pvname, "serve": serve}
+            else:
+                epics_configuration[protocol][variable] = {
+                    "pvname": pvname,
+                    "serve": serve,
+                }
 
     return epics_configuration
