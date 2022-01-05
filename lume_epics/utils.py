@@ -15,7 +15,7 @@ def config_from_yaml(config_file):
         logger.exception("Invalid config file.")
         sys.exit()
 
-    epics_configuration = {"ca": {}, "pva": {}}
+    epics_configuration = {}
 
     if "input_variables" in config:
 
@@ -30,18 +30,11 @@ def config_from_yaml(config_file):
             if not pvname:
                 raise ValueError(f"No pvname provided for {variable}")
 
-            if protocol == "both":
-                epics_configuration["ca"][variable] = {"pvname": pvname, "serve": serve}
-                epics_configuration["pva"][variable] = {
-                    "pvname": pvname,
-                    "serve": serve,
-                }
-
-            else:
-                epics_configuration[protocol][variable] = {
-                    "pvname": pvname,
-                    "serve": serve,
-                }
+            epics_configuration[variable] = {
+                "pvname": pvname,
+                "serve": serve,
+                "protocol": protocol,
+            }
 
     # Is this redundant? Do we need?
     if "output_variables" in config:
@@ -57,17 +50,10 @@ def config_from_yaml(config_file):
             if not pvname:
                 raise ValueError(f"No pvname provided for {variable}")
 
-            if protocol == "both":
-                epics_configuration["ca"][variable] = {"pvname": pvname, "serve": serve}
-                epics_configuration["pva"][variable] = {
-                    "pvname": pvname,
-                    "serve": serve,
-                }
-
-            else:
-                epics_configuration[protocol][variable] = {
-                    "pvname": pvname,
-                    "serve": serve,
-                }
+            epics_configuration[variable] = {
+                "pvname": pvname,
+                "serve": serve,
+                "protocol": protocol,
+            }
 
     return epics_configuration

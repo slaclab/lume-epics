@@ -92,10 +92,28 @@ class Server:
         self._epics_config = epics_config
 
         self._protocols = []
-        if len(self._epics_config["ca"]) > 0:
+
+        ca_config = {
+            var: {
+                "pvname": self._epics_config[var]["pvname"],
+                "serve": self._epics_config[var]["serve"],
+            }
+            for var in self._epics_config
+            if self._epics_config[var]["protocol"] in ["ca", "both"]
+        }
+        pva_config = {
+            var: {
+                "pvname": self._epics_config[var]["pvname"],
+                "serve": self._epics_config[var]["serve"],
+            }
+            for var in self._epics_config
+            if self._epics_config[var]["protocol"] in ["pva", "both"]
+        }
+
+        if len(ca_config) > 0:
             self._protocols.append("ca")
 
-        if len(self._epics_config["pva"]) > 0:
+        if len(pva_config) > 0:
             self._protocols.append("pva")
 
         # set up protocol based queues
@@ -125,18 +143,18 @@ class Server:
             ca_input_vars = {
                 var_name: var
                 for var_name, var in self.input_variables.items()
-                if var_name in self._epics_config["ca"]
+                if var_name in ca_config
             }
             ca_output_vars = {
                 var_name: var
                 for var_name, var in self.output_variables.items()
-                if var_name in self._epics_config["ca"]
+                if var_name in ca_config
             }
 
             self.ca_process = CAServer(
                 input_variables=ca_input_vars,
                 output_variables=ca_output_vars,
-                epics_config=self._epics_config["ca"],
+                epics_config=ca_config,
                 in_queue=self.in_queue,
                 out_queue=self.out_queues["ca"],
                 running_indicator=self._running_indicator,
@@ -149,18 +167,18 @@ class Server:
             pva_input_vars = {
                 var_name: var
                 for var_name, var in self.input_variables.items()
-                if var_name in self._epics_config["pva"]
+                if var_name in pva_config
             }
             pva_output_vars = {
                 var_name: var
                 for var_name, var in self.output_variables.items()
-                if var_name in self._epics_config["pva"]
+                if var_name in pva_config
             }
 
             self.pva_process = PVAServer(
                 input_variables=pva_input_vars,
                 output_variables=pva_output_vars,
-                epics_config=self._epics_config["pva"],
+                epics_config=pva_config,
                 in_queue=self.in_queue,
                 out_queue=self.out_queues["pva"],
                 running_indicator=self._running_indicator,
@@ -229,10 +247,8 @@ class Server:
                             inputs = [
                                 self.input_variables[var]
                                 for var in data["vars"]
-                                if self._epics_config[protocol].get(
-                                    self.input_variables[var].name
-                                )
-                                is not None
+                                if self._epics_config[var]["protocol"]
+                                in [protocol, "both"]
                             ]
 
                             if len(inputs):
@@ -245,7 +261,8 @@ class Server:
                         outputs = [
                             var
                             for var in predicted_output
-                            if self._epics_config[protocol].get(var.name) is not None
+                            if self._epics_config[var.name]["protocol"]
+                            in [protocol, "both"]
                         ]
                         queue.put({"output_variables": outputs}, timeout=0.1)
 
