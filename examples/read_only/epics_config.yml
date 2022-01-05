@@ -21,8 +21,3 @@ output_variables:
   output3:
     pvname: test:output3
     protocol: pva
-
-
-# serve: serve this variable as a pv
-# read_only: Preclude writing to pv
-# documentation, root for images
