@@ -81,52 +81,41 @@ class Controller:
         self._epics_config = epics_config
 
         self._context = Context()
-        if len(epics_config["pva"]):
+
+        ca_config = {
+            var: {
+                "pvname": self._epics_config[var]["pvname"],
+                "serve": self._epics_config[var]["serve"],
+            }
+            for var in self._epics_config
+            if self._epics_config[var]["protocol"] in ["ca", "both"]
+        }
+        pva_config = {
+            var: {
+                "pvname": self._epics_config[var]["pvname"],
+                "serve": self._epics_config[var]["serve"],
+            }
+            for var in self._epics_config
+            if self._epics_config[var]["protocol"] in ["pva", "both"]
+        }
+
+        if len(pva_config):
             self._context = Context("pva")
 
         # utility maps
-        self._pvname_to_varname_map = {}
-        self._varname_to_pvname_map = {}
+        self._pvname_to_varname_map = {
+            config["pvname"]: varname for varname, config in epics_config.items()
+        }
 
-        for protocol in ["ca", "pva"]:
-            self._pvname_to_varname_map.update(
-                {
-                    config["pvname"]: var_name
-                    for var_name, config in epics_config[protocol].items()
-                }
-            )
-            self._varname_to_pvname_map.update(
-                {
-                    var_name: config["pvname"]
-                    for var_name, config in epics_config[protocol].items()
-                }
-            )
+        self._varname_to_pvname_map = {
+            varname: config["pvname"] for varname, config in epics_config.items()
+        }
 
         # track protocols
         self._protocols = {
-            epics_config["ca"][variable]["pvname"]: "ca"
-            for variable in epics_config["ca"]
+            epics_config[variable]["pvname"]: epics_config[variable]["protocol"]
+            for variable in epics_config
         }
-
-        # supersede ca with pva in the event of 'both' configuration
-        self._protocols.update(
-            {
-                epics_config["pva"][variable]["pvname"]: "pva"
-                for variable in epics_config["pva"]
-            }
-        )
-
-        # initialize controller
-
-    # for variable in self._varname_to_pvname_map:
-    #     if variable.variable_type == "image":
-    #         self.get_image(variable.name)
-
-    #     elif variable.variable_type == "array":
-    #         self.get_array(variable.name)
-
-    #     else:
-    #         self.get_value(variable.name)
 
     def _ca_value_callback(self, pvname, value, *args, **kwargs):
         """Callback executed by Channel Access monitor.
