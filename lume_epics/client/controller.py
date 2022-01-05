@@ -28,6 +28,11 @@ DEFAULT_IMAGE_DATA = {
 DEFAULT_SCALAR_VALUE = 0
 
 
+# TODO: Track update dates per pv
+# Check missing pvnames
+# Update example
+
+
 class Controller:
     """
     Controller class used to access process variables. Controllers are used for
@@ -36,22 +41,13 @@ class Controller:
     both getting and setting values on the process variables.
 
     Attributes:
-        _protocol (str): Protocol for getting values from variables ("pva" for pvAccess, "ca" for
+        _protocols (dict): Dictionary mapping pvname to protocol ("pva" for pvAccess, "ca" for
             Channel Access)
 
         _context (Context): P4P threaded context instance for use with pvAccess.
 
         _pv_registry (dict): Registry mapping pvname to dict of value and pv monitor
 
-        _input_pvs (dict): Dictionary of input process variables
-
-        _output_pvs (dict): Dictionary out output process variables
-
-        _prefix (str): Prefix to use for accessing variables
-
-        last_input_update (datetime): Last update of input variables
-
-        last_output_update (datetime): Last update of output variables
 
     Example:
         ```
@@ -67,43 +63,70 @@ class Controller:
 
     """
 
-    def __init__(self, protocol: str, input_pvs: dict, output_pvs: dict, prefix):
+    def __init__(self, epics_config: dict):
         """
         Initializes controller. Stores protocol and creates context attribute if
         using pvAccess.
 
         Args:
-            protocol (str): Protocol for getting values from variables ("pva" for pvAccess, "ca" for
-            Channel Access)
-
-            input_pvs (dict): Dict mapping input variable names to variable
-
-            output_pvs (dict): Dict mapping output variable names to variable
+            epics_config (dict): Dict describing epics configurations
 
         """
-        self._protocol = protocol
         self._pv_registry = defaultdict()
-        self._input_pvs = input_pvs
-        self._output_pvs = output_pvs
-        self._prefix = prefix
-        self.last_input_update = ""
-        self.last_output_update = ""
+        # latest update
+        self.last_update = ""
 
-        # initalize context for pva
-        self._context = None
-        if self._protocol == "pva":
+        # dictionary of last updates for all variables
+        self._last_updates = {}
+        self._epics_config = epics_config
+
+        self._context = Context()
+        if len(epics_config["pva"]):
             self._context = Context("pva")
 
+        # utility maps
+        self._pvname_to_varname_map = {}
+        self._varname_to_pvname_map = {}
+
+        for protocol in ["ca", "pva"]:
+            self._pvname_to_varname_map.update(
+                {
+                    config["pvname"]: var_name
+                    for var_name, config in epics_config[protocol].items()
+                }
+            )
+            self._varname_to_pvname_map.update(
+                {
+                    var_name: config["pvname"]
+                    for var_name, config in epics_config[protocol].items()
+                }
+            )
+
+        # track protocols
+        self._protocols = {
+            epics_config["ca"][variable]["pvname"]: "ca"
+            for variable in epics_config["ca"]
+        }
+
+        # supersede ca with pva in the event of 'both' configuration
+        self._protocols.update(
+            {
+                epics_config["pva"][variable]["pvname"]: "pva"
+                for variable in epics_config["pva"]
+            }
+        )
+
         # initialize controller
-        for variable in {**input_pvs, **output_pvs}.values():
-            if variable.variable_type == "image":
-                self.get_image(variable.name)
 
-            elif variable.variable_type == "array":
-                self.get_array(variable.name)
+    # for variable in self._varname_to_pvname_map:
+    #     if variable.variable_type == "image":
+    #         self.get_image(variable.name)
 
-            else:
-                self.get_value(variable.name)
+    #     elif variable.variable_type == "array":
+    #         self.get_array(variable.name)
+
+    #     else:
+    #         self.get_value(variable.name)
 
     def _ca_value_callback(self, pvname, value, *args, **kwargs):
         """Callback executed by Channel Access monitor.
@@ -113,21 +136,15 @@ class Controller:
 
             value (Union[np.ndarray, float]): Value to assign to process variable.
         """
-        pvname = pvname.replace(f"{self._prefix}:", "")
         self._pv_registry[pvname]["value"] = value
 
-        if pvname in self._input_pvs:
-            self.last_input_update = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
-
-        if pvname in self._output_pvs:
-            self.last_output_update = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+        update_datetime = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+        self.last_update = update_datetime
+        self._last_updates[pvname] = update_datetime
 
     def _ca_connection_callback(self, *, pvname, conn, pv):
         """Callback used for monitoring connection and setting values to None on disconnect.
         """
-        # if disconnected, set value to None
-        pvname = pvname.replace(f"{self._prefix}:", "")
-
         if not conn:
             self._pv_registry[pvname]["value"] = None
 
@@ -144,13 +161,11 @@ class Controller:
         else:
             self._pv_registry[pvname]["value"] = value
 
-        if pvname in self._input_pvs:
-            self.last_input_update = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+        update_datetime = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+        self.last_update = update_datetime
+        self._last_updates[pvname] = update_datetime
 
-        if pvname in self._output_pvs:
-            self.last_output_update = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
-
-    def _set_up_pv_monitor(self, pvname):
+    def _set_up_pv_monitor(self, pvname, root=None):
         """Set up process variable monitor.
 
         Args:
@@ -160,13 +175,20 @@ class Controller:
         if pvname in self._pv_registry:
             return
 
-        if self._protocol == "ca":
+        if root:
+            protocol = self._protocols[root]
+
+        else:
+            protocol = self._protocols[pvname]
+
+        if protocol == "ca":
+
             # add to registry (must exist for connection callback)
             self._pv_registry[pvname] = {"pv": None, "value": None}
 
             # create the pv
             pv_obj = PV(
-                f"{self._prefix}:{pvname}",
+                pvname,
                 callback=self._ca_value_callback,
                 connection_callback=self._ca_connection_callback,
             )
@@ -174,28 +196,26 @@ class Controller:
             # update registry
             self._pv_registry[pvname]["pv"] = pv_obj
 
-        elif self._protocol == "pva":
+        elif protocol == "pva":
             cb = partial(self._pva_value_callback, pvname)
             # populate registry s.t. initially disconnected will populate
             self._pv_registry[pvname] = {"pv": None, "value": None}
 
             # create the monitor obj
-            mon_obj = self._context.monitor(
-                f"{self._prefix}:{pvname}", cb, notify_disconnect=True
-            )
+            mon_obj = self._context.monitor(pvname, cb, notify_disconnect=True)
 
             # update registry with the monitor
             self._pv_registry[pvname]["pv"] = mon_obj
 
-    def get(self, pvname: str) -> np.ndarray:
+    def get(self, pvname: str, root: str = None) -> np.ndarray:
         """
         Accesses and returns the value of a process variable.
 
         Args:
-            pvname (str): Process variable name
+            varname (str): Model variable name
 
         """
-        self._set_up_pv_monitor(pvname)
+        self._set_up_pv_monitor(pvname, root=root)
 
         pv = self._pv_registry.get(pvname, None)
 
@@ -204,13 +224,14 @@ class Controller:
 
         return None
 
-    def get_value(self, pvname):
+    def get_value(self, varname):
         """Gets scalar value of a process variable.
 
         Args:
-            pvname (str): Process variable name.
+            varname (str): Model variable name
 
         """
+        pvname = self._get_pvname(varname)
         value = self.get(pvname)
 
         if value is None:
@@ -218,22 +239,23 @@ class Controller:
 
         return value
 
-    def get_image(self, pvname) -> dict:
+    def get_image(self, varname) -> dict:
         """Gets image data via controller protocol.
 
         Args:
-            pvname (str): Image process variable name
+            varname (str): Model variable name
 
         """
+        pvname = self._get_pvname(varname)
         image = None
-        if self._protocol == "ca":
-            image_flat = self.get(f"{pvname}:ArrayData_RBV")
-            nx = self.get(f"{pvname}:ArraySizeX_RBV")
-            ny = self.get(f"{pvname}:ArraySizeY_RBV")
-            x = self.get(f"{pvname}:MinX_RBV")
-            y = self.get(f"{pvname}:MinY_RBV")
-            x_max = self.get(f"{pvname}:MaxX_RBV")
-            y_max = self.get(f"{pvname}:MaxY_RBV")
+        if self._protocols[pvname] == "ca":
+            image_flat = self.get(f"{pvname}:ArrayData_RBV", root=pvname)
+            nx = self.get(f"{pvname}:ArraySizeX_RBV", root=pvname)
+            ny = self.get(f"{pvname}:ArraySizeY_RBV", root=pvname)
+            x = self.get(f"{pvname}:MinX_RBV", root=pvname)
+            y = self.get(f"{pvname}:MinY_RBV", root=pvname)
+            x_max = self.get(f"{pvname}:MaxX_RBV", root=pvname)
+            y_max = self.get(f"{pvname}:MaxY_RBV", root=pvname)
 
             if all(
                 [
@@ -246,7 +268,7 @@ class Controller:
 
                 image = image_flat.reshape(int(nx), int(ny))
 
-        elif self._protocol == "pva":
+        elif self._protocols[pvname] == "pva":
             # context returns numpy array with WRITEABLE=False
             # copy to manipulate array below
 
@@ -272,23 +294,24 @@ class Controller:
         else:
             return DEFAULT_IMAGE_DATA
 
-    def get_array(self, pvname) -> dict:
+    def get_array(self, varname) -> dict:
         """Gets array data via controller protocol.
 
         Args:
-            pvname (str): Image process variable name
+            varname (str): Model variable name
 
         """
+        pvname = self._get_pvname(varname)
         array = None
-        if self._protocol == "ca":
-            array_flat = self.get(f"{pvname}:ArrayData_RBV")
-            shape = self.get(f"{pvname}:ArraySize_RBV")
+        if self._protocols[pvname] == "ca":
+            array_flat = self.get(f"{pvname}:ArrayData_RBV", root=pvname)
+            shape = self.get(f"{pvname}:ArraySize_RBV", root=pvname)
 
             if all([array_def is not None for array_def in [array_flat, shape]]):
 
                 array = np.array(array_flat).reshape(shape)
 
-        elif self._protocol == "pva":
+        elif self._protocols[pvname] == "pva":
             # context returns numpy array with WRITEABLE=False
             # copy to manipulate array below
 
@@ -299,17 +322,18 @@ class Controller:
         else:
             return np.array([])
 
-    def put(self, pvname, value: float, timeout=1.0) -> None:
+    def put(self, varname, value: float, timeout=1.0) -> None:
         """Assign the value of a scalar process variable.
 
         Args:
-            pvname (str): Name of the process variable
+            varname (str): Model variable name
 
             value (float): Value to assing to process variable.
 
             timeout (float): Operation timeout in seconds
 
         """
+        pvname = self._get_pvname(varname)
         self._set_up_pv_monitor(pvname)
 
         # allow no puts before a value has been collected
@@ -317,20 +341,18 @@ class Controller:
 
         # if the value is registered
         if registered is not None:
-            if self._protocol == "ca":
+            if self._protocols[pvname] == "ca":
                 self._pv_registry[pvname]["pv"].put(value, timeout=timeout)
 
-            elif self._protocol == "pva":
-                self._context.put(
-                    f"{self._prefix}:{pvname}", value, throw=False, timeout=timeout
-                )
+            elif self._protocols[pvname] == "pva":
+                self._context.put(pvname, value, throw=False, timeout=timeout)
 
         else:
             logger.debug(f"No initial value set for {pvname}.")
 
     def put_image(
         self,
-        pvname,
+        varname,
         image_array: np.ndarray = None,
         x_min: float = None,
         x_max: float = None,
@@ -341,7 +363,7 @@ class Controller:
         """Assign the value of a image process variable. Allows updates to individual attributes.
 
         Args:
-            pvname (str): Name of the process variable
+            varname (str): Model variable name
 
             image_array (np.ndarray): Value to assing to process variable.
 
@@ -356,14 +378,15 @@ class Controller:
             timeout (float): Operation timeout in seconds
 
         """
-        self._set_up_pv_monitor(pvname)
+        pvname = self._get_pvname(varname)
+        self._set_up_pv_monitor(pvname, root=pvname)
 
         # allow no puts before a value has been collected
         registered = self.get_image(pvname)
 
         # if the value is registered
         if registered is not None:
-            if self._protocol == "ca":
+            if self._protocols[pvname] == "ca":
 
                 if image_array is not None:
                     self._pv_registry[f"{pvname}:ArrayData_RBV"]["pv"].put(
@@ -390,7 +413,7 @@ class Controller:
                         y_max, timeout=timeout
                     )
 
-            elif self._protocol == "pva":
+            elif self._protocols[pvname] == "pva":
 
                 # compose normative type
                 pv = self._pv_registry[pvname]
@@ -420,33 +443,34 @@ class Controller:
             logger.debug(f"No initial value set for {pvname}.")
 
     def put_array(
-        self, pvname, array: np.ndarray = None, timeout: float = 1.0,
+        self, varname, array: np.ndarray = None, timeout: float = 1.0,
     ) -> None:
         """Assign the value of an array process variable. Allows updates to individual attributes.
 
         Args:
-            pvname (str): Name of the process variable
+            varname (str): Model variable name
 
             array (np.ndarray): Value to assing to process variable.
 
             timeout (float): Operation timeout in seconds
 
         """
-        self._set_up_pv_monitor(pvname)
+        pvname = self._get_pvname(varname)
+        self._set_up_pv_monitor(pvname, root=pvname)
 
         # allow no puts before a value has been collected
         registered = self.get_array(pvname)
 
         # if the value is registered
         if registered is not None:
-            if self._protocol == "ca":
+            if self._protocols[pvname] == "ca":
 
                 if array is not None:
                     self._pv_registry[f"{pvname}:ArrayData_RBV"]["pv"].put(
                         array.flatten(), timeout=timeout
                     )
 
-            elif self._protocol == "pva":
+            elif self._protocols[pvname] == "pva":
 
                 # compose normative type
                 pv = self._pv_registry[pvname]
@@ -458,5 +482,16 @@ class Controller:
             logger.debug(f"No initial value set for {pvname}.")
 
     def close(self):
-        if self._protocol == "pva":
+        if self._context is not None:
             self._context.close()
+
+    def _get_pvname(self, varname):
+
+        pvname = self._varname_to_pvname_map.get(varname)
+        if not pvname:
+            raise ValueError(
+                f"{varname} has not been configured with EPICS controller."
+            )
+
+        else:
+            return pvname
