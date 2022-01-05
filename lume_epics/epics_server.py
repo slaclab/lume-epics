@@ -211,8 +211,8 @@ class Server:
                 # mark running
                 running_indicator.value = True
 
-                for var in data["pvs"]:
-                    self.input_variables[var].value = data["pvs"][var]
+                for var in data["vars"]:
+                    self.input_variables[var].value = data["vars"][var]
 
                 # check no input values are None
                 if not any(
@@ -228,7 +228,7 @@ class Server:
                         if protocol != data["protocol"]:
                             inputs = [
                                 self.input_variables[var]
-                                for var in data["pvs"]
+                                for var in data["vars"]
                                 if self._epics_config[protocol].get(
                                     self.input_variables[var].name
                                 )

@@ -153,7 +153,7 @@ class CAServer(CAProcess):
 
         # only update if not running
         if not self._running_indicator.value:
-            self._in_queue.put({"protocol": "ca", "pvs": self._cached_values})
+            self._in_queue.put({"protocol": "ca", "vars": self._cached_values})
             self._cached_values = {}
 
     def _monitor_callback(self, pvname=None, value=None, **kwargs) -> None:
@@ -164,7 +164,7 @@ class CAServer(CAProcess):
 
         # only update if not running
         if not self._running_indicator.value:
-            self._in_queue.put({"protocol": "ca", "pvs": self._cached_values})
+            self._in_queue.put({"protocol": "ca", "vars": self._cached_values})
             self._cached_values = {}
 
     def _initialize_model(self):
@@ -173,7 +173,7 @@ class CAServer(CAProcess):
         self._in_queue.put(
             {
                 "protocol": "ca",
-                "pvs": {
+                "vars": {
                     var_name: var.value
                     for var_name, var in self._input_variables.items()
                 },

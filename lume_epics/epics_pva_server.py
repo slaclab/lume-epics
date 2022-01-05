@@ -117,7 +117,7 @@ class PVAServer(multiprocessing.Process):
 
         # only update if not running
         if not self._running_indicator.value:
-            self._in_queue.put({"protocol": self.protocol, "pvs": self._cached_values})
+            self._in_queue.put({"protocol": self.protocol, "vars": self._cached_values})
             self._cached_values = {}
 
     def _monitor_callback(self, pvname, V) -> None:
@@ -131,7 +131,7 @@ class PVAServer(multiprocessing.Process):
 
         # only update if not running
         if not self._running_indicator.value:
-            self._in_queue.put({"protocol": self.protocol, "pvs": self._cached_values})
+            self._in_queue.put({"protocol": self.protocol, "vars": self._cached_values})
             self._cached_values = {}
 
     def _initialize_model(self):
@@ -140,7 +140,7 @@ class PVAServer(multiprocessing.Process):
 
         rep = {
             "protocol": "pva",
-            "pvs": {
+            "vars": {
                 var_name: var.value for var_name, var in self._input_variables.items()
             },
         }
@@ -342,7 +342,7 @@ class PVAServer(multiprocessing.Process):
                 # check cached values
                 if len(self._cached_values) > 0 and not self._running_indicator.value:
                     self._in_queue.put(
-                        {"protocol": self.protocol, "pvs": self._cached_values}
+                        {"protocol": self.protocol, "vars": self._cached_values}
                     )
 
             except Empty:
