@@ -84,7 +84,9 @@ class Controller:
 
         pva_config = (
             1
-            if any([config["protocol"] == "pva" for var, config in epics_config])
+            if any(
+                [config["protocol"] == "pva" for var, config in epics_config.items()]
+            )
             else 0
         )
 
