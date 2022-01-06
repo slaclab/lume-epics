@@ -6,7 +6,10 @@ prefix = "test"
 protocol = "ca"
 
 filename = "examples/files/iris_config.yml"
-layout, callbacks = render_from_yaml(filename, prefix, protocol, read_only=False)
+epics_config_filename = "examples/files/iris_epics_config.yml"
+
+
+layout, callbacks = render_from_yaml(filename, epics_config_filename, read_only=False)
 
 
 curdoc().add_root(layout)
