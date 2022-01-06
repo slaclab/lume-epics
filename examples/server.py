@@ -14,7 +14,6 @@ if __name__ == "__main__":
     with open("examples/files/epics_config.yml", "r") as f:
         epics_config = config_from_yaml(f)
 
-    prefix = "test"
     server = Server(
         DemoModel,
         epics_config,
