@@ -10,8 +10,9 @@ import argparse
 
 parser = argparse.ArgumentParser(description="Process bokeh args")
 parser.add_argument("filename", type=str, help="Filename to load.")
-parser.add_argument("protocol", type=str, help="Protocol used to build client.")
-parser.add_argument("prefix", type=str, help="Prefix to serve.")
+parser.add_argument(
+    "epics_config_filename", type=str, help="Filename for epics configuration."
+)
 parser.add_argument(
     "--read-only", default=False, action="store_true", help="Render as read-only"
 )
@@ -33,16 +34,14 @@ parser.add_argument(
 args = parser.parse_args()
 
 filename = args.filename
-prefix = args.prefix
-protocol = args.protocol
+epics_config_filename = args.epics_config_filename
 read_only = args.read_only
 striptool_limit = args.striptool_limit
 ncol_widgets = args.ncol_widgets
 
 layout, callbacks = render_from_yaml(
     filename,
-    prefix,
-    protocol,
+    epics_config_filename,
     read_only=read_only,
     striptool_limit=striptool_limit,
     ncol_widgets=ncol_widgets,
