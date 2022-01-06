@@ -52,10 +52,10 @@ class Controller:
     Example:
         ```
         # create PVAcess controller
-        controller = Controller("pva")
+        epics_config = {"input1": {"pvname": "test:input1", "protocol": "ca"}}
+        controller = Controller(epics_config)
 
-        value = controller.get_value("scalar_input")
-        image_value = controller.get_image("image_input")
+        value = controller.get_value("input1")
 
         controller.close()
 
@@ -80,26 +80,15 @@ class Controller:
         self._last_updates = {}
         self._epics_config = epics_config
 
-        self._context = Context()
+        self._context = None
 
-        ca_config = {
-            var: {
-                "pvname": self._epics_config[var]["pvname"],
-                "serve": self._epics_config[var]["serve"],
-            }
-            for var in self._epics_config
-            if self._epics_config[var]["protocol"] in ["ca", "both"]
-        }
-        pva_config = {
-            var: {
-                "pvname": self._epics_config[var]["pvname"],
-                "serve": self._epics_config[var]["serve"],
-            }
-            for var in self._epics_config
-            if self._epics_config[var]["protocol"] in ["pva", "both"]
-        }
+        pva_config = (
+            1
+            if any([config["protocol"] == "pva" for var, config in epics_config])
+            else 0
+        )
 
-        if len(pva_config):
+        if pva_config:
             self._context = Context("pva")
 
         # utility maps
