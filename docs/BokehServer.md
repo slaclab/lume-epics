@@ -48,58 +48,70 @@ class DemoModel(SurrogateModel):
         return list(self.output_variables.values())
 ```
 
-Now, we use the main method to define and save the input and output variables. This is done in the main method because the server will import and execute the `DemoModel` class.
+Now, we create a YAML file  `my_variables.yml` describing our input and output variables using the following format:
 
-```python
-if __name__ == "__main__":
-    input_variables = {
-        "input1": ScalarInputVariable(
-            name="input1",
-            value=1,
-            default=1,
-            range=[0, 256]
-        ),
-        "input2": ScalarInputVariable(
-            name="input2",
-            value=2,
-            default=2,
-            range=[0, 256]),
-    }
+```yaml
+input_variables:
+  input1:
+      name: input1
+      type: scalar
+      default: 1
+      range: [0, 256]
 
-    output_variables = {
-        "output1": ImageOutputVariable(
-            name="output1",
-            axis_labels=["value_1", "value_2"],
-            axis_units=["mm", "mm"],
-            x_min=0,
-            x_max=50,
-            y_min=0,
-            y_max=50
-        )
-    }
+  input2:
+      name: input2
+      type: scalar
+      default: 2.0
+      range: [0, 256]
 
-    variable_filename = "variables.pickle"
-
-    save_variables(
-        input_variables,
-        output_variables,
-        variable_filename
-    )
+output_variables:
+  output1:
+    name: output1
+    type: image
+    x_label: "value1"
+    y_label: "value2"
+    axis_units: ["mm", "mm"]
+    x_min: 0
+    x_max: 10
+    y_min: 0
+    y_max: 10
 ```
 
 ## Create server
+
+First, we create a YAML file `my_epics_config.yml` describing our EPICS configuration. The variable `input1` will be served using Channel access using the pvname `test:input1`. The variables `input2` and `output1` will be served using pvAccess.
+
+```yaml
+input_variables:
+  input1:
+    pvname: test:input1
+    protocol: ca
+
+  input2:
+    pvname: test:input2
+    protocol: pva
+
+output_variables:
+  output1:
+    pvname: test:output1
+    protocol: pva
+```
 
 Create a new file named `server.py`. Import the `DemoModel`, load the variables, and configure the server. Due to the multiprocess spawning of the application, the server must run inside the main conditional of the python script.
 
 ```python
 from examples.model import DemoModel
 from lume_epics.epics_server import Server
-from lume_model.utils import load_variables
+from lume_model.utils import variables_from_yaml
+from lume_epics.utils import config_from_yaml
 
 # Server must run in main
 if __name__ == "__main__":
-    variable_filename = "variables.pickle"
-    input_variables, output_variables = load_variables(variable_filename)
+        with open("my_variables.yml", "r") as f:
+        input_variables, output_variables = variables_from_yaml(f)
+
+    with open("my_epics_config.yml", "r") as f:
+        epics_config = config_from_yaml(f)
 
     # pass the input + output variable to initialize the classs
     model_kwargs = {
@@ -107,12 +119,9 @@ if __name__ == "__main__":
         "output_variables": output_variables
     }
 
-    prefix = "test"
     server = Server(
         DemoModel,
-        input_variables,
-        output_variables,
-        prefix,
+        epics_config,
         model_kwargs=model_kwargs
     )
     # monitor = False does not loop in main thread
@@ -130,24 +139,29 @@ from bokeh.layouts import column, row
 from bokeh.models import LinearColorMapper
 
 from lume_epics.client.controller import Controller
-from lume_model.utils import load_variables
+from lume_model.utils import variables_from_yaml
+from lume_epics.utils import config_from_yaml
 
 from lume_epics.client.widgets.plots import ImagePlot
 from lume_epics.client.widgets.controls import build_sliders
 from lume_epics.client.controller import Controller
-
-prefix = "test"
 ```
 
 Set up the `Controller` for interfacing with EPICS process variables:
 
-Load variables from your variable file:
+Load variables and epics configuraiton:
 ```python
-input_variables, output_variables = load_variables("variables.pickle")
+# load variables
+with open("my_variables.yml", "r") as f:
+    input_variables, output_variables = variables_from_yaml(f)
+
+# load epics config
+with open("my_epics_config.yml", "r") as f:
+    epics_config = config_from_yaml(f)
 ```
 
 ```python
-controller = Controller("ca", input_variables, output_variables, prefix)
+controller = Controller(epics_config)
 ```
 
 Prepare sliders:
@@ -176,6 +190,7 @@ image_plot.build_plot(color_mapper=color_mapper)
 ```
 
 The image plot will require a callback to continually update the plot to display the lates process variables. Here we define the callback function:
+
 ```python
 # Set up image update callback
 def image_update_callback():
