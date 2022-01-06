@@ -1,3 +1,4 @@
+from lume_epics.utils import config_from_yaml
 from lume_model.utils import variables_from_yaml
 from bokeh.layouts import column, row, gridplot, layout
 from bokeh.models.widgets import Select
@@ -167,7 +168,7 @@ def render_from_yaml(
 
     # load variables
     with open(epics_config_file, "r") as f:
-        epics_config = variables_from_yaml(f)
+        epics_config = config_from_yaml(f)
 
     # variables
     constant_scalars = []
