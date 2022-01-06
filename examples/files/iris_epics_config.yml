@@ -1,0 +1,21 @@
+input_variables:
+  SepalLength:
+    pvname: test:sepallength
+    protocol: pva
+
+  SepalWidth:
+    pvname: test:sepalwidth
+    protocol: pva
+
+  PetalLength:
+    pvname: test:petallength
+    protocol: ca
+
+  PetalWidth:
+    pvname: test:petalwidth
+    protocol: pva
+
+output_variables:
+  Species:
+    pvname: test:species
+    protocol: pva
