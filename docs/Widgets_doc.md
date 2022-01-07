@@ -208,5 +208,4 @@ curdoc().add_root(value_table.table)
 
 # add striptool update callback
 curdoc().add_periodic_callback(value_table.update, 250)
-
 ```
