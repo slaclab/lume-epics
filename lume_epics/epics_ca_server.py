@@ -149,7 +149,38 @@ class CAServer(CAProcess):
             value (Union[np.ndarray, float]): Value to set
 
         """
-        self._cached_values.update({self._pvname_to_varname_map[pvname]: value})
+        model_var_name = self._pvname_to_varname_map.get(pvname)
+        if pvname in self._child_to_parent_map:
+            model_var_name = self._child_to_parent_map[pvname]
+
+        variable = self._input_variables[model_var_name]
+
+        # check for already cached variable
+        variable = self._cached_values.get(model_var_name, variable)
+
+        # check for image variable and proper assignments
+        if variable.variable_type == "image":
+
+            attr_type = pvname.split(":")[-1]
+
+            if attr_type == "ArrayData_RBV":
+                value = np.array(value)
+                value = value.reshape(variable.shape)
+                variable.value = value
+
+            if attr_type == "MinX_RBV":
+                variable.x_min = value
+
+            if attr_type == "MinY_RBV":
+                variable.y_mix = value
+
+            if attr_type == "MaxX_RBV":
+                variable.x_max = value
+
+            if attr_type == "MaxY_RBV":
+                variable.y_max = value
+
+        self._cached_values[model_var_name] = variable
 
         # only update if not running
         if not self._running_indicator.value:
@@ -157,10 +188,40 @@ class CAServer(CAProcess):
             self._cached_values = {}
 
     def _monitor_callback(self, pvname=None, value=None, **kwargs) -> None:
-        """Callback executed on value change events.s
+        """Callback executed on value change events.
 
         """
-        self._cached_values.update({self._pvname_to_varname_map[pvname]: value})
+        model_var_name = self._pvname_to_varname_map.get(pvname)
+
+        variable = self._input_variables.get(model_var_name)
+        if not variable:
+            variable = self._output_variables.get(model_var_name)
+
+        # check for already cached variable
+        variable = self._cached_values.get(model_var_name, variable)
+
+        # check for image variable and proper assignments
+        if variable.variable_type == "image":
+
+            attr_type = pvname.split(":")[-1]
+
+            if attr_type == "ArrayData_RBV":
+                value = value.reshape(variable.shape())
+                variable.value = value
+
+            if attr_type == "MinX_RBV":
+                variable.x_min = value
+
+            if attr_type == "MinY_RBV":
+                variable.y_mix = value
+
+            if attr_type == "MaxX_RBV":
+                variable.x_max = value
+
+            if attr_type == "MaxY_RBV":
+                variable.y_max = value
+
+        self._cached_values[model_var_name] = variable
 
         # only update if not running
         if not self._running_indicator.value:
@@ -170,15 +231,7 @@ class CAServer(CAProcess):
     def _initialize_model(self):
         """ Initialize model
         """
-        self._in_queue.put(
-            {
-                "protocol": "ca",
-                "vars": {
-                    var_name: var.value
-                    for var_name, var in self._input_variables.items()
-                },
-            }
-        )
+        self._in_queue.put({"protocol": "ca", "vars": self._input_variables})
 
     def setup_server(self) -> None:
         """Configure and start server.
@@ -316,6 +369,7 @@ def build_pvdb(variables: List[Variable], epics_config: dict) -> tuple:
 
     for variable in variables:
         pvname = epics_config.get(variable.name)["pvname"]
+
         if variable.variable_type == "image":
 
             if variable.value is None:

@@ -15,11 +15,6 @@ from queue import Full, Empty
 from lume_model.variables import Variable, InputVariable, OutputVariable
 from lume_model.models import SurrogateModel
 
-from epics import caget
-import epics
-
-from p4p.client.thread import Context
-
 from lume_epics import EPICS_ENV_VARS
 from .epics_pva_server import PVAServer
 from .epics_ca_server import CAServer
@@ -86,8 +81,6 @@ class Server:
         self.model = model_class(**model_kwargs)
         self.input_variables = self.model.input_variables
         self.output_variables = self.model.output_variables
-
-        # CHECK ALL VARIABLES ARE REPRESENTED IN THE EPICS CONFIGURATION
 
         self._epics_config = epics_config
 
@@ -230,7 +223,7 @@ class Server:
                 running_indicator.value = True
 
                 for var in data["vars"]:
-                    self.input_variables[var].value = data["vars"][var]
+                    self.input_variables[var] = data["vars"][var]
 
                 # check no input values are None
                 if not any(

@@ -113,7 +113,18 @@ class PVAServer(multiprocessing.Process):
         value = value.raw.value
 
         varname = self._pvname_to_varname_map[pvname]
-        self._cached_values.update({varname: value})
+        model_variable = self._input_variables[varname]
+
+        if model_variable.variable_type == "image":
+            model_variable.x_min = value.attrib["x_min"]
+            model_variable.x_max = value.attrib["x_max"]
+            model_variable.y_min = value.attrib["y_min"]
+            model_variable.y_max = value.attrib["y_max"]
+
+        # check for already cached variable
+        model_variable = self._cached_values.get(varname, model_variable)
+
+        self._cached_values[varname] = model_variable
 
         # only update if not running
         if not self._running_indicator.value:
@@ -124,10 +135,23 @@ class PVAServer(multiprocessing.Process):
         """Callback function used for updating read_only process variables.
 
         """
-        val = V.raw.value
+        value = V.raw.value
         varname = self._pvname_to_varname_map[pvname]
+        model_variable = self._input_variables[varname]
 
-        self._cached_values.update({varname: val})
+        if not model_variable:
+            model_variable = self._output_variables[varname]
+
+        # check for already cached variable
+        model_variable = self._cached_values.get(varname, model_variable)
+
+        if model_variable.variable_type == "image":
+            model_variable.x_min = value.attrib["x_min"]
+            model_variable.x_max = value.attrib["x_max"]
+            model_variable.y_min = value.attrib["y_min"]
+            model_variable.y_max = value.attrib["y_max"]
+
+        self._cached_values[varname] = model_variable
 
         # only update if not running
         if not self._running_indicator.value:
@@ -138,12 +162,7 @@ class PVAServer(multiprocessing.Process):
         """ Initialize model
         """
 
-        rep = {
-            "protocol": "pva",
-            "vars": {
-                var_name: var.value for var_name, var in self._input_variables.items()
-            },
-        }
+        rep = {"protocol": "pva", "vars": self._input_variables}
 
         self._in_queue.put(rep)
 
