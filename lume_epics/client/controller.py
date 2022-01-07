@@ -199,8 +199,22 @@ class Controller:
 
         pv = self._pv_registry.get(pvname, None)
 
+        if root:
+            protocol = self._protocols[root]
+
+        else:
+            protocol = self._protocols[pvname]
+
         if pv:
-            return pv["value"]
+            val = pv["value"]
+            if val is None:
+                if protocol:
+                    val = pv["pv"].get()
+
+                elif protocol == "pva":
+                    val = self._context.get(pvname)
+
+            return val
 
         return None
 
@@ -228,6 +242,7 @@ class Controller:
         """
         pvname = self._get_pvname(varname)
         image = None
+
         if self._protocols[pvname] == "ca":
             image_flat = self.get(f"{pvname}:ArrayData_RBV", root=pvname)
             nx = self.get(f"{pvname}:ArraySizeX_RBV", root=pvname)
@@ -362,7 +377,7 @@ class Controller:
         self._set_up_pv_monitor(pvname, root=pvname)
 
         # allow no puts before a value has been collected
-        registered = self.get_image(pvname)
+        registered = self.get_image(varname)
 
         # if the value is registered
         if registered is not None:
