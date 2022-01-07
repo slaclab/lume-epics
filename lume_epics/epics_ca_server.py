@@ -97,7 +97,6 @@ class CAServer(CAProcess):
         out_queue: multiprocessing.Queue,
         running_indicator: multiprocessing.Value,
         *args,
-        read_only: bool = False,
         **kwargs,
     ) -> None:
         """Initialize server process.
@@ -172,7 +171,7 @@ class CAServer(CAProcess):
                 variable.x_min = value
 
             if attr_type == "MinY_RBV":
-                variable.y_mix = value
+                variable.y_min = value
 
             if attr_type == "MaxX_RBV":
                 variable.x_max = value
