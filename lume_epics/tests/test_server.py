@@ -21,19 +21,19 @@ from lume_epics.tests.conftest import PVA_CONFIG
 
 
 @pytest.mark.parametrize("value", [(1.0)])
-def test_constant_variable_ca(value, prefix, server, model):
+def test_constant_variable_ca(value, server, model, epics_config):
 
     os.environ["PYEPICS_LIBCA"] = get_lib("ca")
 
     # check constant variable assignment
     for _, variable in model.input_variables.items():
-        pvname = f"{prefix}:{variable.name}"
+        pvname = epics_config[variable.name]["pvname"]
         if variable.variable_type == "scalar":
             epics.caput(pvname, value, timeout=1)
 
     for _, variable in model.input_variables.items():
         if variable.variable_type == "scalar":
-            pvname = f"{prefix}:{variable.name}"
+            pvname = epics_config[variable.name]["pvname"]
             val = epics.caget(pvname, timeout=1)
 
             if variable.is_constant:
@@ -47,12 +47,12 @@ def test_constant_variable_ca(value, prefix, server, model):
     reason="pvAccess server requires spawn method disrupted by subprocess popen..."
 )
 @pytest.mark.parametrize("value", [(1.0)])
-def test_constant_variable_pva(value, prefix, server, model):
+def test_constant_variable_pva(value, server, model, epics_config):
     ctxt = Context("pva", conf=PVA_CONFIG)
 
     # check constant variable assignment
     for _, variable in model.input_variables.items():
-        pvname = f"{prefix}:{variable.name}"
+        pvname = epics_config[variable.name]["pvname"]
 
         if variable.variable_type == "scalar":
 
@@ -75,7 +75,7 @@ def test_constant_variable_pva(value, prefix, server, model):
 
     for _, variable in model.input_variables.items():
         if variable.variable_type == "scalar":
-            pvname = f"{prefix}:{variable.name}"
+            pvname = epics_config[variable.name]["pvname"]
 
             count = 3
             successful_get = False

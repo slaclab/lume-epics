@@ -1,9 +1,11 @@
 import numpy as np
 import os
 import logging
+import sys
 from lume_epics import epics_server
 from lume_model.models import SurrogateModel
 from lume_model.variables import *
+from lume_epics.utils import config_from_yaml
 
 logger = logging.getLogger(__name__)
 logger.setLevel("DEBUG")
@@ -89,6 +91,8 @@ class TestModel(SurrogateModel):
 
 
 if __name__ == "__main__":
-    prefix = "test"
-    server = epics_server.Server(TestModel, prefix)
+    with open(sys.argv[1], "r") as f:
+        epics_config = config_from_yaml(f)
+
+    server = epics_server.Server(TestModel, epics_config)
     server.start(monitor=True)

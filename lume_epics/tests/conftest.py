@@ -1,9 +1,7 @@
 import logging
 import pytest
 import sys
-import p4p
 import os
-import time
 import subprocess
 import signal
 from epicscorelibs.path import get_lib
@@ -11,6 +9,9 @@ from os.path import abspath, dirname
 
 from lume_epics.tests.launch_server import TestModel
 from lume_epics.client.controller import Controller
+from lume_epics.utils import config_from_yaml
+
+from lume_epics.epics_server import Server
 
 logger = logging.getLogger(__name__)
 logger.setLevel("DEBUG")
@@ -30,8 +31,7 @@ os.environ["PYEPICS_LIBCA"] = get_lib("ca")
 
 @pytest.fixture(scope="session", autouse=True)
 def rootdir():
-    package_path = abspath(dirname(dirname(dirname(__file__))))
-    return package_path
+    return os.path.dirname(os.path.abspath(__file__))
 
 
 def clear_loggers():
@@ -60,24 +60,34 @@ def tear_down():
 
 
 @pytest.fixture(scope="session", autouse=True)
+def epics_config(rootdir):
+    #  with open(f"{rootdir}/lume_epics/tests/files/epics_config.yml", "r") as f:
+    with open(f"{rootdir}/files/epics_config.yml", "r") as f:
+        epics_config = config_from_yaml(f)
+
+    yield epics_config
+
+
+@pytest.fixture(scope="session", autouse=True)
 def server():
-    """
-    Initialize server and setup teardown
-    """
+    #
+    # Initialize server and setup teardown
+    #
     env = os.environ.copy()
 
     # add root dir to pythonpath in order to run test
     env["PYTHONPATH"] = env.get("PYTHONPATH", "") + f":{rootdir}"
 
+    logger.info(sys.executable)
+
     ca_proc = subprocess.Popen(
-        [sys.executable, "launch_server.py"],
+        [sys.executable, "launch_server.py", "files/epics_config.yml"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
+        shell=False,
         cwd=os.path.dirname(os.path.realpath(__file__)),
         env=env,
     )
-
-    time.sleep(2)
 
     # Check it started successfully
     assert not ca_proc.poll()
@@ -105,10 +115,8 @@ def protocol():
 
 
 @pytest.fixture(scope="session", autouse=True)
-def ca_controller(prefix, protocol, model):
-    controller = Controller(
-        protocol, model.input_variables, model.output_variables, prefix
-    )
+def controller(epics_config):
+    controller = Controller(epics_config)
 
     yield controller
 
