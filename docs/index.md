@@ -15,7 +15,7 @@ def model_fn(input_1, input_2):
 
 ### Defining input and output variables
 
-Model input and output variables are represented by [lume-model](https://github.com/slaclab/lume-model) variable representations. These variables enforce the minimal data requirements necessary for serving EPICS process variables associated with an online model. Lume-model defines two variable types: scalar and image. Each type has both an associated input and output class. Scalar variables hold float values, arrays variables and image variables hold arrays.
+Model input and output variables are represented by [lume-model](https://github.com/slaclab/lume-model) variables. These variables enforce the minimal data requirements necessary for serving EPICS process variables associated with an online model. Lume-model defines two variable types: scalar and image. Each type has both an associated input and output class. Scalar variables hold float values, arrays variables and image variables hold arrays.
 
 In order to appropriately interface with the EPICS server, scalar input variables must be assigned a range and default. When started, the server uses these defaults to execute the model and serve output variables based on the default execution. The range limits correspond the the low and high limits for EPICS graphics displays. During model execution, the current value of the variable is stored using the `value` attribute.
 
