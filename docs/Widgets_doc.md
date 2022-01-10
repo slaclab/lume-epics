@@ -2,7 +2,7 @@
 
 `Lume-epics` is packaged along with several widgets that can be used alongside a `lume-epics` controller to interact with the model process variables over EPICS. These widgets have bokeh attributes, which may be embedded into bokeh page layouts during client construction.
 
-All widgets accept a `lume-epics` controller, a prefix, and a`lume-model` variable or a list of variables for construction.
+All widgets accept a `lume-epics` controller, and a `lume-model` variable or a list of variables for construction.
 
 ## Control widgets
 
@@ -22,22 +22,27 @@ from bokeh.layouts import column, row
 from lume_epics.client.controller import Controller
 from lume_model.utils import load_variables
 from lume_epics.client.widgets.controls import build_sliders
+from lume_model.utils import variables_from_yaml
+from lume_epics.utils import config_from_yaml
 
 # use example variables packaged with lume-epics
-prefix = "test"
-variable_filename = "examples/variables.pickle"
+with open("examples/files/demo_config.yml.yml", "r") as f:
+    input_variables, output_variables = variables_from_yaml(f)
+
+with open("examples/files/epics_config.yml.yml", "r") as f:
+    epics_config = config_from_yaml(f)
 
 # load variables
 input_variables, output_variables = load_variables(variable_filename)
 
 # set up controller
-controller = Controller("ca", input_variables, output_variables, prefix)
+controller = Controller(epics_config)
 
 # convert ot list for slider use
 input_variables = list(input_variable.values())
 
 # build sliders
-sliders = build_sliders(input_variables, controller, prefix)
+sliders = build_sliders(input_variables, controller)
 
 # render
 curdoc().title = "Demo App"
@@ -62,21 +67,23 @@ from lume_epics.client.controller import Controller
 from lume_model.utils import load_variables
 from lume_epics.client.widgets.controls import EntryTable
 
-# use example variables packaged with lume-epics
-prefix = "test"
-variable_filename = "examples/variables.pickle"
+from lume_model.utils import variables_from_yaml
+from lume_epics.utils import config_from_yaml
 
-# load variables
-input_variables, output_variables = load_variables(variable_filename)
+with open("examples/files/demo_config.yml.yml", "r") as f:
+    input_variables, output_variables = variables_from_yaml(f)
+
+with open("examples/files/epics_config.yml.yml", "r") as f:
+    epics_config = config_from_yaml(f)
 
 # set up controller
-controller = Controller("ca", input_variables, output_variables, prefix)
+controller = Controller(epics_config)
 
 # conver to list for use with table
 input_variables = list(input_variable.values())
 
 # build entry table
-entry_table = EntryTable(input_variables, controller, prefix)
+entry_table = EntryTable(input_variables, controller)
 
 # render
 curdoc().title = "Demo App"
@@ -100,21 +107,23 @@ from lume_epics.client.controller import Controller
 from lume_model.utils import load_variables
 from lume_epics.client.widgets.plots import ImagePlot
 
-# use example variables packaged with lume-epics
-prefix = "test"
-variable_filename = "examples/variables.pickle"
+from lume_model.utils import variables_from_yaml
+from lume_epics.utils import config_from_yaml
 
-# load variables
-input_variables, output_variables = load_variables(variable_filename)
+with open("examples/files/demo_config.yml.yml", "r") as f:
+    input_variables, output_variables = variables_from_yaml(f)
+
+with open("examples/files/epics_config.yml.yml", "r") as f:
+    epics_config = config_from_yaml(f)
 
 # set up controller
-controller = Controller("ca", input_variables, output_variables, prefix)
+controller = Controller(epics_config)
 
 # select our image output variable to render
 image_output = [output_variables["output1"]]
 
 # create image plot
-image_plot = ImagePlot(image_output, controller, prefix)
+image_plot = ImagePlot(image_output, controller)
 
 pal = palettes.viridis(256)
 color_mapper = LinearColorMapper(palette=pal, low=0, high=256)
@@ -142,17 +151,19 @@ from lume_epics.client.controller import Controller
 from lume_model.utils import load_variables
 from lume_epics.client.widgets.plots import Striptool
 
-# use example variables packaged with lume-epics
-prefix = "test"
-variable_filename = "examples/variables.pickle"
+from lume_model.utils import variables_from_yaml
+from lume_epics.utils import config_from_yaml
 
-# load variables
-input_variables, output_variables = load_variables(variable_filename)
+with open("examples/files/demo_config.yml.yml", "r") as f:
+    input_variables, output_variables = variables_from_yaml(f)
+
+with open("examples/files/epics_config.yml.yml", "r") as f:
+    epics_config = config_from_yaml(f)
 
 # set up controller
-controller = Controller("ca", input_variables, output_variables, prefix)
+controller = Controller(epics_config)
 
-striptool = Striptool([output_variables["output2"], output_variables["output3"]], controller, prefix)
+striptool = Striptool([output_variables["output2"], output_variables["output3"]], controller)
 
 # render
 curdoc().title = "Demo App"
@@ -177,15 +188,17 @@ from lume_epics.client.controller import Controller
 from lume_model.utils import load_variables
 from lume_epics.client.widgets.table import ValueTable
 
-# use example variables packaged with lume-epics
-prefix = "test"
-variable_filename = "examples/variables.pickle"
+from lume_model.utils import variables_from_yaml
+from lume_epics.utils import config_from_yaml
 
-# load variables
-input_variables, output_variables = load_variables(variable_filename)
+with open("examples/files/demo_config.yml.yml", "r") as f:
+    input_variables, output_variables = variables_from_yaml(f)
+
+with open("examples/files/epics_config.yml.yml", "r") as f:
+    epics_config = config_from_yaml(f)
 
 # set up controller
-controller = Controller("ca", input_variables, output_variables, prefix)
+controller = Controller(epics_config)
 
 value_table = ValueTable([output_variables["output2"], output_variables["output3"]], controller)
 
@@ -195,5 +208,4 @@ curdoc().add_root(value_table.table)
 
 # add striptool update callback
 curdoc().add_periodic_callback(value_table.update, 250)
-
 ```

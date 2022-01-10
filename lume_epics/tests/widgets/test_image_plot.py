@@ -18,31 +18,32 @@ def image_vars(model):
 
 
 @pytest.fixture(scope="session")
-def image_plot(ca_controller, server, model, image_vars):
-    image_plot = ImagePlot(image_vars, ca_controller, palette=YlGn3)
+def image_plot(controller, server, model, image_vars):
+    image_plot = ImagePlot(image_vars, controller, palette=YlGn3)
 
     return image_plot
 
 
-def test_image_plot_update(image_plot, image_vars, prefix, server, ca_controller):
+def test_image_plot_update(image_plot, image_vars, server, epics_config):
     updated_vals = {}
 
     # random dist for variable
     for var in image_vars:
-        nx = epics.caget(f"{prefix}:{var.name}:ArraySizeX_RBV")
-        ny = epics.caget(f"{prefix}:{var.name}:ArraySizeY_RBV")
+        pvname = epics_config[var.name]["pvname"]
+        nx = epics.caget(f"{pvname}:ArraySizeX_RBV")
+        ny = epics.caget(f"{pvname}:ArraySizeY_RBV")
 
         new_val = np.random.uniform(0, 256, size=(nx, ny))
 
         # CANNOT PUT TO OUTPUT IMAGE!!!
-        epics.caput(f"{prefix}:{var.name}:ArrayData_RBV", new_val.flatten())
+        epics.caput(f"{pvname}:ArrayData_RBV", new_val.flatten())
+
         # take transpose as this is served as histogram
         updated_vals[var.name] = np.flipud(new_val.T)
 
     # random dist for variable
     for var in image_vars:
-        image_plot.live_variable = var.name
-        image_plot.update()
+        image_plot.update(live_variable=var.name)
 
         val = image_plot.source.data["image"][0]
 

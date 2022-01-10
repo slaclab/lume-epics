@@ -1,0 +1,33 @@
+input_variables:
+  input1:
+    pvname: test:input1
+    protocol: ca
+
+  input2:
+    pvname: test:input2
+    protocol: ca
+
+  input3:
+    pvname: test:input3
+    protocol: ca
+
+  input4:
+    pvname: test:input4
+    protocol: ca
+
+output_variables:
+  output1:
+    pvname: test:output1
+    protocol: ca
+
+  output2:
+    pvname: test:output2
+    protocol: ca
+
+  output3:
+    pvname: test:output3
+    protocol: ca
+
+  output4:
+    pvname: test:output4
+    protocol: ca

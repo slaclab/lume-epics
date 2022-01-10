@@ -9,7 +9,6 @@ nav:
     - Jupyter Notebook Demo: Jupyter.md
   - Widgets: Widgets_doc.md
   - Documentation:
-    - Layout: Layout.md
     - Client:
       - Controller: Controller.md
       - Monitors: Monitors.md

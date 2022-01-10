@@ -1,3 +1,4 @@
+from lume_epics.utils import config_from_yaml
 from lume_model.utils import variables_from_yaml
 from bokeh.layouts import column, row, gridplot, layout
 from bokeh.models.widgets import Select
@@ -143,12 +144,7 @@ class LayoutBuilder:
 
 
 def render_from_yaml(
-    config_file,
-    prefix: str,
-    protocol: str,
-    read_only=False,
-    striptool_limit=50,
-    ncol_widgets=5,
+    config_file, epics_config_file, read_only=False, striptool_limit=50, ncol_widgets=5,
 ):
     """Renders a bokeh layout from the configuration file. Returns layout and callbacks.
 
@@ -169,6 +165,10 @@ def render_from_yaml(
     # load variables
     with open(config_file, "r") as f:
         input_variables, output_variables = variables_from_yaml(f)
+
+    # load variables
+    with open(epics_config_file, "r") as f:
+        epics_config = config_from_yaml(f)
 
     # variables
     constant_scalars = []
@@ -203,7 +203,7 @@ def render_from_yaml(
             variable_output_images.append(variable)
 
     # set up controller
-    controller = Controller(protocol, input_variables, output_variables, prefix)
+    controller = Controller(epics_config)
 
     # track callbacks
     callbacks = []
@@ -214,7 +214,6 @@ def render_from_yaml(
     layout_builder = LayoutBuilder(ncol_widgets)
 
     # add images
-    current_row = []
     for variable in variable_input_images + constant_images:
         image = ImagePlot([variable], controller)
         image.build_plot(pal)
@@ -223,7 +222,6 @@ def render_from_yaml(
 
     # build input striptools
     if read_only:
-        striptools = []
         for variable in variable_input_scalars:
             striptool = Striptool([variable], controller, limit=striptool_limit)
             layout_builder.add_input(striptool.plot, title=variable.name)
@@ -244,8 +242,6 @@ def render_from_yaml(
         value_entry = EntryTable(input_value_vars, controller)
 
         layout_builder.add_input_stack([value_entry.table, value_entry.button_row])
-
-    table_row = []
 
     # add value table callback
     value_table = ValueTable(input_value_vars, controller)

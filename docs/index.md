@@ -9,13 +9,13 @@ Our model expressed as a function:
 ```python
 import numpy as np
 
-def model(input_1, input_2):
+def model_fn(input_1, input_2):
     return np.random.uniform(input_1, input_2)
 ```
 
 ### Defining input and output variables
 
-Model input and output variables are represented by [lume-model](https://github.com/slaclab/lume-model) variable representations. These variables enforce the minimal data requirements necessary for serving EPICS process variables associated with an online model. Lume-model defines two variable types: scalar and image. Each type has both an associated input and output class. Scalar variables hold float values while image variables hold two dimensional arrays.
+Model input and output variables are represented by [lume-model](https://github.com/slaclab/lume-model) variable representations. These variables enforce the minimal data requirements necessary for serving EPICS process variables associated with an online model. Lume-model defines two variable types: scalar and image. Each type has both an associated input and output class. Scalar variables hold float values, arrays variables and image variables hold arrays.
 
 In order to appropriately interface with the EPICS server, scalar input variables must be assigned a range and default. When started, the server uses these defaults to execute the model and serve output variables based on the default execution. The range limits correspond the the low and high limits for EPICS graphics displays. During model execution, the current value of the variable is stored using the `value` attribute.
 
@@ -62,66 +62,119 @@ class ExampleModel(SurrogateModel):
 
 ### Setting up the server
 
-We can now use the EPICS server to serve our model. The EPICS server requires an instantiated model with `input_variables` and `output_variables` defined as attributes and a prefix for intantiation. By default, the server uses both the pvAccess and Channel Access protocols when serving the EPICS process variables. An optional keyword argument allows the server to be started using a single protocol (`protocols=["pva"]` for pvAccess, `protocols=["ca"]` for Channel Access). Once instantiated, the server is started using the `Server.start()` method, which has an optional monitor keyword argument, `monitor`, that controls thread execution. When `monitor=True`, the server is run in the main thread and may be stopped using keyboard interrupt (`Ctr+C`). If using `monitor=False`, the server can be stopped manually using the `Server.stop()` method.
+We can now use the EPICS server to serve our model. The EPICS server requires an instantiated model with `input_variables` and `output_variables` defined as attributes and a YAML configuration file for pvname assignments and protocol, see [EPICS](EPICS.md). Once instantiated, the server is run using the `Server.start()` method, which has an optional monitor keyword argument, `monitor`, that controls thread execution. When `monitor=True`, the server is run in the main thread and may be stopped using keyboard interrupt (`Ctr+C`). If using `monitor=False`, the server can be stopped manually using the `Server.stop()` method.
 
 The input variables and output variables must be passed in the `model_kwargs` keyword argument because the model class accepts them in its `__init__` method. Arbitrary data may also be passed to the model with this approach.
 
-The same variables and prefix used for instantiating the server must be used for building the client tooling. For the purpose of separability, these variables should be saved during model development and loaded on the client side. `lume-model.utils` contains utility functions for saving variables.
+The same variables used for instantiating the server must be used for building the client tooling. Variables are described in a YAML file with the following format:
 
-In our example, we can accomplish this by saving `input_variables` and `output_variables` before starting our server. Adding to `server.py`:
+```yaml
+input_variables:
+  input1:
+      name: input1
+      type: scalar
+      default: 1
+      range: [0, 256]
+
+  input2:
+      name: input2
+      type: scalar
+      default: 2.0
+      range: [0, 256]
+
+output_variables:
+  output1:
+    name: output1
+    type: scalar
+```
+
+Another YAML file must describe our EPICS configuration. The variable `input1` will be served using Channel access using the pvname `test:input1`. The variables `input2` and `output1` will be served using pvAccess.
+
+```yaml
+input_variables:
+  input1:
+    pvname: test:input1
+    protocol: ca
+
+  input2:
+    pvname: test:input2
+    protocol: pva
+
+output_variables:
+  output1:
+    pvname: test:output1
+    protocol: pva
+```
+
+These are then loaded during server construction:
 
 ```python
 from lume_epics.epics_server import Server
-from lume_model.utils import save_variables
-
-# create dictionary representations of input/output variables
-input_variables = {
-    "input_1": input_1,
-    "input_2": input_2,
-}
-
-output_variables = {
-    "output": output
-}
+from lume_model.utils import variables_from_yaml
+from lume_epics.utils import config_from_yaml
+from lume_epics.model import SurrogateModel
+import numpy as np
 
 
-# save variables
-save_variables(input_variables, output_variables, "example_variables.pickle")
+class ExampleModel(SurrogateModel):
+    def __init__(self, input_variables = [], output_variables = []):
+        self.input_variables = input_variables
+        self.output_variables = output_variables
 
-
-prefix = "test"
-server = Server(
-            ExampleModel,
-            prefix,
-            model_kwargs = {"input_variables": input_variables, "output_variables": output_variables}
+    def evaluate(self, input_variables):
+        self.input_variables = {input_variable.name: input_variable for input_variable in input_variables}
+        self.output_variables["output"].value = np.random.uniform(
+            self.input_variables["input_1"].value, self.input_variables["input_2"].value
         )
+        return list(self.output_variables.values()
 
-# monitor = False does not loop in main thread and can be terminated
-# with server.stop()
-server.start(monitor=True)
-# Runs until keyboard interrupt.
+# Server must run in main
+if __name__ == "__main__":
+        with open("my_variables.yml", "r") as f:
+        input_variables, output_variables = variables_from_yaml(f)
+
+    with open("my_epics_config.yml", "r") as f:
+        epics_config = config_from_yaml(f)
+
+    # pass the input + output variable to initialize the classs
+    model_kwargs = {
+        "input_variables": input_variables,
+        "output_variables": output_variables
+    }
+
+    server = Server(
+        ExampleModel,
+        epics_config,
+        model_kwargs=model_kwargs
+    )
+    # monitor = False does not loop in main thread
+    server.start(monitor=True)
 ```
 
 ### Setting up the client
 
 A number of EPICS compatable widgets are included in `lume-epics`. Each widget accepts a controller used to monitor EPICS process variables. The controller is then used by a widget-specific monitor, which is responsible for formatting outputs of EPICS values into formats usable by the widget. There are currently slider, value table, image, and striptool widgets; however, more widgets could be configured using the base monitor and controller classes included in `lume_epics/client/`.
 
-The controller fetches variables using a configurable protocol defined on instantiation. Variable assigment is done over both pvAccess and Channel Access protocols by default. The controller must be configured to reflect the corresponding server. If using a single protocol for serving, the controller must be set up to fetch using that protocol and the excluded protocol must be disabled manually using the appropriate `set_pva=False`, `set_ca=False` key word argument. The prefix used for serving must match the prefix used with the client.
+The controller fetches variables using a configurable protocol defined on instantiation. The controller must be configured for EPICS/variable correspondance like the server by passing the EPICS configuration dictionary as defined in the YAML.
 
 For our client, we will load our saved variables and create a set of sliders for our inputs and a value table displaying the output variable. This code should be in a separate script from the server setup named `client.py`.
 
 ```python
-from lume_model.utils import load_variables
+from lume_model.utils import variables_from_yaml
+from lume_epics.utils import config_from_yaml
 from lume_epics.client.controller import Controller
 from lume_epics.client.widgets.tables import ValueTable
 from lume_epics.client.widgets.controls import build_sliders
 
 
-input_variables, output_variables = load_variables("example_variables.pickle")
-prefix = "test"
+with open("my_variables.yml", "r") as f:
+    input_variables, output_variables = variables_from_yaml(f)
+
+with open("my_epics_config.yml", "r") as f:
+    epics_config = config_from_yaml(f)
 
 # initialize controller to use pvAccess for variable gets
-controller = Controller("pva", input_variables, output_variables, prefix)
+controller = Controller(epics_config)
 
 # build sliders for the command process variable database
 sliders = build_sliders(
@@ -173,12 +226,62 @@ Models with images can be constructed similarly to the above model.
 
 The following example uses the two input variables defined in the above model to create an image from the distribution. In this case, the axis limits of the image output are fixed. This model can also be run using the Bokeh server demo.
 
+First, define the variables in `variables.yml`:
+
+```yaml
+input_variables:
+  input1:
+      name: input1
+      type: scalar
+      default: 1
+      range: [0, 256]
+
+  input2:
+      name: input2
+      type: scalar
+      default: 2.0
+      range: [0, 256]
+
+output_variables:
+  output1:
+    name: output1
+    type: image
+    x_label: "value1"
+    y_label: "value2"
+    axis_units: ["mm", "mm"]
+    x_min: 0
+    x_max: 10
+    y_min: 0
+    y_max: 10
+```
+
+
+Next create a YAML file `my_epics_config.yml` describing our EPICS configuration. The variable `input1` will be served using Channel access using the pvname `test:input1`. The variables `input2` and `output1` will be served using pvAccess.
+
+```yaml
+input_variables:
+  input1:
+    pvname: test:input1
+    protocol: ca
+
+  input2:
+    pvname: test:input2
+    protocol: pva
+
+output_variables:
+  output1:
+    pvname: test:output1
+    protocol: pva
+```
+
 In `server.py`:
 ```python
 import numpy as np
 from lume_model.variables import ScalarInputVariable, ImageOutputVariable
 from lume_model.models import SurrogateModel
 from lume_model.utils import save_variables
+from lume_model.utils import variables_from_yaml
+from lume_epics.utils import config_from_yaml
 
 class ExampleModel(SurrogateModel):
     def __init__(self, input_variables: dict=None, output_variables:dict=None):
@@ -195,44 +298,19 @@ class ExampleModel(SurrogateModel):
         return list(self.output_variables.values())
 
 
-input_variables = {
-    "input1": ScalarInputVariable(
-        name="input1",
-        value=1,
-        default=1,
-        range=[0, 256]
-    ),
-    "input2": ScalarInputVariable(
-        name="input2",
-        value=2,
-        default=2,
-        range=[0, 256]),
-}
-
-output_variables = {
-    "output1": ImageOutputVariable(
-        name="output1",
-        axis_labels=["value_1", "value_2"],
-        axis_units=["mm", "mm"],
-        x_min=0,
-        x_max=50,
-        y_min=0,
-        y_max=50
-    )
-}
-
 # must use main for server due to multiprocess spawning
 if __name__ == "__main"__:
     from lume_epics.epics_server import Server
-    from lume_model.utils import save_variables
 
-    # save variables
-    save_variables(input_variables, output_variables, "example_variables.pickle")
+    with open("my_variables.yml", "r") as f:
+        input_variables, output_variables = variables_from_yaml(f)
 
-    prefix = "test"
+    with open("my_epics_config.yml", "r") as f:
+        epics_config = config_from_yaml(f)
+
     server = Server(
                 ExampleModel,
-                prefix,
+                epics_config
                 model_kwargs = {"input_variables": input_variables, "output_variables": output_variables}
             )
 
@@ -281,36 +359,42 @@ image_output = ImageOutputVariable(
 
 ### Serving from configuration files
 
-The model may be served using the variable configuration files as defined in [lume-epics](https://slaclab.github.io/lume-model/#configuration-files). Additionally, a display may be autogenerated from the same configuration file. These commands are registered as entrypoints.
+The model may be served using the variable configuration files as defined in [lume-model](https://slaclab.github.io/lume-model/#configuration-files) and the EPICS configuration YAML as defined in [EPICS configuration](EPICS.md). Additionally, a display may be autogenerated from the same configuration files. These commands are registered as entrypoints.
+
+To launch an example NN trained on the Iris data set, first install tensorflow:
+
+```
+$ conda install tensorflow
+```
 
 After installing lume-epics, the server can be launched by:
 
 ```
-$ serve-from-template examples/files/iris_config.yml {PREFIX}
+$ serve-from-template examples/files/iris_config.yml examples/files/iris_epics_config.yml
 ```
 
 Protocols to use during serve may be disabled using the --serve-{PROTOCOL} flag. Both Channel Access and pvAccess are served by default.
 
 
 ```
-$ serve-from-template examples/files/iris_config.yml {PREFIX} --serve-ca False
+$ serve-from-template examples/files/iris_config.yml examples/files/iris_epics_config.yml
 ```
 
 Likewise, the client can be launched using the command:
 
 ```
-$ render-from-template examples/files/iris_config.yml {PROTOCOL} {PREFIX}
+$ render-from-template examples/files/iris_config.yml examples/files/iris_epics_config.yml
 ```
 
 Additional arguments include the number of steps to show using the striptool and the number of columns to use when rendering the display:
 
 
 ```
-$ render-from-template examples/files/iris_config.yml {PROTOCOL} {PREFIX} --striptool-limit 50 --ncol-widgets 5
+$ render-from-template examples/files/iris_config.yml examples/files/iris_epics_config.yml  --striptool-limit 50 --ncol-widgets 5
 ```
 
 Rendering in read-only mode will hide all entry controls and render a striptool for each of the variables.
 
 ```
-$ render-from-template examples/files/iris_config.yml {PROTOCOL} {PREFIX} --striptool-limit 50 --ncol-widgets 5 --read-only
+$ render-from-template examples/files/iris_config.yml examples/files/iris_epics_config.yml   --striptool-limit 50 --ncol-widgets 5 --read-only
 ```

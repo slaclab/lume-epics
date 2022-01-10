@@ -49,7 +49,7 @@ class PVImage:
         if "units" in variable.__fields_set__:
             self.units = variable.units.split(":")
 
-        self.pvname = variable.name
+        self.varname = variable.name
         self.controller = controller
         self.axis_labels = variable.axis_labels
         self.axis_units = variable.axis_units
@@ -59,7 +59,7 @@ class PVImage:
 
         """
 
-        return self.controller.get_image(self.pvname)
+        return self.controller.get_image(self.varname)
 
 
 class PVTimeSeries:
@@ -77,7 +77,7 @@ class PVTimeSeries:
 
         units (str): Units associated with the variable
 
-        pvname (str): Name of the process variable to access
+        varname (str): Name of the model variable to access
 
     """
 
@@ -90,7 +90,7 @@ class PVTimeSeries:
             controller (Controller): Controller object for accessing process variable.
 
         """
-        self.pvname = variable.name
+        self.varname = variable.name
         self.tstart = time.time()
         self.time = np.array([])
         self.data = np.array([])
@@ -109,7 +109,7 @@ class PVTimeSeries:
         """
         t = datetime.now()
 
-        v = self.controller.get_value(self.pvname)
+        v = self.controller.get_value(self.varname)
 
         self.time = np.append(self.time, t)
         self.data = np.append(self.data, v)
@@ -132,7 +132,7 @@ class PVScalar:
 
         units (str): Units associated with the variable.
 
-        pvname (str): Name of the process variable to access.
+        varname (str): Name of the model variable to access.
 
     """
 
@@ -148,7 +148,7 @@ class PVScalar:
         # check if units has been set
         if "units" in variable.__fields_set__:
             self.units = variable.units
-        self.pvname = variable.name
+        self.varname = variable.name
         self.controller = controller
 
     def poll(self) -> Tuple[np.ndarray]:
@@ -156,4 +156,4 @@ class PVScalar:
         Poll variable for value,
 
         """
-        return self.controller.get_value(self.pvname)
+        return self.controller.get_value(self.varname)

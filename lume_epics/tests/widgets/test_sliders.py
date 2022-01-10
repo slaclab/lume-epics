@@ -14,16 +14,17 @@ def slider_variables(model):
 
 
 @pytest.fixture(scope="module")
-def sliders(ca_controller, slider_variables):
+def sliders(controller, slider_variables):
     # build sliders for the command process variable database
-    return build_sliders(slider_variables, ca_controller)
+    return build_sliders(slider_variables, controller)
 
 
 @pytest.mark.parametrize("value", [(4), (-8)])
-def test_slider_update(value, slider_variables, prefix, sliders):
+def test_slider_update(value, slider_variables, sliders, epics_config):
 
     for var in slider_variables:
-        epics.caput(f"{prefix}:{var.name}", value)
+        pvname = epics_config[var.name]["pvname"]
+        epics.caput(pvname, value)
 
     for slider in sliders:
         slider.update()
@@ -31,11 +32,12 @@ def test_slider_update(value, slider_variables, prefix, sliders):
 
 
 @pytest.mark.parametrize("value", [(4), (-8)])
-def test_slider_set(value, slider_variables, prefix, sliders):
+def test_slider_set(value, slider_variables, sliders, epics_config):
 
     for slider in sliders:
         slider.bokeh_slider.value = value
 
     for var in slider_variables:
-        val = epics.caget(f"{prefix}:{var.name}")
+        pvname = epics_config[var.name]["pvname"]
+        val = epics.caget(pvname)
         assert val == value

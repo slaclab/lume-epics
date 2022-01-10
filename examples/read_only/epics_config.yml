@@ -1,0 +1,23 @@
+input_variables:
+  input1:
+    pvname: test:input1
+    protocol: ca
+    serve: false
+
+  input2:
+    pvname: test:input2
+    protocol: ca
+    serve: false
+
+output_variables:
+  output1:
+    pvname: test:output1
+    protocol: pva
+
+  output2:
+    pvname: test:output2
+    protocol: pva
+
+  output3:
+    pvname: test:output3
+    protocol: pva

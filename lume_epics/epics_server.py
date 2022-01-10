@@ -15,11 +15,6 @@ from queue import Full, Empty
 from lume_model.variables import Variable, InputVariable, OutputVariable
 from lume_model.models import SurrogateModel
 
-from epics import caget
-import epics
-
-from p4p.client.thread import Context
-
 from lume_epics import EPICS_ENV_VARS
 from .epics_pva_server import PVAServer
 from .epics_ca_server import CAServer
@@ -57,11 +52,9 @@ class Server:
     def __init__(
         self,
         model_class: SurrogateModel,
-        prefix: str,
-        protocols: List[str] = ["pva", "ca"],
+        epics_config: dict,
         model_kwargs: dict = {},
-        epics_config: dict = {},
-        read_only: bool = False,
+        epics_env: dict = {},
     ) -> None:
         """Create OnlineSurrogateModel instance in the main thread and
         initialize output variables by running with the input process variable
@@ -72,86 +65,60 @@ class Server:
             model_class (SurrogateModel): Surrogate model class to be
             instantiated.
 
-            prefix (str): Prefix used to format process variables.
-
-            protocols (List[str]): List of protocols used to instantiate server.
+            epics_config (dict): Dictionary describing EPICS configuration for model variables
 
             model_kwargs (dict): Kwargs to instantiate model.
 
-            read_only (bool): Indication whether this will be a read-only server
+            epics_env (dict): Environment variables for EPICS configuration
 
         """
-        # check protocol conditions
-        if not protocols:
-            raise ValueError("Protocol must be provided to start server.")
 
-        if any([protocol not in ["ca", "pva"] for protocol in protocols]):
-            raise ValueError(
-                'Invalid protocol provided. Protocol options are "pva" '
-                '(pvAccess) and "ca" (Channel Access).'
-            )
-
-        if read_only and len(protocols) > 1:
-            raise ValueError(
-                "Only single protocol may be provided for read-only server."
-            )
-
-        # Update epics configuration
+        # Update epics environment if programatically set
         for var in EPICS_ENV_VARS:
-            if epics_config.get(var):
-                os.environ[var] = epics_config[var]
-
-        self.prefix = prefix
-        self.protocols = protocols
+            if epics_env.get(var):
+                os.environ[var] = epics_env[var]
 
         self.model = model_class(**model_kwargs)
         self.input_variables = self.model.input_variables
+        self.output_variables = self.model.output_variables
 
-        # track pv monitors
-        self._ca_monitors = {}
+        self._epics_config = epics_config
 
-        # NEED TO CHECK READ ONLY
-        if not read_only:
-            for variable in self.input_variables.values():
-                if variable.value is None:
-                    variable.value = variable.default
+        self._protocols = []
 
-        # if read_only, get initial values
-        elif "ca" in protocols and read_only:
-
-            for variable in self.input_variables.values():
-                logger.info("Getting value for %s via caget", variable.name)
-                variable.value = caget(f"{prefix}:{variable.name}")
-                # monitors must be created at outset as pv caching causes issues with pv callbacks defined in the ca_server
-                self._ca_monitors[variable.name] = epics.PV(
-                    f"{self.prefix}:{variable.name}", auto_monitor=True
-                )
-
-        elif "pva" in protocols and read_only:
-            context = Context("pva")
-            for variable in self.input_variables.values():
-                variable.value = context.get(f"{prefix}:{variable.name}")
-                variable.value = 1
-
-            context.close()
-
-        model_input = list(self.input_variables.values())
-
-        self.input_variables = self.model.input_variables
-        self.output_variables = self.model.evaluate(model_input)
-        self.output_variables = {
-            variable.name: variable for variable in self.output_variables
+        ca_config = {
+            var: {
+                "pvname": self._epics_config[var]["pvname"],
+                "serve": self._epics_config[var]["serve"],
+            }
+            for var in self._epics_config
+            if self._epics_config[var]["protocol"] in ["ca", "both"]
+        }
+        pva_config = {
+            var: {
+                "pvname": self._epics_config[var]["pvname"],
+                "serve": self._epics_config[var]["serve"],
+            }
+            for var in self._epics_config
+            if self._epics_config[var]["protocol"] in ["pva", "both"]
         }
 
+        if len(ca_config) > 0:
+            self._protocols.append("ca")
+
+        if len(pva_config) > 0:
+            self._protocols.append("pva")
+
+        # set up protocol based queues
         self.in_queue = multiprocessing.Queue()
         self.out_queues = dict()
-        for protocol in protocols:
+        for protocol in self._protocols:
             self.out_queues[protocol] = multiprocessing.Queue()
 
+        # exit event for triggering shutdown
         self.exit_event = multiprocessing.Event()
-
         self._running_indicator = multiprocessing.Value("b", False)
-        self._read_only = read_only
+        self._process_exit_events = []
 
         # we use the running marker to make sure pvs + ca don't just keep adding queue elements
         self.comm_thread = Thread(
@@ -165,37 +132,52 @@ class Server:
         )
 
         # initialize channel access server
-        if "ca" in protocols:
+        if "ca" in self._protocols:
+            ca_input_vars = {
+                var_name: var
+                for var_name, var in self.input_variables.items()
+                if var_name in ca_config
+            }
+            ca_output_vars = {
+                var_name: var
+                for var_name, var in self.output_variables.items()
+                if var_name in ca_config
+            }
+
             self.ca_process = CAServer(
-                prefix=self.prefix,
-                input_variables=self.input_variables,
-                output_variables=self.output_variables,
+                input_variables=ca_input_vars,
+                output_variables=ca_output_vars,
+                epics_config=ca_config,
                 in_queue=self.in_queue,
                 out_queue=self.out_queues["ca"],
                 running_indicator=self._running_indicator,
-                read_only=self._read_only,
             )
 
-            # add callback to monitors
-            if self._read_only:
-                for var in self.input_variables:
-                    self._ca_monitors[var].add_callback(
-                        self.ca_process._monitor_callback
-                    )
+            self._process_exit_events.append(self.ca_process.exit_event)
 
         # initialize pvAccess server
-        if "pva" in protocols:
+        if "pva" in self._protocols:
+            pva_input_vars = {
+                var_name: var
+                for var_name, var in self.input_variables.items()
+                if var_name in pva_config
+            }
+            pva_output_vars = {
+                var_name: var
+                for var_name, var in self.output_variables.items()
+                if var_name in pva_config
+            }
 
-            manager = multiprocessing.Manager()
             self.pva_process = PVAServer(
-                prefix=self.prefix,
-                input_variables=self.input_variables,
-                output_variables=self.output_variables,
+                input_variables=pva_input_vars,
+                output_variables=pva_output_vars,
+                epics_config=pva_config,
                 in_queue=self.in_queue,
                 out_queue=self.out_queues["pva"],
                 running_indicator=self._running_indicator,
-                read_only=self._read_only,
             )
+
+            self._process_exit_events.append(self.pva_process.exit_event)
 
     def __enter__(self):
         """Handle server startup
@@ -231,36 +213,51 @@ class Server:
 
         """
         model = self.model
+        inputs_initialized = 0
 
         while not self.exit_event.is_set():
             try:
-
                 data = in_queue.get(timeout=0.1)
 
                 # mark running
                 running_indicator.value = True
 
-                for pv in data["pvs"]:
-                    self.input_variables[pv].value = data["pvs"][pv]
+                for var in data["vars"]:
+                    self.input_variables[var] = data["vars"][var]
 
-                # sync pva/ca
-                for protocol, queue in out_queues.items():
-                    if protocol == data["protocol"]:
-                        continue
-
-                    queue.put(
-                        {
-                            "input_variables": [
-                                self.input_variables[pv] for pv in data["pvs"]
-                            ]
-                        }
-                    )
+                # check no input values are None
+                if not any(
+                    [var.value is None for var in self.input_variables.values()]
+                ):
+                    inputs_initialized = 1
 
                 # update output variable state
-                model_input = list(self.input_variables.values())
-                predicted_output = model.evaluate(model_input)
-                for protocol, queue in out_queues.items():
-                    queue.put({"output_variables": predicted_output}, timeout=0.1)
+                if inputs_initialized:
+
+                    # sync pva/ca if duplicated
+                    for protocol, queue in out_queues.items():
+                        if protocol != data["protocol"]:
+                            inputs = [
+                                self.input_variables[var]
+                                for var in data["vars"]
+                                if self._epics_config[var]["protocol"]
+                                in [protocol, "both"]
+                            ]
+
+                            if len(inputs):
+                                queue.put({"input_variables": inputs})
+
+                    model_input = list(self.input_variables.values())
+                    predicted_output = model.evaluate(model_input)
+
+                    for protocol, queue in out_queues.items():
+                        outputs = [
+                            var
+                            for var in predicted_output
+                            if self._epics_config[var.name]["protocol"]
+                            in [protocol, "both"]
+                        ]
+                        queue.put({"output_variables": outputs}, timeout=0.1)
 
                 running_indicator.value = False
 
@@ -270,7 +267,7 @@ class Server:
             except Full:
                 logger.error(f"{protocol} queue is full.")
 
-        logger.info("Stopping comm thread")
+        logger.info("Stopping execution thread")
 
     def start(self, monitor: bool = True) -> None:
         """Starts server using set server protocol(s).
@@ -283,16 +280,21 @@ class Server:
         """
         self.comm_thread.start()
 
-        if "ca" in self.protocols:
+        if "ca" in self._protocols:
             self.ca_process.start()
 
-        if "pva" in self.protocols:
+        if "pva" in self._protocols:
             self.pva_process.start()
 
         if monitor:
             try:
-                while True:
+                while not any(
+                    [exit_event.is_set() for exit_event in self._process_exit_events]
+                ):
                     time.sleep(0.1)
+
+                # shut down server if process exited.
+                self.stop()
 
             except KeyboardInterrupt:
                 self.stop()
@@ -305,11 +307,11 @@ class Server:
         self.exit_event.set()
         self.comm_thread.join()
 
-        if "ca" in self.protocols:
+        if "ca" in self._protocols:
             self.ca_process.shutdown()
             self.ca_process.join()
 
-        if "pva" in self.protocols:
+        if "pva" in self._protocols:
             self.pva_process.shutdown()
             self.pva_process.join()
 

@@ -1,3 +1,4 @@
+from lume_epics.tests.conftest import epics_config
 import pytest
 import epics
 import time
@@ -19,27 +20,29 @@ def table_variables(model):
 
 
 @pytest.fixture(scope="module")
-def value_table(ca_controller, table_variables):
+def value_table(controller, table_variables):
 
-    return ValueTable(table_variables, ca_controller)
+    return ValueTable(table_variables, controller)
 
 
 @pytest.mark.parametrize("value", [(1), (5), (8)])
 def test_value_table_update(
-    value, value_table, prefix, table_variables, server, input_variables
+    value, value_table, table_variables, input_variables, epics_config
 ):
 
     # update input variables to trigger output update
     for var in input_variables:
-        epics.caput(f"{prefix}:{var.name}", value)
+        pvname = epics_config[var.name]["pvname"]
+        epics.caput(pvname, value)
 
     time.sleep(1)
 
     value_table.update()
 
     for var in table_variables:
+        pvname = epics_config[var.name]["pvname"]
         val_idx = value_table._source.data["x"].index(var.name)
-        epics_val = epics.caget(f"{prefix}:{var.name}")
+        epics_val = epics.caget(pvname)
         val = value_table._source.data["y"][val_idx]
 
         assert epics_val == float(val)

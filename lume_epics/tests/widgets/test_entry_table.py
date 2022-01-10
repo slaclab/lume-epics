@@ -14,9 +14,9 @@ def entry_inputs(model):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def entry_table(ca_controller, entry_inputs, server):
+def entry_table(controller, entry_inputs, server):
     # create entry table
-    return EntryTable(entry_inputs, ca_controller)
+    return EntryTable(entry_inputs, controller)
 
 
 def test_entry_table_clear(entry_table, entry_inputs):
@@ -28,7 +28,7 @@ def test_entry_table_clear(entry_table, entry_inputs):
 
 # test entry table submit
 @pytest.mark.parametrize("value", [(7), (3)])
-def test_entry_table_sumbit(value, entry_table, entry_inputs, prefix, server):
+def test_entry_table_sumbit(value, entry_table, entry_inputs, epics_config, server):
 
     for input_var in entry_inputs:
         entry_table.text_inputs[input_var.name].value_input = str(value)
@@ -39,5 +39,6 @@ def test_entry_table_sumbit(value, entry_table, entry_inputs, prefix, server):
 
     for input_var in entry_inputs:
         if not input_var.is_constant:
-            val = epics.caget(f"{prefix}:{input_var.name}")
+            pvname = epics_config[input_var.name]["pvname"]
+            val = epics.caget(pvname)
             assert val == value
