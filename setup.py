@@ -18,7 +18,7 @@ setup(
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     packages=find_packages(),
-    author='SLAC National Accelerator Laboratory',
+    author="SLAC National Accelerator Laboratory",
     author_email="jgarra@slac.stanford.edu",
     license="SLAC Open",
     install_requires=requirements,
@@ -26,10 +26,11 @@ setup(
     extras_require={"dev": dev_requirements},
     url="https://github.com/slaclab/lume-epics",
     include_package_data=True,
-    python_requires=">=3.7",
+    python_requires=">=3.7,<3.9",
     entry_points={
         "console_scripts": [
-        "render-from-template=lume_epics.commands.render_from_template:render_from_template",
-        "serve-from-template=lume_epics.commands.serve_from_template:serve_from_template"]
+            "render-from-template=lume_epics.commands.render_from_template:render_from_template",
+            "serve-from-template=lume_epics.commands.serve_from_template:serve_from_template",
+        ]
     },
 )

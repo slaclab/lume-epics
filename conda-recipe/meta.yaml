@@ -12,10 +12,10 @@ source:
 
 requirements:
   host:
-    - python >=3.6
+    - python >=3.6, <3.9
     - setuptools
   run:
-    - python >=3.6
+    - python >=3.6, <3.9
     - epics-base
     - pyepics
     - pcaspy
