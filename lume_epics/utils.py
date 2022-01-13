@@ -56,4 +56,22 @@ def config_from_yaml(config_file):
                 "protocol": protocol,
             }
 
+    if "summary" in config:
+        pvname = config["summary"].get("pvname")
+        owner = config["summary"].get("owner", "")
+        date_published = config["summary"].get("date_published", "")
+        description = config["summary"].get("description", "")
+        id = config["summary"].get("id", "")
+
+        if not pvname:
+            raise ValueError("No pvname provided for summary variable.")
+
+        epics_configuration["summary"] = {
+            "pvname": pvname,
+            "owner": owner,
+            "date_published": date_published,
+            "description": description,
+            "id": id,
+        }
+
     return epics_configuration

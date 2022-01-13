@@ -16,6 +16,7 @@ from p4p.server.thread import SharedPV
 from p4p.server import Server as P4PServer
 from p4p.nt.ndarray import ntndarray as NTNDArrayData
 from p4p.server.raw import ServOpWrap
+from p4p import Value, Type
 
 p4p_logger = logging.getLogger("p4p")
 p4p_logger.setLevel("DEBUG")
@@ -284,6 +285,31 @@ class PVAServer(multiprocessing.Process):
                     # in this case, externally hosted output variable
                     else:
                         self._providers[pvname] = None
+
+            if "summary" in self._epics_config:
+                pvname = self._epics_config["summary"].get("pvname")
+                owner = self._epics_config["summary"].get("owner")
+                date_published = self._epics_config["summary"].get("date_published")
+                description = self._epics_config["summary"].get("description")
+                id = self._epics_config["summary"].get("id")
+
+                spec = [
+                    ("id", "s"),
+                    ("owner", "s"),
+                    ("date_published", "s"),
+                    ("description", "s"),
+                ]
+                values = {
+                    "id": id,
+                    "date_published": date_published,
+                    "description": description,
+                    "owner": owner,
+                }
+                print(values)
+                pv_type = Type(id="summary", spec=spec)
+                value = Value(pv_type, values)
+                pv = SharedPV(initial=value)
+                self._providers[pvname] = pv
 
             # initialize pva server
             self.pva_server = P4PServer(providers=[self._providers])
