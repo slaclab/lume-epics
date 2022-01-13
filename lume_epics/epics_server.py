@@ -309,10 +309,8 @@ class Server:
 
         if "ca" in self._protocols:
             self.ca_process.shutdown()
-            self.ca_process.join()
 
         if "pva" in self._protocols:
             self.pva_process.shutdown()
-            self.pva_process.join()
 
         logger.info("Server is stopped.")

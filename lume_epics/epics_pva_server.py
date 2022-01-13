@@ -198,83 +198,97 @@ class PVAServer(multiprocessing.Process):
 
         # update output variable values
         self._initialize_model()
-        model_outputs = self._out_queue.get()
-        for output in model_outputs.get("output_variables", []):
-            self._output_variables[output.name] = output
+        model_outputs = None
+        while not self.shutdown_event.is_set() and model_outputs is None:
 
-        variables = copy.deepcopy(self._input_variables)
-        variables.update(self._output_variables)
+            try:
+                model_outputs = self._out_queue.get(timeout=0.1)
+            except Empty:
+                pass
 
-        # ignore interrupt in subprocess
-        signal.signal(signal.SIGINT, signal.SIG_IGN)
+        if self.shutdown_event.is_set():
+            pass
 
-        logger.info("Initializing pvAccess server")
+        # if startup hasn't failed
+        else:
 
-        # initialize global inputs
-        for variable in variables.values():
-            pvname = self._varname_to_pvname_map[variable.name]
+            for output in model_outputs.get("output_variables", []):
+                self._output_variables[output.name] = output
 
-            if self._epics_config[variable.name]["serve"]:
+            variables = copy.deepcopy(self._input_variables)
+            variables.update(self._output_variables)
 
-                # prepare scalar variable types
-                if variable.variable_type == "scalar":
-                    nt = NTScalar("d")
-                    initial = variable.value
+            # ignore interrupt in subprocess
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
 
-                # prepare image variable types
-                elif variable.variable_type == "image":
-                    nd_array = variable.value.view(NTNDArrayData)
-                    nd_array.attrib = {
-                        "x_min": variable.x_min,
-                        "y_min": variable.y_min,
-                        "x_max": variable.x_max,
-                        "y_max": variable.y_max,
-                    }
-                    nt = NTNDArray()
-                    initial = nd_array
+            logger.info("Initializing pvAccess server")
 
-                elif variable.variable_type == "array":
-                    if variable.value_type == "str":
-                        nt = NTScalar("as")
+            # initialize global inputs
+            for variable in variables.values():
+                pvname = self._varname_to_pvname_map[variable.name]
+
+                if self._epics_config[variable.name]["serve"]:
+
+                    # prepare scalar variable types
+                    if variable.variable_type == "scalar":
+                        nt = NTScalar("d")
                         initial = variable.value
 
-                    else:
+                    # prepare image variable types
+                    elif variable.variable_type == "image":
                         nd_array = variable.value.view(NTNDArrayData)
+                        nd_array.attrib = {
+                            "x_min": variable.x_min,
+                            "y_min": variable.y_min,
+                            "x_max": variable.x_max,
+                            "y_max": variable.y_max,
+                        }
                         nt = NTNDArray()
                         initial = nd_array
 
+                    elif variable.variable_type == "array":
+                        if variable.value_type == "str":
+                            nt = NTScalar("as")
+                            initial = variable.value
+
+                        else:
+                            nd_array = variable.value.view(NTNDArrayData)
+                            nt = NTNDArray()
+                            initial = nd_array
+
+                    else:
+                        raise ValueError(
+                            "Unsupported variable type provided: %s",
+                            variable.variable_type,
+                        )
+
+                    if variable.name in self._input_variables:
+                        handler = PVAccessInputHandler(
+                            pvname=pvname, is_constant=variable.is_constant, server=self
+                        )
+
+                        pv = SharedPV(handler=handler, nt=nt, initial=initial)
+
+                    else:
+                        pv = SharedPV(nt=nt, initial=initial)
+
+                    self._providers[pvname] = pv
+
+                # if not serving pv, set up monitor
                 else:
-                    raise ValueError(
-                        "Unsupported variable type provided: %s", variable.variable_type
-                    )
+                    if variable.name in self._input_variables:
+                        self._monitors[pvname] = self._context.monitor(
+                            pvname, partial(self._monitor_callback, pvname)
+                        )
 
-                if variable.name in self._input_variables:
-                    handler = PVAccessInputHandler(
-                        pvname=pvname, is_constant=variable.is_constant, server=self
-                    )
+                    # in this case, externally hosted output variable
+                    else:
+                        self._providers[pvname] = None
 
-                    pv = SharedPV(handler=handler, nt=nt, initial=initial)
+            # initialize pva server
+            self.pva_server = P4PServer(providers=[self._providers])
 
-                else:
-                    pv = SharedPV(nt=nt, initial=initial)
-
-                self._providers[pvname] = pv
-
-            # if not serving pv, set up monitor
-            else:
-                if variable.name in self._input_variables:
-                    self._monitors[pvname] = self._context.monitor(
-                        pvname, partial(self._monitor_callback, pvname)
-                    )
-
-                # in this case, externally hosted output variable
-                else:
-                    self._providers[pvname] = None
-
-        # initialize pva server
-        self.pva_server = P4PServer(providers=[self._providers])
-
-        logger.info("pvAccess server started")
+            logger.info("pvAccess server started")
 
     def update_pvs(
         self,
@@ -369,7 +383,9 @@ class PVAServer(multiprocessing.Process):
                 logger.debug("out queue empty")
 
         self._context.close()
-        self.pva_server.stop()
+        if self.pva_server is not None:
+            self.pva_server.stop()
+
         logger.info("pvAccess server stopped.")
 
     def shutdown(self):

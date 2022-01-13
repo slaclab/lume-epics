@@ -263,7 +263,17 @@ class CAServer(CAProcess):
 
         # update output variable values
         self._initialize_model()
-        model_outputs = self._out_queue.get()
+        model_outputs = None
+        while not self.shutdown_event.is_set() and model_outputs is None:
+
+            try:
+                model_outputs = self._out_queue.get(timeout=0.1)
+            except Empty:
+                pass
+
+        if self.shutdown_event.is_set():
+            pass
+
         for output in model_outputs.get("output_variables", []):
             self._output_variables[output.name] = output
 
