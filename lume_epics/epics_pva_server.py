@@ -298,14 +298,24 @@ class PVAServer(multiprocessing.Process):
                     ("owner", "s"),
                     ("date_published", "s"),
                     ("description", "s"),
+                    ("input_variables", "as"),
+                    ("output_variables", "as"),
                 ]
                 values = {
                     "id": id,
                     "date_published": date_published,
                     "description": description,
                     "owner": owner,
+                    "input_variables": [
+                        self._epics_config[var]["pvname"]
+                        for var in self._input_variables
+                    ],
+                    "output_variables": [
+                        self._epics_config[var]["pvname"]
+                        for var in self._input_variables
+                    ],
                 }
-                print(values)
+
                 pv_type = Type(id="summary", spec=spec)
                 value = Value(pv_type, values)
                 pv = SharedPV(initial=value)
