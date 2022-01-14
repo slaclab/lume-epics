@@ -87,20 +87,15 @@ class Server:
         self._protocols = []
 
         ca_config = {
-            var: {
-                "pvname": self._epics_config[var]["pvname"],
-                "serve": self._epics_config[var]["serve"],
-            }
+            var: self._epics_config[var]
             for var in self._epics_config
-            if self._epics_config[var]["protocol"] in ["ca", "both"]
+            if self._epics_config[var].get("protocol") in ["ca", "both"]
         }
         pva_config = {
-            var: {
-                "pvname": self._epics_config[var]["pvname"],
-                "serve": self._epics_config[var]["serve"],
-            }
+            var: self._epics_config[var]
             for var in self._epics_config
-            if self._epics_config[var]["protocol"] in ["pva", "both"]
+            if self._epics_config[var].get("protocol") in ["pva", "both"]
+            or var == "summary"
         }
 
         if len(ca_config) > 0:
