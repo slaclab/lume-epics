@@ -84,6 +84,21 @@ class Server:
 
         self._epics_config = epics_config
 
+        # define programatic access to model summary
+        self._pvname = None
+        self._owner = None
+        self._date_published = None
+        self._description = None
+        self._id = None
+        if "summary" in self._epics_config:
+            self._pvname = self._epics_config["summary"].get("pvname")
+            self._owner = self._epics_config["summary"].get("owner", "")
+            self._date_published = self._epics_config["summary"].get(
+                "date_published", ""
+            )
+            self._description = self._epics_config["summary"].get("description", "")
+            self._id = self._epics_config["summary"].get("id", "")
+
         self._protocols = []
 
         ca_config = {
@@ -309,3 +324,33 @@ class Server:
             self.pva_process.shutdown()
 
         logger.info("Server is stopped.")
+
+    @property
+    def summary(self):
+        return {
+            "pvname": self._pvname,
+            "owner": self._owner,
+            "date published": self._date_published,
+            "description": self._description,
+            "id": self._id,
+        }
+
+    @property
+    def owner(self):
+        return self._owner
+
+    @property
+    def summary_pvname(self):
+        return self._pvname
+
+    @property
+    def date_published(self):
+        return self._date_published
+
+    @property
+    def description(self):
+        return self._description
+
+    @property
+    def id(self):
+        return self._id

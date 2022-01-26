@@ -19,36 +19,29 @@ def config_from_yaml(config_file):
 
     if "input_variables" in config:
 
-        for variable in config["input_variables"]:
+        # keep formatting distinction btw inputs/outputs for clarity
+        for variable in config["input_variables"] + config["output_variables"]:
             protocol = config["input_variables"][variable].get("protocol")
             serve = config["input_variables"][variable].get("serve", True)
             pvname = config["input_variables"][variable].get("pvname")
 
-            if not protocol:
-                raise ValueError(f"No protocol provided for {variable}")
-
-            if not pvname:
-                raise ValueError(f"No pvname provided for {variable}")
-
-            epics_configuration[variable] = {
-                "pvname": pvname,
-                "serve": serve,
-                "protocol": protocol,
-            }
-
-    # Is this redundant? Do we need?
-    if "output_variables" in config:
-
-        for variable in config["output_variables"]:
-            protocol = config["output_variables"][variable].get("protocol")
-            serve = config["output_variables"][variable].get("serve", True)
-            pvname = config["output_variables"][variable].get("pvname")
+            keys = list(config["output_variables"][variable].keys())
 
             if not protocol:
                 raise ValueError(f"No protocol provided for {variable}")
 
             if not pvname:
                 raise ValueError(f"No pvname provided for {variable}")
+
+            keys.remove("protocol")
+            keys.remove("pvname")
+            try:
+                keys.remove("serve")
+            except ValueError:
+                pass
+
+            if len(keys) > 0 and protocol == "pva":
+                epics_configuration[variable]["fields"] = keys
 
             epics_configuration[variable] = {
                 "pvname": pvname,
