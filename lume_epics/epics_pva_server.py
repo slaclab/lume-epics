@@ -254,7 +254,13 @@ class PVAServer(multiprocessing.Process):
 
                             if variable.variable_type == "table":
                                 spec.append((field, "v"))
-                                nt = NTTable()
+                                table_rep = ()
+                                for col in variable.columns:
+
+                                    # here we assume double type in tables...
+                                    table_rep += (col, "ad")
+
+                                nt = NTTable(table_rep)
                                 initial = nt.wrap(variable.value)
 
                             if variable.variable_type == "array":
@@ -311,7 +317,13 @@ class PVAServer(multiprocessing.Process):
                             initial = nd_array
 
                         elif variable.variable_type == "table":
-                            nt = NTTable()
+                            table_rep = ()
+                            for col in variable.columns:
+
+                                # here we assume double type in tables...
+                                table_rep += (col, "ad")
+
+                            nt = NTTable(table_rep)
                             initial = nt.wrap(variable.value)
 
                         elif variable.variable_type == "array":
