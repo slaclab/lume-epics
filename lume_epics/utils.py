@@ -34,6 +34,9 @@ def config_from_yaml(config_file):
 
         fields = var_config.get("fields")
 
+        if fields is not None and protocol == "ca":
+            raise ValueError("Cannot serve fields with Channel Access server.")
+
         epics_configuration[variable] = {
             "pvname": pvname,
             "serve": serve,
