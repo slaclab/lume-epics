@@ -1,0 +1,18 @@
+input_variables:
+  input1:
+    pvname: test:input1
+    protocol: pva
+
+  input2:
+    pvname: test:input2
+    protocol: pva
+
+
+output_variables:
+  output_summary:
+    pvname: test:output_summary
+    protocol: pva
+    fields:
+      - output2
+      - output3
+      - output4

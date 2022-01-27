@@ -19,3 +19,10 @@ output_variables:
   Species:
     pvname: test:species
     protocol: pva
+
+summary:
+  pvname: test:iris:model
+  description: Iris example for lume-epics
+  owner: Jacqueline Garrahan
+  date_published: 1/13/2022
+  id: model1

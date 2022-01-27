@@ -11,11 +11,12 @@ from typing import List, Union
 from functools import partial
 from lume_model.variables import InputVariable, OutputVariable
 from p4p.client.thread import Context
-from p4p.nt import NTScalar, NTNDArray
+from p4p.nt import NTScalar, NTNDArray, NTTable
 from p4p.server.thread import SharedPV
 from p4p.server import Server as P4PServer
 from p4p.nt.ndarray import ntndarray as NTNDArrayData
 from p4p.server.raw import ServOpWrap
+from p4p import Value, Type
 
 p4p_logger = logging.getLogger("p4p")
 p4p_logger.setLevel("DEBUG")
@@ -188,6 +189,7 @@ class PVAServer(multiprocessing.Process):
                 try:
                     val = self._context.get(self._varname_to_pvname_map[var_name])
                     val = val.raw.value
+
                 except:
                     self.exit_event.set()
                     raise ValueError(
@@ -224,55 +226,136 @@ class PVAServer(multiprocessing.Process):
             logger.info("Initializing pvAccess server")
 
             # initialize global inputs
-            for variable in variables.values():
-                pvname = self._varname_to_pvname_map[variable.name]
+            for variable_name, config in self._epics_config.items():
 
-                if self._epics_config[variable.name]["serve"]:
+                if config["serve"]:
 
-                    # prepare scalar variable types
-                    if variable.variable_type == "scalar":
-                        nt = NTScalar("d")
-                        initial = variable.value
+                    fields = config.get("fields")
+                    pvname = config.get("pvname")
 
-                    # prepare image variable types
-                    elif variable.variable_type == "image":
-                        nd_array = variable.value.view(NTNDArrayData)
-                        nd_array.attrib = {
-                            "x_min": variable.x_min,
-                            "y_min": variable.y_min,
-                            "x_max": variable.x_max,
-                            "y_max": variable.y_max,
-                        }
-                        nt = NTNDArray()
-                        initial = nd_array
+                    if fields is not None:
 
-                    elif variable.variable_type == "array":
-                        if variable.value_type == "str":
-                            nt = NTScalar("as")
+                        spec = []
+                        structure = {}
+
+                        for field in fields:
+
+                            variable = variables[field]
+
+                            if variable is None:
+                                raise ValueError(
+                                    f"Field {field} for {variable_name} not found in variable list"
+                                )
+
+                            if variable.variable_type == "scalar":
+                                spec.append((field, "d"))
+                                nt = NTScalar("d")
+                                initial = variable.value
+
+                            if variable.variable_type == "table":
+                                spec.append((field, "v"))
+                                table_rep = ()
+                                for col in variable.columns:
+
+                                    # here we assume double type in tables...
+                                    table_rep += (col, "ad")
+
+                                nt = NTTable(table_rep)
+                                initial = nt.wrap(variable.value)
+
+                            if variable.variable_type == "array":
+                                spec.append((field, "v"))
+
+                                if variable.value_type == "str":
+                                    nt = NTScalar("as")
+                                    initial = nt.wrap(variable.value)
+
+                                else:
+                                    nd_array = variable.value.view(NTNDArrayData)
+                                    nt = NTNDArray()
+                                    initial = nt.wrap(nd_array)
+
+                            if variable.variable_type == "image":
+                                spec.append((field, "v"))
+
+                                nd_array = variable.value.view(NTNDArrayData)
+                                nd_array.attrib = {
+                                    "x_min": variable.x_min,
+                                    "y_min": variable.y_min,
+                                    "x_max": variable.x_max,
+                                    "y_max": variable.y_max,
+                                }
+
+                                nt = NTNDArray()
+                                initial = nt.wrap(nd_array)
+
+                            structure[field] = initial
+
+                        # assemble pv
+                        struct_type = Type(id=variable_name, spec=spec)
+
+                        struct_value = Value(struct_type, structure)
+                        pv = SharedPV(initial=struct_value)
+                        self._providers[pvname] = pv
+
+                    else:
+                        variable = variables[variable_name]
+                        # prepare scalar variable types
+                        if variable.variable_type == "scalar":
+                            nt = NTScalar("d")
                             initial = variable.value
 
-                        else:
+                        # prepare image variable types
+                        elif variable.variable_type == "image":
                             nd_array = variable.value.view(NTNDArrayData)
+                            nd_array.attrib = {
+                                "x_min": variable.x_min,
+                                "y_min": variable.y_min,
+                                "x_max": variable.x_max,
+                                "y_max": variable.y_max,
+                            }
                             nt = NTNDArray()
                             initial = nd_array
 
-                    else:
-                        raise ValueError(
-                            "Unsupported variable type provided: %s",
-                            variable.variable_type,
-                        )
+                        elif variable.variable_type == "table":
+                            table_rep = ()
+                            for col in variable.columns:
 
-                    if variable.name in self._input_variables:
-                        handler = PVAccessInputHandler(
-                            pvname=pvname, is_constant=variable.is_constant, server=self
-                        )
+                                # here we assume double type in tables...
+                                table_rep += (col, "ad")
 
-                        pv = SharedPV(handler=handler, nt=nt, initial=initial)
+                            nt = NTTable(table_rep)
+                            initial = nt.wrap(variable.value)
 
-                    else:
-                        pv = SharedPV(nt=nt, initial=initial)
+                        elif variable.variable_type == "array":
+                            if variable.value_type == "str":
+                                nt = NTScalar("as")
+                                initial = variable.value
 
-                    self._providers[pvname] = pv
+                            else:
+                                nd_array = variable.value.view(NTNDArrayData)
+                                nt = NTNDArray()
+                                initial = nd_array
+
+                        else:
+                            raise ValueError(
+                                "Unsupported variable type provided: %s",
+                                variable.variable_type,
+                            )
+
+                        if variable.name in self._input_variables:
+                            handler = PVAccessInputHandler(
+                                pvname=pvname,
+                                is_constant=variable.is_constant,
+                                server=self,
+                            )
+
+                            pv = SharedPV(handler=handler, nt=nt, initial=initial)
+
+                        else:
+                            pv = SharedPV(nt=nt, initial=initial)
+
+                        self._providers[pvname] = pv
 
                 # if not serving pv, set up monitor
                 else:
@@ -284,6 +367,41 @@ class PVAServer(multiprocessing.Process):
                     # in this case, externally hosted output variable
                     else:
                         self._providers[pvname] = None
+
+            if "summary" in self._epics_config:
+                pvname = self._epics_config["summary"].get("pvname")
+                owner = self._epics_config["summary"].get("owner")
+                date_published = self._epics_config["summary"].get("date_published")
+                description = self._epics_config["summary"].get("description")
+                id = self._epics_config["summary"].get("id")
+
+                spec = [
+                    ("id", "s"),
+                    ("owner", "s"),
+                    ("date_published", "s"),
+                    ("description", "s"),
+                    ("input_variables", "as"),
+                    ("output_variables", "as"),
+                ]
+                values = {
+                    "id": id,
+                    "date_published": date_published,
+                    "description": description,
+                    "owner": owner,
+                    "input_variables": [
+                        self._epics_config[var]["pvname"]
+                        for var in self._input_variables
+                    ],
+                    "output_variables": [
+                        self._epics_config[var]["pvname"]
+                        for var in self._input_variables
+                    ],
+                }
+
+                pv_type = Type(id="summary", spec=spec)
+                value = Value(pv_type, values)
+                pv = SharedPV(initial=value)
+                self._providers[pvname] = pv
 
             # initialize pva server
             self.pva_server = P4PServer(providers=[self._providers])

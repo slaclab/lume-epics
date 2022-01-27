@@ -4,7 +4,14 @@ import logging
 import sys
 from lume_epics import epics_server
 from lume_model.models import SurrogateModel
-from lume_model.variables import *
+from lume_model.variables import (
+    ScalarInputVariable,
+    ImageInputVariable,
+    ScalarOutputVariable,
+    ArrayInputVariable,
+    ImageOutputVariable,
+    ArrayOutputVariable,
+)
 from lume_epics.utils import config_from_yaml
 
 logger = logging.getLogger(__name__)
@@ -54,27 +61,35 @@ class TestModel(SurrogateModel):
         self.output_variables["output3"].value = (
             self.input_variables["input3"].value * 2
         )
+
         self.output_variables["output3"].x_min = (
             self.input_variables["input3"].x_min / 2
         )
+
         self.output_variables["output3"].x_max = (
             self.input_variables["input3"].x_max / 2
         )
+
         self.output_variables["output3"].y_min = (
             self.input_variables["input3"].y_min / 2
         )
+
         self.output_variables["output3"].y_max = (
             self.input_variables["input3"].y_max / 2
         )
+
         self.output_variables["output3"].x_min = (
             self.input_variables["input3"].x_min / 2
         )
+
         self.output_variables["output3"].x_max = (
             self.input_variables["input3"].x_max / 2
         )
+
         self.output_variables["output3"].y_min = (
             self.input_variables["input3"].y_min / 2
         )
+
         self.output_variables["output3"].y_max = (
             self.input_variables["input3"].y_max / 2
         )

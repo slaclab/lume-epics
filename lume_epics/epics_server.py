@@ -84,24 +84,40 @@ class Server:
 
         self._epics_config = epics_config
 
+        # define programatic access to model summary
+        self._pvname = None
+        self._owner = None
+        self._date_published = None
+        self._description = None
+        self._id = None
+        if "summary" in self._epics_config:
+            self._pvname = self._epics_config["summary"].get("pvname")
+            self._owner = self._epics_config["summary"].get("owner", "")
+            self._date_published = self._epics_config["summary"].get(
+                "date_published", ""
+            )
+            self._description = self._epics_config["summary"].get("description", "")
+            self._id = self._epics_config["summary"].get("id", "")
+
         self._protocols = []
 
         ca_config = {
-            var: {
-                "pvname": self._epics_config[var]["pvname"],
-                "serve": self._epics_config[var]["serve"],
-            }
+            var: self._epics_config[var]
             for var in self._epics_config
-            if self._epics_config[var]["protocol"] in ["ca", "both"]
+            if self._epics_config[var].get("protocol") in ["ca", "both"]
         }
         pva_config = {
-            var: {
-                "pvname": self._epics_config[var]["pvname"],
-                "serve": self._epics_config[var]["serve"],
-            }
+            var: self._epics_config[var]
             for var in self._epics_config
-            if self._epics_config[var]["protocol"] in ["pva", "both"]
+            if self._epics_config[var].get("protocol") in ["pva", "both"]
+            or var == "summary"
         }
+
+        # track nested fields
+        self._pva_fields = []
+        for var, config in self._epics_config.items():
+            if config.get("fields"):
+                self._pva_fields += config["fields"]
 
         if len(ca_config) > 0:
             self._protocols.append("ca")
@@ -254,7 +270,8 @@ class Server:
                         outputs = [
                             var
                             for var in predicted_output
-                            if self._epics_config[var.name]["protocol"]
+                            if var.name in self._pva_fields
+                            or self._epics_config[var.name]["protocol"]
                             in [protocol, "both"]
                         ]
                         queue.put({"output_variables": outputs}, timeout=0.1)
@@ -314,3 +331,33 @@ class Server:
             self.pva_process.shutdown()
 
         logger.info("Server is stopped.")
+
+    @property
+    def summary(self):
+        return {
+            "pvname": self._pvname,
+            "owner": self._owner,
+            "date published": self._date_published,
+            "description": self._description,
+            "id": self._id,
+        }
+
+    @property
+    def owner(self):
+        return self._owner
+
+    @property
+    def summary_pvname(self):
+        return self._pvname
+
+    @property
+    def date_published(self):
+        return self._date_published
+
+    @property
+    def description(self):
+        return self._description
+
+    @property
+    def id(self):
+        return self._id

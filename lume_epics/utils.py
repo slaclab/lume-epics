@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 
 def config_from_yaml(config_file):
-    """
+    """Load yaml file into configuration
     """
 
     config = yaml.safe_load(config_file)
@@ -17,43 +17,51 @@ def config_from_yaml(config_file):
 
     epics_configuration = {}
 
-    if "input_variables" in config:
+    variables = config["input_variables"]
+    variables.update(config["output_variables"])
 
-        for variable in config["input_variables"]:
-            protocol = config["input_variables"][variable].get("protocol")
-            serve = config["input_variables"][variable].get("serve", True)
-            pvname = config["input_variables"][variable].get("pvname")
+    # keep formatting distinction btw inputs/outputs for clarity
+    for variable, var_config in variables.items():
+        protocol = var_config.get("protocol")
+        serve = var_config.get("serve", True)
+        pvname = var_config.get("pvname")
 
-            if not protocol:
-                raise ValueError(f"No protocol provided for {variable}")
+        if not protocol:
+            raise ValueError(f"No protocol provided for {variable}")
 
-            if not pvname:
-                raise ValueError(f"No pvname provided for {variable}")
+        if not pvname:
+            raise ValueError(f"No pvname provided for {variable}")
 
-            epics_configuration[variable] = {
-                "pvname": pvname,
-                "serve": serve,
-                "protocol": protocol,
-            }
+        fields = var_config.get("fields")
 
-    # Is this redundant? Do we need?
-    if "output_variables" in config:
+        if fields is not None and protocol == "ca":
+            raise ValueError("Cannot serve fields with Channel Access server.")
 
-        for variable in config["output_variables"]:
-            protocol = config["output_variables"][variable].get("protocol")
-            serve = config["output_variables"][variable].get("serve", True)
-            pvname = config["output_variables"][variable].get("pvname")
+        epics_configuration[variable] = {
+            "pvname": pvname,
+            "serve": serve,
+            "protocol": protocol,
+        }
 
-            if not protocol:
-                raise ValueError(f"No protocol provided for {variable}")
+        if fields:
+            epics_configuration[variable]["fields"] = fields
 
-            if not pvname:
-                raise ValueError(f"No pvname provided for {variable}")
+    if "summary" in config:
+        pvname = config["summary"].get("pvname")
+        owner = config["summary"].get("owner", "")
+        date_published = config["summary"].get("date_published", "")
+        description = config["summary"].get("description", "")
+        id = config["summary"].get("id", "")
 
-            epics_configuration[variable] = {
-                "pvname": pvname,
-                "serve": serve,
-                "protocol": protocol,
-            }
+        if not pvname:
+            raise ValueError("No pvname provided for summary variable.")
+
+        epics_configuration["summary"] = {
+            "pvname": pvname,
+            "owner": owner,
+            "date_published": date_published,
+            "description": description,
+            "id": id,
+        }
 
     return epics_configuration

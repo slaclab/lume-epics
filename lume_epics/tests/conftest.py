@@ -61,8 +61,15 @@ def tear_down():
 
 @pytest.fixture(scope="session", autouse=True)
 def epics_config(rootdir):
-    #  with open(f"{rootdir}/lume_epics/tests/files/epics_config.yml", "r") as f:
     with open(f"{rootdir}/files/epics_config.yml", "r") as f:
+        epics_config = config_from_yaml(f)
+
+    yield epics_config
+
+
+@pytest.fixture(scope="session", autouse=True)
+def epics_config_struct(rootdir):
+    with open(f"{rootdir}/files/epics_config_struct.yml", "r") as f:
         epics_config = config_from_yaml(f)
 
     yield epics_config

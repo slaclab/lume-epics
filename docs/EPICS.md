@@ -33,6 +33,70 @@ The optional field `serve` for each variable accepts a boolean defaulting to tru
 
 The client controller `lume_epics.client.controller.Controller` is also initialized using the EPICS configuration dictionary and a common file may be used for a project, though the serve field is unimportant to the controller.
 
+Over pvAccess, you also have the option to host a summary process variable:
+
+```yaml
+input_variables:
+  input1:
+    pvname: test:input1
+    protocol: ca
+    serve: false
+
+  input2:
+    pvname: test:input2
+    protocol: pva
+
+output_variables:
+  output1:
+    pvname: test:output1
+    protocol: pva
+
+  output2:
+    pvname: test:output2
+    protocol: pva
+
+  output3:
+    pvname: test:output3
+    protocol: pva
+
+summary:
+  pvname: test:summary_variable
+  owner: Jacqueline Garrahan
+  date_published: 1/27/22
+  description: A basic epics configuration
+  id: model1
+```
+
+
+You can also serve output variables as a pvAccess structure:
+
+```yaml
+input_variables:
+  input1:
+    pvname: test:input1
+    protocol: ca
+    serve: false
+
+  input2:
+    pvname: test:input2
+    protocol: pva
+
+output_variables:
+  pvname: test:output
+  protocol: pva
+  fields:
+    - output1
+    - output2
+    - output3
+
+summary:
+  pvname: test:summary_variable
+  owner: Jacqueline Garrahan
+  date_published: 1/27/22
+  description: A basic epics configuration
+  id: model1
+```
+
 
 ## EPICS environment configuration
 
