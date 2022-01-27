@@ -26,29 +26,22 @@ def config_from_yaml(config_file):
         serve = var_config.get("serve", True)
         pvname = var_config.get("pvname")
 
-        keys = list(var_config.keys())
-
         if not protocol:
             raise ValueError(f"No protocol provided for {variable}")
 
         if not pvname:
             raise ValueError(f"No pvname provided for {variable}")
 
-        keys.remove("protocol")
-        keys.remove("pvname")
-        try:
-            keys.remove("serve")
-        except ValueError:
-            pass
-
-        if len(keys) > 0 and protocol == "pva":
-            epics_configuration[variable]["fields"] = keys
+        fields = var_config.get("fields")
 
         epics_configuration[variable] = {
             "pvname": pvname,
             "serve": serve,
             "protocol": protocol,
         }
+
+        if fields:
+            epics_configuration[variable]["fields"] = fields
 
     if "summary" in config:
         pvname = config["summary"].get("pvname")

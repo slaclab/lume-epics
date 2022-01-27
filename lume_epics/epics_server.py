@@ -113,6 +113,12 @@ class Server:
             or var == "summary"
         }
 
+        # track nested fields
+        self._pva_fields = []
+        for var, config in self._epics_config.items():
+            if config.get("fields"):
+                self._pva_fields += config["fields"]
+
         if len(ca_config) > 0:
             self._protocols.append("ca")
 
@@ -264,7 +270,8 @@ class Server:
                         outputs = [
                             var
                             for var in predicted_output
-                            if self._epics_config[var.name]["protocol"]
+                            if var.name in self._pva_fields
+                            or self._epics_config[var.name]["protocol"]
                             in [protocol, "both"]
                         ]
                         queue.put({"output_variables": outputs}, timeout=0.1)

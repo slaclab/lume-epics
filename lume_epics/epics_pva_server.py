@@ -230,8 +230,8 @@ class PVAServer(multiprocessing.Process):
 
                 if config["serve"]:
 
-                    fields = config.get["fields"]
-                    pvname = config.get["pvname"]
+                    fields = config.get("fields")
+                    pvname = config.get("pvname")
 
                     if fields is not None:
 
@@ -250,7 +250,7 @@ class PVAServer(multiprocessing.Process):
                             if variable.variable_type == "scalar":
                                 spec.append((field, "d"))
                                 nt = NTScalar("d")
-                                initial = nt.wrap(variable.value)
+                                initial = variable.value
 
                             if variable.variable_type == "table":
                                 spec.append((field, "v"))
