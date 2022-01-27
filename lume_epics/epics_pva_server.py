@@ -292,8 +292,9 @@ class PVAServer(multiprocessing.Process):
                             structure[field] = initial
 
                         # assemble pv
-                        MyType = Type(id=variable_name, spec=spec)
-                        struct_value = Value(MyType, structure)
+                        struct_type = Type(id=variable_name, spec=spec)
+
+                        struct_value = Value(struct_type, structure)
                         pv = SharedPV(initial=struct_value)
                         self._providers[pvname] = pv
 
