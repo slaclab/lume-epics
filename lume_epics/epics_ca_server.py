@@ -10,13 +10,13 @@ import numpy as np
 import os
 from queue import Full, Empty, Queue
 
-from epics.ca import CAThread
 import epics
+from epics.ca import CAThread
 from epics.multiproc import CAProcess
+import pcaspy
 
-# initialize libca before pcaspy import
-if not epics.ca.libca:
-    epics.ca.initialize_libca()
+# use correct libca
+os.environ["PYEPICS_LIBCA"] = os.path.dirname(pcaspy.__file__)
 
 from pcaspy import Driver, SimpleServer
 from typing import Dict, Mapping, Union, List
@@ -241,9 +241,6 @@ class CAServer(CAProcess):
 
         logger.info("Initializing CA server")
 
-        # initialize channel access server
-        self._ca_server = SimpleServer()
-
         # update value with stored defaults
         for var_name in self._input_variables:
             if self._epics_config[var_name]["serve"]:
@@ -252,14 +249,19 @@ class CAServer(CAProcess):
                 ].default
 
             else:
-                val = epics.caget(self._varname_to_pvname_map[var_name])
+                pvname = self._varname_to_pvname_map[var_name]
+                val = epics.caget(pvname, timeout=0.5, connection_timeout=1.0)
                 if not val:
-                    self.exit_event.set()
-                    raise ValueError(
+                    logger.error(
                         f"Unable to connect to {self._varname_to_pvname_map[var_name]}"
                     )
+                    self.exit_event.set()
+                    return False
 
                 self._input_variables[var_name].value = val
+
+        # initialize channel access server
+        self._ca_server = SimpleServer()
 
         # update output variable values
         self._initialize_model()
@@ -314,6 +316,7 @@ class CAServer(CAProcess):
         self._server_thread.start()
 
         logger.info("CA server started")
+        return True
 
     def update_pvs(
         self,
@@ -336,20 +339,23 @@ class CAServer(CAProcess):
         """Start server process.
 
         """
-        self.setup_server()
-        while not self.shutdown_event.is_set():
-            try:
-                data = self._out_queue.get_nowait()
-                inputs = data.get("input_variables", [])
-                outputs = data.get("output_variables", [])
-                self.update_pvs(inputs, outputs)
+        started = self.setup_server()
+        if started:
+            while not self.shutdown_event.is_set():
+                try:
+                    data = self._out_queue.get_nowait()
+                    inputs = data.get("input_variables", [])
+                    outputs = data.get("output_variables", [])
+                    self.update_pvs(inputs, outputs)
 
-            except Empty:
-                time.sleep(0.05)
-                logger.debug("out queue empty")
+                except Empty:
+                    time.sleep(0.05)
+                    logger.debug("out queue empty")
 
-        self._server_thread.stop()
-        logger.info("Channel access server stopped.")
+            self._server_thread.stop()
+            logger.info("Channel access server stopped.")
+        else:
+            logger.info("Unable to set up server. Shutting down.")
 
     def shutdown(self):
         """Safely shutdown the server process.
