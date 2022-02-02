@@ -251,7 +251,7 @@ class CAServer(CAProcess):
             else:
                 pvname = self._varname_to_pvname_map[var_name]
                 val = epics.caget(pvname)
-                if not val:
+                if val is None:
                     logger.error(
                         f"Unable to connect to {self._varname_to_pvname_map[var_name]}"
                     )
