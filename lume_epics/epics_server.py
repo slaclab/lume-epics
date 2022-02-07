@@ -12,6 +12,12 @@ from typing import Dict, Mapping, Union, List
 from threading import Thread
 from queue import Full, Empty
 
+import pcaspy
+
+# use correct libca
+os.environ["PYEPICS_LIBCA"] = os.path.dirname(pcaspy.__file__)
+
+
 from lume_model.variables import Variable, InputVariable, OutputVariable
 from lume_model.models import SurrogateModel
 

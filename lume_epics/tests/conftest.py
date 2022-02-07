@@ -7,11 +7,11 @@ import signal
 from epicscorelibs.path import get_lib
 from os.path import abspath, dirname
 
-from lume_epics.tests.launch_server import TestModel
+
 from lume_epics.client.controller import Controller
+from lume_epics.tests.launch_server import TestModel
 from lume_epics.utils import config_from_yaml
 
-from lume_epics.epics_server import Server
 
 logger = logging.getLogger(__name__)
 logger.setLevel("DEBUG")
@@ -87,6 +87,8 @@ def server():
 
     logger.info(sys.executable)
 
+    print("Starting up")
+
     ca_proc = subprocess.Popen(
         [sys.executable, "launch_server.py", "files/epics_config.yml"],
         stdout=subprocess.PIPE,
@@ -96,8 +98,10 @@ def server():
         env=env,
     )
 
+    print("Past opening proce")
+
     # Check it started successfully
-    assert not ca_proc.poll()
+    #    assert not ca_proc.poll()
 
     # yield ca_proc
     yield ca_proc

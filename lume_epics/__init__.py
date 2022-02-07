@@ -1,11 +1,5 @@
 import os
 
-import epics
-import pcaspy
-
-# use correct libca
-os.environ["PYEPICS_LIBCA"] = os.path.dirname(pcaspy.__file__)
-
 os.environ["EPICS_CA_MAX_ARRAY_BYTES"] = "1000000"
 
 from ._version import get_versions
