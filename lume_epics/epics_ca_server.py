@@ -334,7 +334,9 @@ class CAServer(CAProcess):
         """
         variables = input_variables + output_variables
 
-        self._ca_driver.update_pvs(variables)
+        # update variables if the driver is running
+        if self._ca_driver is not None:
+            self._ca_driver.update_pvs(variables)
 
     def run(self) -> None:
         """Start server process.
