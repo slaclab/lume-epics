@@ -305,15 +305,16 @@ class CAServer(CAProcess):
             )
             self._monitors[var_name].add_callback(self._monitor_callback)
 
-        # Register pvs with server
-        self._ca_server.createPV("", pvdb)
+        # Register pvs with server if serving
+        if len(pvdb):
+            self._ca_server.createPV("", pvdb)
 
-        # set up driver for handing read and write requests to process variables
-        self._ca_driver = CADriver(server=self)
+            # set up driver for handing read and write requests to process variables
+            self._ca_driver = CADriver(server=self)
 
-        # start the server thread
-        self._server_thread = CAServerThread(self._ca_server)
-        self._server_thread.start()
+            # start the server thread
+            self._server_thread = CAServerThread(self._ca_server)
+            self._server_thread.start()
 
         logger.info("CA server started")
         return True
