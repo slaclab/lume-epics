@@ -355,7 +355,10 @@ class CAServer(CAProcess):
                     time.sleep(0.05)
                     logger.debug("out queue empty")
 
-            self._server_thread.stop()
+            # if server thread running
+            if self._server_thread is not None:
+                self._server_thread.stop()
+
             logger.info("Channel access server stopped.")
         else:
             logger.info("Unable to set up server. Shutting down.")
