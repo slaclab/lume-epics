@@ -92,6 +92,7 @@ class PVAServer(multiprocessing.Process):
         # monitors for read only
         self._monitors = {}
         self._cached_values = {}
+        self._field_to_parent_map = {}
 
         # utility maps
         self._pvname_to_varname_map = {
@@ -226,6 +227,8 @@ class PVAServer(multiprocessing.Process):
             logger.info("Initializing pvAccess server")
 
             # initialize global inputs
+            self._structures = {}
+            self._structure_specs = {}
             for variable_name, config in self._epics_config.items():
 
                 if config["serve"]:
@@ -239,6 +242,8 @@ class PVAServer(multiprocessing.Process):
                         structure = {}
 
                         for field in fields:
+                            # track fields in dict
+                            self._field_to_parent_map[field] = variable_name
 
                             variable = variables[field]
 
@@ -267,8 +272,8 @@ class PVAServer(multiprocessing.Process):
                                 spec.append((field, "v"))
 
                                 if variable.value_type == "str":
-                                    nt = NTScalar("as")
-                                    initial = nt.wrap(variable.value)
+                                    nt = NTScalar("s")
+                                    initial = variable.value
 
                                 else:
                                     nd_array = variable.value.view(NTNDArrayData)
@@ -292,8 +297,9 @@ class PVAServer(multiprocessing.Process):
                             structure[field] = initial
 
                         # assemble pv
+                        self._structures[variable_name] = structure
+                        self._structure_specs[variable_name] = spec
                         struct_type = Type(id=variable_name, spec=spec)
-
                         struct_value = Value(struct_type, structure)
                         pv = SharedPV(initial=struct_value)
                         self._providers[pvname] = pv
@@ -423,7 +429,7 @@ class PVAServer(multiprocessing.Process):
         """
         variables = input_variables + output_variables
         for variable in variables:
-            pvname = self._varname_to_pvname_map[variable.name]
+            parent = self._field_to_parent_map.get(variable.name)
 
             if variable.name in self._input_variables and variable.is_constant:
                 logger.debug("Cannot update constant variable.")
@@ -448,8 +454,8 @@ class PVAServer(multiprocessing.Process):
                     logger.debug(
                         "pvAccess array process variable %s updated.", variable.name
                     )
-                    if variable.value_type == "string":
-                        value = list(variable.value)
+                    if variable.value_type == "str":
+                        value = variable.value
 
                     else:
                         value = variable.value.view(NTNDArrayData)
@@ -463,7 +469,17 @@ class PVAServer(multiprocessing.Process):
                     )
                     value = variable.value
 
-            output_provider = self._providers[pvname]
+            # update structure or pv
+            if parent:
+                self._structures[parent][variable.name] = value
+                struct_type = Type(id=parent, spec=self._structure_specs[parent])
+                value = Value(struct_type, self._structures[parent])
+                pvname = self._varname_to_pvname_map[parent]
+                output_provider = self._providers[pvname]
+
+            else:
+                pvname = self._varname_to_pvname_map[variable.name]
+                output_provider = self._providers[pvname]
 
             if output_provider:
                 output_provider.post(value)
