@@ -1,6 +1,7 @@
 import time
 import logging
 import multiprocessing
+import traceback
 
 try:
     multiprocessing.set_start_method("spawn")
@@ -282,8 +283,9 @@ class Server:
                                 in [protocol, "both"]
                             ]
                             queue.put({"output_variables": outputs}, timeout=0.1)
+
                     except Exception as e:
-                        print(e)
+                        traceback.print_exc()
                         self._model_exec_exit_event.set()
 
                 running_indicator.value = False

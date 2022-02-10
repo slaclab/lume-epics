@@ -305,15 +305,16 @@ class CAServer(CAProcess):
             )
             self._monitors[var_name].add_callback(self._monitor_callback)
 
-        # Register pvs with server
-        self._ca_server.createPV("", pvdb)
+        # Register pvs with server if serving
+        if len(pvdb):
+            self._ca_server.createPV("", pvdb)
 
-        # set up driver for handing read and write requests to process variables
-        self._ca_driver = CADriver(server=self)
+            # set up driver for handing read and write requests to process variables
+            self._ca_driver = CADriver(server=self)
 
-        # start the server thread
-        self._server_thread = CAServerThread(self._ca_server)
-        self._server_thread.start()
+            # start the server thread
+            self._server_thread = CAServerThread(self._ca_server)
+            self._server_thread.start()
 
         logger.info("CA server started")
         return True
@@ -333,7 +334,9 @@ class CAServer(CAProcess):
         """
         variables = input_variables + output_variables
 
-        self._ca_driver.update_pvs(variables)
+        # update variables if the driver is running
+        if self._ca_driver is not None:
+            self._ca_driver.update_pvs(variables)
 
     def run(self) -> None:
         """Start server process.
@@ -352,7 +355,10 @@ class CAServer(CAProcess):
                     time.sleep(0.05)
                     logger.debug("out queue empty")
 
-            self._server_thread.stop()
+            # if server thread running
+            if self._server_thread is not None:
+                self._server_thread.stop()
+
             logger.info("Channel access server stopped.")
         else:
             logger.info("Unable to set up server. Shutting down.")
