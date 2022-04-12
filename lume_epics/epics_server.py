@@ -20,7 +20,7 @@ os.environ["PYEPICS_LIBCA"] = os.path.dirname(pcaspy.__file__)
 
 
 from lume_model.variables import Variable, InputVariable, OutputVariable
-from lume_model.models import SurrogateModel
+from lume_model.models import BaseModel
 
 from lume_epics import EPICS_ENV_VARS
 from .epics_pva_server import PVAServer
@@ -38,9 +38,9 @@ class Server:
     Attributes:
         model (SurrogateModel): SurrogateModel class to be served
 
-        input_variables (List[Variable]): List of lume-model variables passed to model.
+        input_variables (Dict[str, Variable]): Dict of of lume-model variable name to variable passed as model input.
 
-        ouput_variables (List[Variable]): List of lume-model variables to use as
+        ouput_variables (Dict[str, Variable]): Dict of of lume-model variable name to variable to use as
             outputs.
 
         ca_server (SimpleServer): Server class that interfaces between the Channel
@@ -58,7 +58,7 @@ class Server:
 
     def __init__(
         self,
-        model_class: SurrogateModel,
+        model_class: BaseModel,
         epics_config: dict,
         model_kwargs: dict = {},
         epics_env: dict = {},
@@ -269,7 +269,7 @@ class Server:
                             if len(inputs):
                                 queue.put({"input_variables": inputs})
 
-                    model_input = list(self.input_variables.values())
+                    model_input = self.input_variables
 
                     try:
                         predicted_output = model.evaluate(model_input)
@@ -277,9 +277,9 @@ class Server:
                         for protocol, queue in out_queues.items():
                             outputs = [
                                 var
-                                for var in predicted_output
-                                if var.name in self._pva_fields
-                                or self._epics_config[var.name]["protocol"]
+                                for var_name, var in predicted_output.items()
+                                if var_name in self._pva_fields
+                                or self._epics_config[var_name]["protocol"]
                                 in [protocol, "both"]
                             ]
                             queue.put({"output_variables": outputs}, timeout=0.1)

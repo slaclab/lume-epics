@@ -13,57 +13,56 @@ from typing import Dict, Tuple, Mapping, Union, List
 from abc import ABC, abstractmethod
 
 from lume_model.variables import InputVariable, OutputVariable
-from lume_model.models import SurrogateModel
+from lume_model.models import BaseModel
 
 logger = logging.getLogger(__name__)
 
 
-class OnlineSurrogateModel:
+class OnlineModel:
     """
     Class for executing surrogate model.
 
     Attributes:
         model (SurrogateModel): Model for execution.
 
-        input_variables (List[InputVariable]): List of lume-model variables to use as inputs.
+        input_variables (Dict[str, InputVariable]): List of lume-model variables to use as inputs.
 
-        ouput_variables (List[OutputVariable]): List of lume-model variables to use as outputs.
+        ouput_variables (Dict[str, OutputVariable]): List of lume-model variables to use as outputs.
 
     """
 
-    def __init__(self, model: SurrogateModel,) -> None:
+    def __init__(self, model: BaseModel,) -> None:
         """
-        Initialize OnlineSurrogateModel with the surrogate model.
+        Initialize OnlineModel with the base model class.
 
         Args:
-            model (SurrogateModel): Instantiated surrogate model.
+            model (BaseModel): Instantiated model.
 
         """
         self.model = model
 
-        self.input_variables = list(self.model.input_variables.values())
+        self.input_variables = self.model.input_variables
         self.output_variables = self.model.output_variables
 
-    def run(self, input_variables: List[InputVariable]) -> List[OutputVariable]:
+    def run(
+        self, input_variables: Dict[str, InputVariable]
+    ) -> Dict[str, OutputVariable]:
         """
         Executes both scalar and image model given process variable value inputs.
 
         Args:
-            input_variables (List[InputVariable]): List of lume-model variables to use as inputs.
+            input_variables (Dict[str, InputVariable]): Dict of lume-model variables to use as inputs.
 
         """
         # update input variables and get state representation
         self.input_variables = input_variables
 
         # update output variable state
-        predicted_output = self.model.evaluate(self.input_variables)
-
         logger.info("Running model")
         t1 = time.time()
-        for variable in predicted_output:
-            self.output_variables[variable.name] = variable
+        self.output_variables = self.model.evaluate(self.input_variables)
         t2 = time.time()
 
         logger.info("Ellapsed time: %s", str(t2 - t1))
 
-        return list(self.output_variables.values())
+        return self.output_variables
