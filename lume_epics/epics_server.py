@@ -9,7 +9,7 @@ except:
     pass
 
 import os
-from typing import Dict, Mapping, Union, List
+from typing import Dict, List, Type, Optional
 from threading import Thread, Event
 from queue import Full, Empty
 
@@ -33,50 +33,61 @@ logger.setLevel(logging.DEBUG)
 class Server:
     """
     Server for EPICS process variables. Can be optionally initialized with only
-    pvAccess or Channel Access protocols; but, defaults to serving over both.
+    pvAccess or Channel Access protocols.
 
     Attributes:
-        model (SurrogateModel): SurrogateModel class to be served
+        model (BaseModel): Instantiated model
 
-        input_variables (Dict[str, Variable]): Dict of of lume-model variable name to variable passed as model input.
+        input_variables (Dict[str: InputVariable]): Model input variables
 
-        ouput_variables (Dict[str, Variable]): Dict of of lume-model variable name to variable to use as
-            outputs.
+        output_variables (Dict[str: OutputVariable]): Model output variables
 
-        ca_server (SimpleServer): Server class that interfaces between the Channel
-            Access client and the driver.
+        epics_config (Optional[Dict]): ...
 
-        ca_driver (CADriver): Class used by server to handle to process variable
-            read/write requests.
+        _pva_fields (List[str]): List of variables pointing to pvAccess fields
 
-        pva_server (P4PServer): Threaded p4p server used for serving pvAccess
-            variables.
+        _protocols (List[str]): List of protocols in use
 
-        exit_event (Event): Threading exit event marking server shutdown.
+        in_queue (multiprocessing.Queue):
+
+        out_queues (Dict[str, multiprocessing.Queue]): Queue updates to output
+            variables to protocol servers.
+
+        exit_event (multiprocessing.Event): Event triggering shutdown
+
+        _running_indicator (multiprocessing.Value): Value indicating whether server is running
+
+        _process_exit_events (List[multiprocessing.Event]): Exit events for each process
+
+        _model_exec_exit_event (Event): Thread event for model execution exceptions
+
+        comm_thread (Thread): Thread for model execution
+
+        ca_process (multiprocessing.Process): Channel access server process
+
+        pva_process (multiprocessing.Process): pvAccess server process
 
     """
 
     def __init__(
         self,
-        model_class: BaseModel,
+        model_class: Type[BaseModel],
         epics_config: dict,
-        model_kwargs: dict = {},
-        epics_env: dict = {},
+        model_kwargs: dict = {},  # TODO DROP and use instantiated mode
+        epics_env: dict = {},  # TODO drop hashable default. Should be Optional[dict]
     ) -> None:
-        """Create OnlineSurrogateModel instance in the main thread and
-        initialize output variables by running with the input process variable
-        state, input/output variable tracking, start the server, create the
-        process variables, and start the driver.
+        """Create model_class instance and configure both Channel Access and pvAccess
+        servers for execution.
 
         Args:
-            model_class (SurrogateModel): Surrogate model class to be
-            instantiated.
+            model_class (Type[BaseModel]): Model class to be instantiated
 
-            epics_config (dict): Dictionary describing EPICS configuration for model variables
+            epics_config (dict): Dictionary describing EPICS configuration for model
+                variables.
 
             model_kwargs (dict): Kwargs to instantiate model.
 
-            epics_env (dict): Environment variables for EPICS configuration
+            epics_env (dict): Environment variables for EPICS configuration.
 
         """
 
@@ -97,6 +108,8 @@ class Server:
         self._date_published = None
         self._description = None
         self._id = None
+
+        # If configured, set up summary pv
         if "summary" in self._epics_config:
             self._pvname = self._epics_config["summary"].get("pvname")
             self._owner = self._epics_config["summary"].get("owner", "")
@@ -160,12 +173,12 @@ class Server:
         if "ca" in self._protocols:
             ca_input_vars = {
                 var_name: var
-                for var_name, var in self.input_variables.items()
+                for var_name, var in self.model.input_variables.items()
                 if var_name in ca_config
             }
             ca_output_vars = {
                 var_name: var
-                for var_name, var in self.output_variables.items()
+                for var_name, var in self.model.output_variables.items()
                 if var_name in ca_config
             }
 
@@ -205,33 +218,33 @@ class Server:
             self._process_exit_events.append(self.pva_process.exit_event)
 
     def __enter__(self):
-        """Handle server startup
-        """
+        """Handle server startup"""
         self.start(monitor=False)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        """Handle server shutdown
-        """
+        """Handle server shutdown"""
         self.stop()
 
     def run_comm_thread(
         self,
         *,
         running_indicator: multiprocessing.Value,
-        in_queue: multiprocessing.Queue = None,
-        out_queues: Dict[str, multiprocessing.Queue] = None,
+        in_queue: Optional[multiprocessing.Queue],
+        out_queues: Optional[Dict[str, multiprocessing.Queue]],
     ):
-        """Handles communications between pvAccess server, Channel Access server, and model.
+        """Handles communications between pvAccess server, Channel Access server, and
+            model.
 
         Arguments:
-            model_class: Model class to be executed.
+            running_indicator (multiprocessing.Value): Indicates whether main server
+                process active.
 
-            in_queue (multiprocessing.Queue):
+            in_queue (Optional[multiprocessing.Queue]): Queue receiving input variable
+                inputs.
 
-            out_queues (Dict[str: multiprocessing.Queue]): Maps protocol to output assignment queue.
-
-            running_marker (multiprocessing.Value): multiprocessing marker for whether comm thread computing or not
+            out_queues (Optional[Dict[str, multiprocessing.Queue]]): Queue for communicating
+                output vars with servers.
 
         """
         model = self.model
@@ -302,9 +315,9 @@ class Server:
         """Starts server using set server protocol(s).
 
         Args:
-            monitor (bool): Indicates whether to run the server in the background
-                or to continually monitor. If monitor = False, the server must be
-                explicitly stopped using server.stop()
+            monitor (bool): Indicates whether to run the server in the background or to
+                continually monitor. If monitor = False, the server must be explicitly
+                stopped using server.stop()
 
         """
         self.comm_thread.start()
@@ -333,9 +346,7 @@ class Server:
                 self.stop()
 
     def stop(self) -> None:
-        """Stops the server.
-
-        """
+        """Stops the server."""
         logger.info("Stopping server.")
         self.exit_event.set()
         self.comm_thread.join()
