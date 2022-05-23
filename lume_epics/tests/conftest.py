@@ -87,8 +87,6 @@ def server():
 
     logger.info(sys.executable)
 
-    print("Starting up")
-
     ca_proc = subprocess.Popen(
         [sys.executable, "launch_server.py", "files/epics_config.yml"],
         stdout=subprocess.PIPE,
@@ -97,8 +95,6 @@ def server():
         cwd=os.path.dirname(os.path.realpath(__file__)),
         env=env,
     )
-
-    print("Past opening proce")
 
     # Check it started successfully
     #    assert not ca_proc.poll()
