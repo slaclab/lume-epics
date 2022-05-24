@@ -9,6 +9,7 @@ import time
 import signal
 from typing import List, Union
 from functools import partial
+from typing import Dict
 from lume_model.variables import InputVariable, OutputVariable
 from p4p.client.thread import Context
 from p4p.nt import NTScalar, NTNDArray, NTTable
@@ -44,7 +45,6 @@ class PVAServer(multiprocessing.Process):
         _cached_values (dict): Dict for caching values while model executes
         _pvname_to_varname_map (dict): Mapping of pvname to variable name
         _varname_to_pvname_map (dict): Mapping of variable name to pvame
-
 
     """
 
@@ -214,9 +214,7 @@ class PVAServer(multiprocessing.Process):
 
         # if startup hasn't failed
         else:
-
-            for output in model_outputs.get("output_variables", []):
-                self._output_variables[output.name] = output
+            self._output_variables.update(model_outputs.get("output_variables", {}))
 
             variables = copy.deepcopy(self._input_variables)
             variables.update(self._output_variables)
@@ -416,19 +414,19 @@ class PVAServer(multiprocessing.Process):
 
     def update_pvs(
         self,
-        input_variables: List[InputVariable],
-        output_variables: List[OutputVariable],
+        input_variables: Dict[str, InputVariable],
+        output_variables: Dict[str, OutputVariable],
     ) -> None:
         """Update process variables over pvAccess.
 
         Args:
-            input_variables (List[InputVariable]): List of lume-epics output variables.
+            input_variables (Dict[str, InputVariable]): Dict of lume-epics output variables.
 
-            output_variables (List[OutputVariable]): List of lume-model output variables.
+            output_variables (Dict[str, OutputVariable]): Dict of lume-model output variables.
 
         """
-        variables = input_variables + output_variables
-        for variable in variables:
+        variables = input_variables.update(output_variables)
+        for var_name, variable in variables.items():
             parent = self._field_to_parent_map.get(variable.name)
 
             if variable.name in self._input_variables and variable.is_constant:
@@ -502,8 +500,8 @@ class PVAServer(multiprocessing.Process):
         while not self.shutdown_event.is_set():
             try:
                 data = self._out_queue.get_nowait()
-                inputs = data.get("input_variables", [])
-                outputs = data.get("output_variables", [])
+                inputs = data.get("input_variables", {})
+                outputs = data.get("output_variables", {})
                 self.update_pvs(inputs, outputs)
 
                 # check cached values

@@ -3,22 +3,16 @@ Lume-epics is a dedicated API for serving LUME model variables with EPICS. Confi
 
 # Installation
 
-Lume-epics may be installed using conda over the channel `jrgarrahan`:
+Lume-epics may be installed via conda on the `conda-forge` channel:
 <br>
-``` $ conda install lume-epics -c jrgarrahan ```
+``` $ conda install lume-epics -c conda-forge ```
 <br>
 
-### Dependencies
-The dependencies for lume-epics are:
-* `python>=3.7`
-* `pydantic`
-* `pcaspy`
-* `pyepics`
-* `p4p`
-* `numpy`
-* `bokeh`
-* `lume-model`
-* `EPICS >= 7.0.1`.
+
+Alternatively, you may install from the GitHub repository using:
+<br>
+``` $ pip install https://github.com/slaclab/lume-epics.git ```
+<br>
 
 ## Server
 The EPICS server requires a model class, input variables, output variables, and a prefix for intantiation. By default, the server uses both the pvAccess and Channel Access protocols when serving the EPICS process variables. An optional keyword argument allows the server to be started using a single protocol (`protocols=["pva"]` for pvAccess, `protocols=["ca"]` for Channel Access). Once instantiated, the server is started using the `Server.start()` method, which has an optional monitor keyword argument, `monitor`, that controls thread execution. When `monitor=True`, the server is run in the main thread and may be stopped using keyboard interrupt (`Ctr+C`). If using `monitor=False`, the server can be stopped manually using the `Server.stop()` method.
