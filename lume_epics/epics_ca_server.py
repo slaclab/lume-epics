@@ -37,7 +37,9 @@ class CAServerThread(CAThread):
 
     def __init__(self, server):
         """
-        :param server: :class:`pcaspy.SimpleServer` object
+
+        Args:
+            server (pcaspy.SimpleServer): Pcaspy server to run in thread.
         """
         super(CAThread, self).__init__()
         self.server = server
@@ -102,15 +104,12 @@ class CAServer(CAProcess):
         """Initialize server process.
 
         Args:
-            prefix (str): EPICS prefix for serving process variables
-
             input_variables (Dict[str, InputVariable]): Dictionary mapping pvname to lume-model input variable.
-
             output_variables (Dict[str, OutputVariable]):Dictionary mapping pvname to lume-model output variable.
-
-            in_queue (multiprocessing.Queue): Queue for tracking updates to input variables
-
-            out_queue (multiprocessing.Queue): Queue for tracking updates to output variables
+            epics_config (dict): Dictionary mapping pvname to EPICS configuration.
+            in_queue (multiprocessing.Queue): Queue for tracking updates to input variables.
+            out_queue (multiprocessing.Queue): Queue for tracking updates to output variables.
+            running_indicator (multiprocessing.Value): Multiprocessing value for indicating if server running.
 
         """
         super().__init__(*args, **kwargs)
@@ -187,9 +186,7 @@ class CAServer(CAProcess):
             self._cached_values = {}
 
     def _monitor_callback(self, pvname=None, value=None, **kwargs) -> None:
-        """Callback executed on value change events.
-
-        """
+        """Callback executed on value change events."""
         model_var_name = self._pvname_to_varname_map.get(pvname)
 
         variable = self._input_variables.get(model_var_name)
@@ -228,14 +225,11 @@ class CAServer(CAProcess):
             self._cached_values = {}
 
     def _initialize_model(self):
-        """ Initialize model
-        """
+        """Initialize model"""
         self._in_queue.put({"protocol": "ca", "vars": self._input_variables})
 
     def setup_server(self) -> None:
-        """Configure and start server.
-
-        """
+        """Configure and start server."""
         # ignore interrupt in subprocess
         signal.signal(signal.SIGINT, signal.SIG_IGN)
 
@@ -339,9 +333,7 @@ class CAServer(CAProcess):
             self._ca_driver.update_pvs(variables)
 
     def run(self) -> None:
-        """Start server process.
-
-        """
+        """Start server process."""
         started = self.setup_server()
         if started:
             while not self.shutdown_event.is_set():
@@ -364,9 +356,7 @@ class CAServer(CAProcess):
             logger.info("Unable to set up server. Shutting down.")
 
     def shutdown(self):
-        """Safely shutdown the server process.
-
-        """
+        """Safely shutdown the server process."""
         self.shutdown_event.set()
 
 
@@ -436,20 +426,44 @@ def build_pvdb(variables: List[Variable], epics_config: dict) -> tuple:
                         "count": ndim,
                         "value": shape,
                     },
-                    f"{pvname}:ArraySizeX_RBV": {"type": "int", "value": array_size_x,},
-                    f"{pvname}:ArraySizeY_RBV": {"type": "int", "value": array_size_y,},
-                    f"{pvname}:ArraySize_RBV": {"type": "int", "value": array_size,},
+                    f"{pvname}:ArraySizeX_RBV": {
+                        "type": "int",
+                        "value": array_size_x,
+                    },
+                    f"{pvname}:ArraySizeY_RBV": {
+                        "type": "int",
+                        "value": array_size_y,
+                    },
+                    f"{pvname}:ArraySize_RBV": {
+                        "type": "int",
+                        "value": array_size,
+                    },
                     f"{pvname}:ArrayData_RBV": {
                         "type": "float",
                         "prec": variable.precision,
                         "count": count,
                         "value": array_data,
                     },
-                    f"{pvname}:MinX_RBV": {"type": "float", "value": variable.x_min,},
-                    f"{pvname}:MinY_RBV": {"type": "float", "value": variable.y_min,},
-                    f"{pvname}:MaxX_RBV": {"type": "float", "value": variable.x_max,},
-                    f"{pvname}:MaxY_RBV": {"type": "float", "value": variable.y_max,},
-                    f"{pvname}:ColorMode_RBV": {"type": "int", "value": color_mode,},
+                    f"{pvname}:MinX_RBV": {
+                        "type": "float",
+                        "value": variable.x_min,
+                    },
+                    f"{pvname}:MinY_RBV": {
+                        "type": "float",
+                        "value": variable.y_min,
+                    },
+                    f"{pvname}:MaxX_RBV": {
+                        "type": "float",
+                        "value": variable.x_max,
+                    },
+                    f"{pvname}:MaxY_RBV": {
+                        "type": "float",
+                        "value": variable.y_max,
+                    },
+                    f"{pvname}:ColorMode_RBV": {
+                        "type": "int",
+                        "value": color_mode,
+                    },
                 }
             )
 
@@ -544,9 +558,7 @@ class CADriver(Driver):
     """
 
     def __init__(self, server) -> None:
-        """Initialize the Channel Access driver. Store input state and output state.
-
-        """
+        """Initialize the Channel Access driver. Store input state and output state."""
         super(CADriver, self).__init__()
         self.server = server
 
@@ -626,7 +638,8 @@ class CADriver(Driver):
             else:
                 if variable.variable_type == "image":
                     logger.debug(
-                        "Channel Access image process variable %s updated.", pvname,
+                        "Channel Access image process variable %s updated.",
+                        pvname,
                     )
                     self.setParam(pvname + ":ArrayData_RBV", variable.value.flatten())
                     self.setParam(pvname + ":MinX_RBV", variable.x_min)
@@ -644,7 +657,8 @@ class CADriver(Driver):
 
                 elif variable.variable_type == "array":
                     logger.debug(
-                        "Channel Access image process variable %s updated.", pvname,
+                        "Channel Access image process variable %s updated.",
+                        pvname,
                     )
 
                     self.setParam(pvname + ":ArrayData_RBV", variable.value.flatten())
