@@ -6,9 +6,8 @@ nav:
   - Install: Install.md
   - Tutorial:
     - Bokeh Server: BokehServer.md
-    - Jupyter Notebook Demo: Jupyter.md
   - Widgets: Widgets_doc.md
-  - Documentation:
+  - API:
     - Client:
       - Controller: Controller.md
       - Monitors: Monitors.md
