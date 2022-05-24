@@ -24,7 +24,7 @@ Create a new file named `model.py`. Set up out model:
 ```python
 import numpy as np
 from lume_model.variables import ScalarInputVariable, ImageOutputVariable
-from lume_model.models import SurrogateModel
+from lume_model.models import BaseModel
 from lume_model.utils import save_variables
 ```
 
@@ -32,7 +32,7 @@ Next, define the demo model. Here, we define the input and output variables as k
 passed variables must be dictionaries of variables with corresponding types and names. These could also be defined as class attributes.
 
 ```python
-class DemoModel(SurrogateModel):
+class DemoModel(BaseModel):
     def __init__(self, input_variables=None, output_variables=None):
         self.input_variables = input_variables
         self.output_variables = output_variables

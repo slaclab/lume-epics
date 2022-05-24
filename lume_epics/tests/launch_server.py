@@ -3,7 +3,7 @@ import os
 import logging
 import sys
 from lume_epics import epics_server
-from lume_model.models import SurrogateModel
+from lume_model.models import BaseModel
 from lume_model.variables import (
     ScalarInputVariable,
     ImageInputVariable,
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel("DEBUG")
 
 
-class TestModel(SurrogateModel):
+class TestModel(BaseModel):
     input_variables = {
         "input1": ScalarInputVariable(name="input1", default=1.0, range=[0.0, 5.0]),
         "input2": ScalarInputVariable(
@@ -26,7 +26,15 @@ class TestModel(SurrogateModel):
         ),
         "input3": ImageInputVariable(
             name="input3",
-            default=np.array([[1, 6,], [4, 1]]),
+            default=np.array(
+                [
+                    [
+                        1,
+                        6,
+                    ],
+                    [4, 1],
+                ]
+            ),
             value_range=[1, 10],
             axis_labels=["count_1", "count_2"],
             x_min=0,
@@ -43,7 +51,8 @@ class TestModel(SurrogateModel):
         "output1": ScalarOutputVariable(name="output1"),
         "output2": ScalarOutputVariable(name="output2"),
         "output3": ImageOutputVariable(
-            name="output3", axis_labels=["count_1", "count_2"],
+            name="output3",
+            axis_labels=["count_1", "count_2"],
         ),
         "output4": ArrayOutputVariable(name="output4"),
     }

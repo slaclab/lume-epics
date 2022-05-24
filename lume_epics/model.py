@@ -1,8 +1,8 @@
 """
-This module is used for executing callbacks on the user's SurrogateModel class for use
-with the EPICS server defined in lume_epics.epics_server. The SurrogateModel must be
+This module is used for executing callbacks on the user's BaseModel subclass for use
+with the EPICS server defined in lume_epics.epics_server. The BaseModel must be
 defined using the guidelines outlined in the lume_model.models module to be surfaced
-using the OnlineSurrogateModel class.
+using the BaseModel class.
 
 """
 
@@ -23,7 +23,7 @@ class OnlineModel:
     Class for executing surrogate model.
 
     Attributes:
-        model (SurrogateModel): Model for execution.
+        model (BaseModel): Model for execution.
 
         input_variables (Dict[str, InputVariable]): List of lume-model variables to use as inputs.
 
@@ -31,7 +31,10 @@ class OnlineModel:
 
     """
 
-    def __init__(self, model: BaseModel,) -> None:
+    def __init__(
+        self,
+        model: BaseModel,
+    ) -> None:
         """
         Initialize OnlineModel with the base model class.
 

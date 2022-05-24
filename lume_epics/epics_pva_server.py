@@ -540,7 +540,7 @@ class PVAccessInputHandler:
 
     def put(self, pv: SharedPV, op: ServOpWrap) -> None:
         """Updates the global input process variable state, posts the input process
-        variable value change, runs the thread local OnlineSurrogateModel instance
+        variable value change, runs the thread local BaseModel instance
         using the updated global input process variable states, and posts the model
         output values to the output process variables.
 

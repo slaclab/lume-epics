@@ -16,7 +16,7 @@ from lume_model.variables import (
     ImageOutputVariable,
 )
 from lume_epics import epics_server
-from lume_model.models import SurrogateModel
+from lume_model.models import BaseModel
 from lume_epics.tests.conftest import PVA_CONFIG
 
 
