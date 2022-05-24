@@ -13,6 +13,7 @@ from typing import Dict, List, Type, Optional
 from threading import Thread, Event
 from queue import Full, Empty
 
+# require import for libca config
 import pcaspy
 
 # use correct libca
@@ -234,7 +235,7 @@ class Server:
         out_queues: Optional[Dict[str, multiprocessing.Queue]],
     ):
         """Handles communications between pvAccess server, Channel Access server, and
-            model.
+             dmodel.
 
         Arguments:
             running_indicator (multiprocessing.Value): Indicates whether main server
