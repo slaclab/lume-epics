@@ -4,11 +4,11 @@ from lume_model.variables import (
     ImageOutputVariable,
     ScalarOutputVariable,
 )
-from lume_model.models import SurrogateModel
+from lume_model.models import BaseModel
 from lume_model.utils import save_variables
 
 
-class DemoModel(SurrogateModel):
+class DemoModel(BaseModel):
     def __init__(self, input_variables=None, output_variables=None):
         self.input_variables = input_variables
         self.output_variables = output_variables
