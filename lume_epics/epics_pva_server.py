@@ -134,9 +134,7 @@ class PVAServer(multiprocessing.Process):
             self._cached_values = {}
 
     def _monitor_callback(self, pvname, V) -> None:
-        """Callback function used for updating read_only process variables.
-
-        """
+        """Callback function used for updating read_only process variables."""
         value = V.raw.value
         varname = self._pvname_to_varname_map[pvname]
         model_variable = self._input_variables[varname]
@@ -161,17 +159,14 @@ class PVAServer(multiprocessing.Process):
             self._cached_values = {}
 
     def _initialize_model(self):
-        """ Initialize model
-        """
+        """Initialize model"""
 
         rep = {"protocol": "pva", "vars": self._input_variables}
 
         self._in_queue.put(rep)
 
     def setup_server(self) -> None:
-        """Configure and start server.
-
-        """
+        """Configure and start server."""
 
         self._context = Context()
 
@@ -491,9 +486,7 @@ class PVAServer(multiprocessing.Process):
                     self.shutdown()
 
     def run(self) -> None:
-        """Start server process.
-
-        """
+        """Start server process."""
         self.setup_server()
 
         # mark running
@@ -521,9 +514,7 @@ class PVAServer(multiprocessing.Process):
         logger.info("pvAccess server stopped.")
 
     def shutdown(self):
-        """Safely shutdown the server process.
-
-        """
+        """Safely shutdown the server process."""
         self.shutdown_event.set()
 
 
@@ -539,6 +530,7 @@ class PVAccessInputHandler:
 
         Args:
             pvname (str): The PV being handled
+            is_constant (bool): Indicator of constant variable
             server (PVAServer): Reference to the server holding this PV
 
         """

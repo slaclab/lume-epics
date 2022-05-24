@@ -1,10 +1,12 @@
 # Installation
 
-Lume-epics may be installed using conda over the channel `jrgarrahan`:
+Lume-epics may be installed via conda on the `conda-forge` channel:
 <br>
-``` $ conda install lume-epics -c jrgarrahan ```
+``` $ conda install lume-epics -c conda-forge ```
 <br>
 
-### Dependencies
-The dependencies for lume-epics are `python>=3.7`, `pydantic`, `pcaspy`, `pyepics`, `p4p`, `numpy`, `bokeh`, `lume-model`, and EPICS >= 7.0.1.
 
+Alternatively, you may install from the GitHub repository using:
+<br>
+``` $ pip install https://github.com/slaclab/lume-epics.git ```
+<br>

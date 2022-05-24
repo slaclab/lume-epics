@@ -5,5 +5,5 @@ numpy
 bokeh
 click
 pyyaml
-lume-model>=0.13
+lume-model>=1.4
 nose>=1.1.2

@@ -3,12 +3,3 @@ doctr
 black
 mkdocs
 pytest
-pcaspy
-pyepics
-p4p
-numpy
-bokeh
-pyyaml
-click
-lume-model>=0.13
-nose>=1.1.2
