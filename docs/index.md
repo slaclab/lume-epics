@@ -40,14 +40,14 @@ output = ScalarOutputVariable(name="output")
 
 ### Defining the model
 
-[LUME-model](https://github.com/slaclab/lume-model) includes a SurrogateModel base class to enforce the defined class's compatability with the lume-epics server. The primary function of this base class is to force the implementation of an evaluate method. This method must accept a list of `lume-model` input variables, execute the model, and return a list of `lume-model` output variables. Input variables and output variables must be defined as class attributes. They may be defined directly as class attributes or assigned in __init__.
+[LUME-model](https://github.com/slaclab/lume-model) includes a BaseModel base class to enforce the defined class's compatability with the lume-epics server. The primary function of this base class is to force the implementation of an evaluate method. This method must accept a list of `lume-model` input variables, execute the model, and return a list of `lume-model` output variables. Input variables and output variables must be defined as class attributes. They may be defined directly as class attributes or assigned in __init__.
 
 For our model, we will construct a class that accepts and stores our input and output variables on initialization. Then, we implement an `evaluate` method that accepts an updated list of input variables, executes the model, and updates the output variable value appropriately. Place the following code in a file named `server.py`.
 ```python
-from lume_epics.model import SurrogateModel
+from lume_epics.model import BaseModel
 import numpy as np
 
-class ExampleModel(SurrogateModel):
+class ExampleModel(BaseModel):
     def __init__(self, input_variables = [], output_variables = []):
         self.input_variables = input_variables
         self.output_variables = output_variables
@@ -112,11 +112,11 @@ These are then loaded during server construction:
 from lume_epics.epics_server import Server
 from lume_model.utils import variables_from_yaml
 from lume_epics.utils import config_from_yaml
-from lume_epics.model import SurrogateModel
+from lume_epics.model import BaseModel
 import numpy as np
 
 
-class ExampleModel(SurrogateModel):
+class ExampleModel(BaseModel):
     def __init__(self, input_variables = [], output_variables = []):
         self.input_variables = input_variables
         self.output_variables = output_variables
@@ -278,12 +278,12 @@ In `server.py`:
 ```python
 import numpy as np
 from lume_model.variables import ScalarInputVariable, ImageOutputVariable
-from lume_model.models import SurrogateModel
+from lume_model.models import BaseModel
 from lume_model.utils import save_variables
 from lume_model.utils import variables_from_yaml
 from lume_epics.utils import config_from_yaml
 
-class ExampleModel(SurrogateModel):
+class ExampleModel(BaseModel):
     def __init__(self, input_variables: dict=None, output_variables:dict=None):
         self.input_variables = input_variables
         self.output_variables = output_variables
