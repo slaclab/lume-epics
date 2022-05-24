@@ -12,16 +12,15 @@ The code for this example can be found in [lume-epics/examples](https://github.c
 
 `$ conda activate lume-epics-demo`
 
-`$ conda install numpy `
+Install lume-model and lume-epics from the `conda-forge`:
 
-Install lume-model and lume-epics from the `jrgarrahan` conda channel:
+`$ conda install numpy lume-model lume-epics -c conda-forge`
 
-`$ conda install lume-model lume-epics -c jrgarrahan`
+
 
 ## Create model
 
-Create a new file named `model.py`. At the top of the file, import the `lume-model` `SurrogateModel` base class, `lume-model` `ScalarInputVariable` and `ImageOutputVariable`, `numpy`, and the `lume-model` `save_variables` utility.
-
+Create a new file named `model.py`. Set up out model:
 ```python
 import numpy as np
 from lume_model.variables import ScalarInputVariable, ImageOutputVariable
