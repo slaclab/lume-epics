@@ -273,12 +273,12 @@ class Server:
                     # sync pva/ca if duplicated
                     for protocol, queue in out_queues.items():
                         if protocol != data["protocol"]:
-                            inputs = [
-                                self.input_variables[var]
+                            inputs = {
+                                var: self.input_variables[var]
                                 for var in data["vars"]
                                 if self._epics_config[var]["protocol"]
                                 in [protocol, "both"]
-                            ]
+                            }
 
                             if len(inputs):
                                 queue.put({"input_variables": inputs})
@@ -289,13 +289,13 @@ class Server:
                         predicted_output = model.evaluate(model_input)
 
                         for protocol, queue in out_queues.items():
-                            outputs = [
-                                var
-                                for var_name, var in predicted_output.items()
-                                if var_name in self._pva_fields
-                                or self._epics_config[var_name]["protocol"]
+                            outputs = {
+                                var.name: var
+                                for var in predicted_output.values()
+                                if var.name in self._pva_fields
+                                or self._epics_config[var.name]["protocol"]
                                 in [protocol, "both"]
-                            ]
+                            }
                             queue.put({"output_variables": outputs}, timeout=0.1)
 
                     except Exception as e:

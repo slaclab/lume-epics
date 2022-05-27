@@ -270,8 +270,8 @@ class CAServer(CAProcess):
         if self.shutdown_event.is_set():
             pass
 
-        for output in model_outputs.get("output_variables", []):
-            self._output_variables[output.name] = output
+        model_output_vars = model_outputs.get("output_variables", {})
+        self._output_variables.update(model_output_vars)
 
         # differentiate between values to serve and not to serve
         to_serve = []
@@ -315,22 +315,23 @@ class CAServer(CAProcess):
 
     def update_pvs(
         self,
-        input_variables: List[InputVariable],
-        output_variables: List[OutputVariable],
-    ):
+        input_variables: Dict[str, InputVariable],
+        output_variables: Dict[str, OutputVariable],
+    ) -> None:
         """Update process variables over Channel Access.
 
         Args:
-            input_variables (List[InputVariable]): List of lume-epics output variables.
+            input_variables (Dict[str, InputVariable]): List of lume-epics output variables.
 
-            output_variables (List[OutputVariable]): List of lume-model output variables.
+            output_variables (Dict[str, OutputVariable]): List of lume-model output variables.
 
         """
-        variables = input_variables + output_variables
+        variables = input_variables
+        variables.update(output_variables)
 
         # update variables if the driver is running
         if self._ca_driver is not None:
-            self._ca_driver.update_pvs(variables)
+            self._ca_driver.update_pvs(list(variables.values()))
 
     def run(self) -> None:
         """Start server process."""
@@ -339,8 +340,8 @@ class CAServer(CAProcess):
             while not self.shutdown_event.is_set():
                 try:
                     data = self._out_queue.get_nowait()
-                    inputs = data.get("input_variables", [])
-                    outputs = data.get("output_variables", [])
+                    inputs = data.get("input_variables", {})
+                    outputs = data.get("output_variables", {})
                     self.update_pvs(inputs, outputs)
 
                 except Empty:

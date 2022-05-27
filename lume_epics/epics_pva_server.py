@@ -209,7 +209,8 @@ class PVAServer(multiprocessing.Process):
 
         # if startup hasn't failed
         else:
-            self._output_variables.update(model_outputs.get("output_variables", {}))
+            model_output_vars = model_outputs.get("output_variables", {})
+            self._output_variables.update(model_output_vars)
 
             variables = copy.deepcopy(self._input_variables)
             variables.update(self._output_variables)
@@ -420,8 +421,10 @@ class PVAServer(multiprocessing.Process):
             output_variables (Dict[str, OutputVariable]): Dict of lume-model output variables.
 
         """
-        variables = input_variables.update(output_variables)
-        for var_name, variable in variables.items():
+        variables = input_variables
+        variables.update(output_variables)
+
+        for variable in variables.values():
             parent = self._field_to_parent_map.get(variable.name)
 
             if variable.name in self._input_variables and variable.is_constant:
