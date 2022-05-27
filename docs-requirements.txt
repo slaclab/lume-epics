@@ -1,1 +1,3 @@
+mkdocks
 mkdocstrings
+mkdocs-material

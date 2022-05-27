@@ -16,6 +16,8 @@ nav:
     - Server: Server.md
     - EPICS: EPICS.md
 plugins:
+  - search:
+      separator: '[\s\-\.]'
   - mkdocstrings:
       default_handler: python
       handlers:
@@ -27,3 +29,19 @@ plugins:
               - "^__init__$"  # but always include __init__ modules and methods
           rendering:
             show_source: true
+            show_root_toc_entry: false
+            show_root_heading: true
+            show_if_no_docstring: false
+            show_signature_annotations: true
+            separate_signature: true
+            merge_init_into_class: true
+            show_submodules: true
+            heading_level: 2
+
+theme:
+  name: material
+  features:
+    - toc.integrate
+    - toc.follow
+    - navigation.top
+    - navigation.tabs
