@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: [3.8]
+        python-version: [3.9]
     name:  Build docs
     steps:
       - uses: actions/checkout@v2
@@ -22,8 +22,8 @@ jobs:
           auto-activate-base: true
           activate-environment: true
           python-version: ${{ matrix.python-version }}
-          channels: anaconda,conda-forge
-          channel-priority: flexible
+          channels: conda-forge,anaconda
+          channel-priority: strict
       - name: Build package
         shell: bash -l {0}
         run: |
