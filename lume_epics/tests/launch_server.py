@@ -57,8 +57,7 @@ class TestModel(BaseModel):
         "output4": ArrayOutputVariable(name="output4"),
     }
 
-    def evaluate(self, input_variables):
-        self.input_variables = {variable.name: variable for variable in input_variables}
+    def evaluate(self, input_variables: dict):
 
         self.output_variables["output1"].value = (
             self.input_variables["input1"].value * 2
@@ -111,7 +110,7 @@ class TestModel(BaseModel):
         )
 
         # return inputs * 2
-        return list(self.output_variables.values())
+        return self.output_variables
 
 
 if __name__ == "__main__":

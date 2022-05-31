@@ -14,7 +14,6 @@ class DemoModel(BaseModel):
         self.output_variables = output_variables
 
     def evaluate(self, input_variables):
-        input_variables = {input_var.name: input_var for input_var in input_variables}
         self.output_variables["output1"].value = np.random.uniform(
             input_variables["input1"].value,  # lower dist bound
             input_variables["input2"].value,  # upper dist bound
@@ -23,4 +22,4 @@ class DemoModel(BaseModel):
         self.output_variables["output2"].value = input_variables["input1"].value
         self.output_variables["output3"].value = input_variables["input2"].value
 
-        return list(self.output_variables.values())
+        return self.output_variables
