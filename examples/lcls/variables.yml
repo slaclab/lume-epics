@@ -1,0 +1,29 @@
+input_variables:
+  klys_li24_11:
+    type: scalar
+    default: 1 # will be dropped in later lume-epics iter
+    range: [0, 100] # will be dropped in later lume-epics iter
+
+  klys_li24_21:
+    type: scalar
+    default: 1 # will be dropped in later lume-epics iter
+    range: [0, 100] # will be dropped in later lume-epics iter
+
+  klys_li24_31:
+    type: scalar
+    default: 1 # will be dropped in later lume-epics iter
+    range: [0, 100] # will be dropped in later lume-epics iter
+
+  klys_li24_41:
+    type: scalar
+    default: 1 # will be dropped in later lume-epics iter
+    range: [0, 100] # will be dropped in later lume-epics iter
+
+  klys_li24_51:
+    type: scalar
+    default: 1 # will be dropped in later lume-epics iter
+    range: [0, 100] # will be dropped in later lume-epics iter
+
+output_variables:
+  summation:
+    type: scalar

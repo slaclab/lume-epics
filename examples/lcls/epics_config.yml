@@ -1,0 +1,30 @@
+input_variables:
+  klys_li24_11:
+    pvname: KLYS:LI24:11:AMPL
+    protocol: ca
+    serve: false
+
+  klys_li24_21:
+    pvname: KLYS:LI24:21:AMPL
+    protocol: ca
+    serve: false
+
+  klys_li24_31:
+    pvname: KLYS:LI24:31:AMPL
+    protocol: ca
+    serve: false
+
+  klys_li24_41:
+    pvname: KLYS:LI24:41:AMPL
+    protocol: ca
+    serve: false
+
+  klys_li24_51:
+    pvname: KLYS:LI24:51:AMPL
+    protocol: ca
+    serve: false
+
+output_variables:
+  summation:
+    pvname: sample:summation
+    protocol: pva

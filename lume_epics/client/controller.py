@@ -123,8 +123,7 @@ class Controller:
         self._last_updates[pvname] = update_datetime
 
     def _ca_connection_callback(self, *, pvname, conn, pv):
-        """Callback used for monitoring connection and setting values to None on disconnect.
-        """
+        """Callback used for monitoring connection and setting values to None on disconnect."""
         if not conn:
             self._pv_registry[pvname]["value"] = None
 
@@ -208,7 +207,7 @@ class Controller:
         if pv:
             val = pv["value"]
             if val is None:
-                if protocol:
+                if protocol == "ca":
                     val = pv["pv"].get()
 
                 elif protocol == "pva":
@@ -438,7 +437,10 @@ class Controller:
             logger.debug(f"No initial value set for {pvname}.")
 
     def put_array(
-        self, varname, array: np.ndarray = None, timeout: float = 1.0,
+        self,
+        varname,
+        array: np.ndarray = None,
+        timeout: float = 1.0,
     ) -> None:
         """Assign the value of an array process variable. Allows updates to individual attributes.
 
