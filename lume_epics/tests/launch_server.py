@@ -58,6 +58,7 @@ class TestModel(BaseModel):
     }
 
     def evaluate(self, input_variables: dict):
+        self.input_variables = input_variables
 
         self.output_variables["output1"].value = (
             self.input_variables["input1"].value * 2
