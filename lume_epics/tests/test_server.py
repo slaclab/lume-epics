@@ -21,17 +21,20 @@ from lume_epics.tests.conftest import PVA_CONFIG
 
 
 @pytest.mark.parametrize("value", [(1.0)])
-def test_constant_variable_ca(value, server, model, epics_config):
+def test_scalar_variables_ca(value, server, model, epics_config):
+
+    model_obj = model()
 
     os.environ["PYEPICS_LIBCA"] = get_lib("ca")
 
     # check constant variable assignment
-    for _, variable in model.input_variables.items():
+    for variable in model_obj.input_variables.values():
         pvname = epics_config[variable.name]["pvname"]
+
         if variable.variable_type == "scalar":
             epics.caput(pvname, value, timeout=1)
 
-    for _, variable in model.input_variables.items():
+    for variable in model_obj.input_variables.values():
         if variable.variable_type == "scalar":
             pvname = epics_config[variable.name]["pvname"]
             val = epics.caget(pvname, timeout=1)
@@ -41,6 +44,21 @@ def test_constant_variable_ca(value, server, model, epics_config):
 
             else:
                 assert val == value
+
+            # update vars
+            model_obj.input_variables[variable.name].value = val
+
+        else:
+            model_obj.input_variables[variable.name].value = variable.default
+
+    output_variables = model_obj.evaluate(model_obj.input_variables)
+
+    for variable in output_variables.values():
+
+        if variable.variable_type == "scalar":
+            pvname = epics_config[variable.name]["pvname"]
+            val = epics.caget(pvname, timeout=1)
+            assert variable.value == val
 
 
 @pytest.mark.skip(

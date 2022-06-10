@@ -6,7 +6,7 @@ import subprocess
 import signal
 from epicscorelibs.path import get_lib
 from os.path import abspath, dirname
-
+import time
 
 from lume_epics.client.controller import Controller
 from lume_epics.tests.launch_server import TestModel
@@ -104,6 +104,7 @@ def server():
 
     # teardown
     ca_proc.send_signal(signal.SIGINT)
+    time.sleep(1)
 
 
 @pytest.fixture(scope="session", autouse=True)
