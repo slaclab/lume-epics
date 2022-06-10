@@ -178,6 +178,10 @@ class CAServer(CAProcess):
             if attr_type == "MaxY_RBV":
                 variable.y_max = value
 
+        # assign value
+        else:
+            variable.value = value
+
         self._cached_values[model_var_name] = variable
 
         # only update if not running
@@ -216,6 +220,10 @@ class CAServer(CAProcess):
 
             if attr_type == "MaxY_RBV":
                 variable.y_max = value
+
+        # assign value
+        else:
+            variable.value = value
 
         self._cached_values[model_var_name] = variable
 
