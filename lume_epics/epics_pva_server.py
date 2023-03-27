@@ -117,14 +117,16 @@ class PVAServer(multiprocessing.Process):
         varname = self._pvname_to_varname_map[pvname]
         model_variable = self._input_variables[varname]
 
+        # check for already cached variable
+        model_variable = self._cached_values.get(varname, model_variable)
+
         if model_variable.variable_type == "image":
             model_variable.x_min = value.attrib["x_min"]
             model_variable.x_max = value.attrib["x_max"]
             model_variable.y_min = value.attrib["y_min"]
             model_variable.y_max = value.attrib["y_max"]
-
-        # check for already cached variable
-        model_variable = self._cached_values.get(varname, model_variable)
+        else:
+            model_variable.value = value
 
         self._cached_values[varname] = model_variable
 
@@ -178,7 +180,6 @@ class PVAServer(multiprocessing.Process):
                 ].default
 
             else:
-
                 if self._context is None:
                     self._context = Context("pva")
 
@@ -198,7 +199,6 @@ class PVAServer(multiprocessing.Process):
         self._initialize_model()
         model_outputs = None
         while not self.shutdown_event.is_set() and model_outputs is None:
-
             try:
                 model_outputs = self._out_queue.get(timeout=0.1)
             except Empty:
@@ -224,14 +224,11 @@ class PVAServer(multiprocessing.Process):
             self._structures = {}
             self._structure_specs = {}
             for variable_name, config in self._epics_config.items():
-
                 if config["serve"]:
-
                     fields = config.get("fields")
                     pvname = config.get("pvname")
 
                     if fields is not None:
-
                         spec = []
                         structure = {}
 
@@ -255,7 +252,6 @@ class PVAServer(multiprocessing.Process):
                                 spec.append((field, "v"))
                                 table_rep = ()
                                 for col in variable.columns:
-
                                     # here we assume double type in tables...
                                     table_rep += (col, "ad")
 
@@ -320,7 +316,6 @@ class PVAServer(multiprocessing.Process):
                         elif variable.variable_type == "table":
                             table_rep = ()
                             for col in variable.columns:
-
                                 # here we assume double type in tables...
                                 table_rep += (col, "ad")
 
