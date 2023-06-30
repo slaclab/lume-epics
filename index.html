@@ -1,0 +1,1037 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://slaclab.github.io/lume-epics/">
+      
+      
+      
+        <link rel="next" href="Install/">
+      
+      <link rel="icon" href="assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.17">
+    
+    
+      
+        <title>lume-epics</title>
+      
+    
+    
+      <link rel="stylesheet" href="assets/stylesheets/main.26e3688c.min.css">
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#lume-epics" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="." title="lume-epics" class="md-header__button md-logo" aria-label="lume-epics" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            lume-epics
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Overview
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/slaclab/lume-epics" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+    
+  
+
+
+  <li class="md-tabs__item">
+    <a href="." class="md-tabs__link md-tabs__link--active">
+      Overview
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="Install/" class="md-tabs__link">
+      Install
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="BokehServer/" class="md-tabs__link">
+        Tutorial
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="Widgets_doc/" class="md-tabs__link">
+      Widgets
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="Controller/" class="md-tabs__link">
+        API
+      </a>
+    </li>
+  
+
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="." title="lume-epics" class="md-nav__button md-logo" aria-label="lume-epics" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    lume-epics
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/slaclab/lume-epics" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Overview
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="." class="md-nav__link md-nav__link--active">
+        Overview
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#model-development" class="md-nav__link">
+    Model Development
+  </a>
+  
+    <nav class="md-nav" aria-label="Model Development">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#defining-input-and-output-variables" class="md-nav__link">
+    Defining input and output variables
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#defining-the-model" class="md-nav__link">
+    Defining the model
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setting-up-the-server" class="md-nav__link">
+    Setting up the server
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setting-up-the-client" class="md-nav__link">
+    Setting up the client
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-the-application" class="md-nav__link">
+    Running the application
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#image-variables" class="md-nav__link">
+    Image variables
+  </a>
+  
+    <nav class="md-nav" aria-label="Image variables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#variable-associations" class="md-nav__link">
+    Variable Associations
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#serving-from-configuration-files" class="md-nav__link">
+    Serving from configuration files
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Install/" class="md-nav__link">
+        Install
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          Tutorial
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Tutorial
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="BokehServer/" class="md-nav__link">
+        Bokeh Server
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Widgets_doc/" class="md-nav__link">
+        Widgets
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+          API
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          API
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_1" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5_1" id="__nav_5_1_label" tabindex="0">
+          Client
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_1_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_5_1">
+          <span class="md-nav__icon md-icon"></span>
+          Client
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Controller/" class="md-nav__link">
+        Controller
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Monitors/" class="md-nav__link">
+        Monitors
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Widgets/" class="md-nav__link">
+        Widgets
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Model/" class="md-nav__link">
+        Model
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Server/" class="md-nav__link">
+        Server
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="EPICS/" class="md-nav__link">
+        EPICS
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="lume-epics">lume-epics</h1>
+<p>LUME-EPICS is a dedicated API for serving LUME model variables with EPICS.</p>
+<h2 id="model-development">Model Development</h2>
+<p>The LUME-EPICS server must be instantiated with a user defined class holding all methods necessary for model execution and the  input and output variables associated with the model. For the purpose of example, we consider a model that accepts two float inputs and returns a value sampled between the two inputs.</p>
+<p>Our model expressed as a function:</p>
+<pre><code class="language-python">import numpy as np
+
+def model_fn(input_1, input_2):
+    return np.random.uniform(input_1, input_2)
+</code></pre>
+<h3 id="defining-input-and-output-variables">Defining input and output variables</h3>
+<p>Model input and output variables are represented by <a href="https://github.com/slaclab/lume-model">lume-model</a> variables. These variables enforce the minimal data requirements necessary for serving EPICS process variables associated with an online model. LUME-model defines two variable types: scalar and image. Each type has both an associated input and output class. Scalar variables hold float values, arrays variables and image variables hold arrays.</p>
+<p>In order to appropriately interface with the EPICS server, scalar input variables must be assigned a range and default. When started, the server uses these defaults to execute the model and serve output variables based on the default execution. The range limits correspond the the low and high limits for EPICS graphics displays. During model execution, the current value of the variable is stored using the <code>value</code> attribute.</p>
+<p>For our model, we must define two scalar input variables and one scalar output variable:</p>
+<pre><code class="language-python">from lume_model.variables import ScalarInputVariable, ScalarOutputVariable
+
+input_1 = ScalarInputVariable(
+    name=&quot;input_1&quot;,
+    default=1.0,
+    range=[0, 256]
+)
+
+input_2 = ScalarInputVariable(
+    name=&quot;input_2&quot;,
+    default=2.0,
+    range=[0, 256]
+)
+
+output = ScalarOutputVariable(name=&quot;output&quot;)
+</code></pre>
+<h3 id="defining-the-model">Defining the model</h3>
+<p><a href="https://github.com/slaclab/lume-model">LUME-model</a> includes a BaseModel base class to enforce the defined class's compatability with the lume-epics server. The primary function of this base class is to force the implementation of an evaluate method. This method must accept a list of <code>lume-model</code> input variables, execute the model, and return a list of <code>lume-model</code> output variables. Input variables and output variables must be defined as class attributes. They may be defined directly as class attributes or assigned in <strong>init</strong>.</p>
+<p>For our model, we will construct a class that accepts and stores our input and output variables on initialization. Then, we implement an <code>evaluate</code> method that accepts an updated list of input variables, executes the model, and updates the output variable value appropriately. Place the following code in a file named <code>server.py</code>.</p>
+<pre><code class="language-python">from lume_epics.model import BaseModel
+import numpy as np
+
+class ExampleModel(BaseModel):
+    def __init__(self, input_variables = [], output_variables = []):
+        self.input_variables = input_variables
+        self.output_variables = output_variables
+
+    def evaluate(self, input_variables):
+        self.input_variables = {input_variable.name: input_variable for input_variable in input_variables}
+        self.output_variables[&quot;output&quot;].value = np.random.uniform(
+            self.input_variables[&quot;input_1&quot;].value, self.input_variables[&quot;input_2&quot;].value
+        )
+        return list(self.output_variables.values()
+</code></pre>
+<h3 id="setting-up-the-server">Setting up the server</h3>
+<p>We can now use the EPICS server to serve our model. The EPICS server requires an instantiated model with <code>input_variables</code> and <code>output_variables</code> defined as attributes and a YAML configuration file for pvname assignments and protocol, see <a href="EPICS/">EPICS</a>. Once instantiated, the server is run using the <code>Server.start()</code> method, which has an optional monitor keyword argument, <code>monitor</code>, that controls thread execution. When <code>monitor=True</code>, the server is run in the main thread and may be stopped using keyboard interrupt (<code>Ctr+C</code>). If using <code>monitor=False</code>, the server can be stopped manually using the <code>Server.stop()</code> method.</p>
+<p>The input variables and output variables must be passed in the <code>model_kwargs</code> keyword argument because the model class accepts them in its <code>__init__</code> method. Arbitrary data may also be passed to the model with this approach.</p>
+<p>The same variables used for instantiating the server must be used for building the client tooling. Variables are described in a YAML file with the following format:</p>
+<pre><code class="language-yaml">input_variables:
+  input1:
+      name: input1
+      type: scalar
+      default: 1
+      range: [0, 256]
+
+  input2:
+      name: input2
+      type: scalar
+      default: 2.0
+      range: [0, 256]
+
+output_variables:
+  output1:
+    name: output1
+    type: scalar
+</code></pre>
+<p>Another YAML file must describe our EPICS configuration. The variable <code>input1</code> will be served using Channel access using the pvname <code>test:input1</code>. The variables <code>input2</code> and <code>output1</code> will be served using pvAccess.</p>
+<pre><code class="language-yaml">input_variables:
+  input1:
+    pvname: test:input1
+    protocol: ca
+
+  input2:
+    pvname: test:input2
+    protocol: pva
+
+output_variables:
+  output1:
+    pvname: test:output1
+    protocol: pva
+</code></pre>
+<p>These are then loaded during server construction:</p>
+<pre><code class="language-python">from lume_epics.epics_server import Server
+from lume_model.utils import variables_from_yaml
+from lume_epics.utils import config_from_yaml
+from lume_epics.model import BaseModel
+import numpy as np
+
+
+class ExampleModel(BaseModel):
+    def __init__(self, input_variables = [], output_variables = []):
+        self.input_variables = input_variables
+        self.output_variables = output_variables
+
+    def evaluate(self, input_variables):
+        self.input_variables = {input_variable.name: input_variable for input_variable in input_variables}
+        self.output_variables[&quot;output&quot;].value = np.random.uniform(
+            self.input_variables[&quot;input_1&quot;].value, self.input_variables[&quot;input_2&quot;].value
+        )
+        return list(self.output_variables.values()
+
+# Server must run in main
+if __name__ == &quot;__main__&quot;:
+        with open(&quot;my_variables.yml&quot;, &quot;r&quot;) as f:
+        input_variables, output_variables = variables_from_yaml(f)
+
+    with open(&quot;my_epics_config.yml&quot;, &quot;r&quot;) as f:
+        epics_config = config_from_yaml(f)
+
+    # pass the input + output variable to initialize the classs
+    model_kwargs = {
+        &quot;input_variables&quot;: input_variables,
+        &quot;output_variables&quot;: output_variables
+    }
+
+    server = Server(
+        ExampleModel,
+        epics_config,
+        model_kwargs=model_kwargs
+    )
+    # monitor = False does not loop in main thread
+    server.start(monitor=True)
+</code></pre>
+<h3 id="setting-up-the-client">Setting up the client</h3>
+<p>A number of EPICS compatable widgets are included in <code>lume-epics</code>. Each widget accepts a controller used to monitor EPICS process variables. The controller is then used by a widget-specific monitor, which is responsible for formatting outputs of EPICS values into formats usable by the widget. There are currently slider, value table, image, and striptool widgets; however, more widgets could be configured using the base monitor and controller classes included in <code>lume_epics/client/</code>.</p>
+<p>The controller fetches variables using a configurable protocol defined on instantiation. The controller must be configured for EPICS/variable correspondance like the server by passing the EPICS configuration dictionary as defined in the YAML.</p>
+<p>For our client, we will load our saved variables and create a set of sliders for our inputs and a value table displaying the output variable. This code should be in a separate script from the server setup named <code>client.py</code>.</p>
+<pre><code class="language-python">from lume_model.utils import variables_from_yaml
+from lume_epics.utils import config_from_yaml
+from lume_epics.client.controller import Controller
+from lume_epics.client.widgets.tables import ValueTable
+from lume_epics.client.widgets.controls import build_sliders
+
+
+with open(&quot;my_variables.yml&quot;, &quot;r&quot;) as f:
+    input_variables, output_variables = variables_from_yaml(f)
+
+with open(&quot;my_epics_config.yml&quot;, &quot;r&quot;) as f:
+    epics_config = config_from_yaml(f)
+
+# initialize controller to use pvAccess for variable gets
+controller = Controller(epics_config)
+
+# build sliders for the command process variable database
+sliders = build_sliders(
+            [input_variables[&quot;input_1&quot;], input_variables[&quot;input_2&quot;]],
+            controller
+        )
+
+# build value table
+value_table = ValueTable(
+                [output_variables[&quot;output&quot;]],
+                controller,
+)
+</code></pre>
+<p>To serve the widgets using bokeh, you must include the bokeh items in the document formatting. These are stored as attributes on the widget. Tutorials for serving these directly using the bokeh server and within Jupyter notebooks are included in Tutorials. For the purpose of this example, a bokeh application can be built by including the following:</p>
+<pre><code class="language-python">from bokeh.io import curdoc
+from bokeh.layouts import column, row
+
+# collect bokeh sliders from sliders
+bokeh_sliders = [slider.bokeh_slider for slider in sliders]
+
+# render
+curdoc().title = &quot;Demo App&quot;
+curdoc().add_root(
+            row(
+                column(bokeh_sliders, width=350), column(value_table.table)
+                )
+    )
+
+curdoc().add_periodic_callback(value_table.update, 250)
+# add callback for updating slider variable to reflect live variable value
+for slider in sliders:
+    curdoc().add_periodic_callback(slider.update, 250)
+</code></pre>
+<h3 id="running-the-application">Running the application</h3>
+<p>The application may now be executed using the following commands in separate windows:</p>
+<p><code>$ python server.py</code></p>
+<p><code>$ bokeh serve client.py --show</code></p>
+<h2 id="image-variables">Image variables</h2>
+<p>Models with images can be constructed similarly to the above model.</p>
+<p>The following example uses the two input variables defined in the above model to create an image from the distribution. In this case, the axis limits of the image output are fixed. This model can also be run using the Bokeh server demo.</p>
+<p>First, define the variables in <code>variables.yml</code>:</p>
+<pre><code class="language-yaml">input_variables:
+  input1:
+      name: input1
+      type: scalar
+      default: 1
+      range: [0, 256]
+
+  input2:
+      name: input2
+      type: scalar
+      default: 2.0
+      range: [0, 256]
+
+output_variables:
+  output1:
+    name: output1
+    type: image
+    x_label: &quot;value1&quot;
+    y_label: &quot;value2&quot;
+    axis_units: [&quot;mm&quot;, &quot;mm&quot;]
+    x_min: 0
+    x_max: 10
+    y_min: 0
+    y_max: 10
+</code></pre>
+<p>Next create a YAML file <code>my_epics_config.yml</code> describing our EPICS configuration. The variable <code>input1</code> will be served using Channel access using the pvname <code>test:input1</code>. The variables <code>input2</code> and <code>output1</code> will be served using pvAccess.</p>
+<pre><code class="language-yaml">input_variables:
+  input1:
+    pvname: test:input1
+    protocol: ca
+
+  input2:
+    pvname: test:input2
+    protocol: pva
+
+output_variables:
+  output1:
+    pvname: test:output1
+    protocol: pva
+</code></pre>
+<p>In <code>server.py</code>:</p>
+<pre><code class="language-python">import numpy as np
+from lume_model.variables import ScalarInputVariable, ImageOutputVariable
+from lume_model.models import BaseModel
+from lume_model.utils import save_variables
+from lume_model.utils import variables_from_yaml
+from lume_epics.utils import config_from_yaml
+
+class ExampleModel(BaseModel):
+    def __init__(self, input_variables: dict=None, output_variables:dict=None):
+        self.input_variables = input_variables
+        self.output_variables = output_variables
+
+    def evaluate(self, input_variables):
+        self.output_variables[&quot;output1&quot;].value = np.random.uniform(
+            self.input_variables[&quot;input1&quot;].value, # lower dist bound
+            self.input_variables[&quot;input2&quot;].value, # upper dist bound
+            (50,50)
+        )
+
+        return list(self.output_variables.values())
+
+
+# must use main for server due to multiprocess spawning
+if __name__ == &quot;__main&quot;__:
+    from lume_epics.epics_server import Server
+
+    with open(&quot;my_variables.yml&quot;, &quot;r&quot;) as f:
+        input_variables, output_variables = variables_from_yaml(f)
+
+    with open(&quot;my_epics_config.yml&quot;, &quot;r&quot;) as f:
+        epics_config = config_from_yaml(f)
+
+    server = Server(
+                ExampleModel,
+                epics_config
+                model_kwargs = {&quot;input_variables&quot;: input_variables, &quot;output_variables&quot;: output_variables}
+            )
+
+    # monitor = False does not loop in main thread and can be terminated
+    # with server.stop()
+    server.start(monitor=True)
+    # Runs until keyboard interrupt.
+</code></pre>
+<h3 id="variable-associations">Variable Associations</h3>
+<p>In the case that image variable axis bounds are dictated by the output of other variables, associations can be created between the bound scalar variable and the axis values of the image variables. This is accomplished by defining the <code>parent</code> attribute on the bound variables and assigning the corresponding variable name to the bound variable attributes of the image variable.</p>
+<p>For example, the following variables indicate that <code>x_min</code>, <code>x_max</code>, <code>y_min</code>, and <code>y_max</code> define the axis limits of the image output <code>image_output</code>:</p>
+<pre><code class="language-python">x_min = ScalarOutputVariable(
+            name=&quot;x_min&quot;,
+            parent=&quot;image_output&quot;
+        )
+
+x_max = ScalarOutputVariable(
+            name=&quot;x_max&quot;,
+            parent=&quot;image_output&quot;
+        )
+
+y_min = ScalarOutputVariable(
+            name=&quot;y_min&quot;,
+            parent=&quot;image_output&quot;
+        ),
+y_max = ScalarOutputVariable(
+            name=&quot;y_max&quot;
+            parent=&quot;image_output&quot;
+        )
+
+image_output = ImageOutputVariable(
+    name=&quot;image_output&quot;,
+    axis_labels=[&quot;value_1&quot;, &quot;value_2&quot;],
+    axis_units=[&quot;mm&quot;, &quot;mm&quot;],
+    x_min_variable=&quot;x_min&quot;,
+    x_max_variable=&quot;x_max&quot;,
+    y_min_variable=&quot;y_min&quot;,
+    y_max_variable=&quot;y_max&quot;
+)
+</code></pre>
+<h3 id="serving-from-configuration-files">Serving from configuration files</h3>
+<p>The model may be served using the variable configuration files as defined in <a href="https://slaclab.github.io/lume-model/#configuration-files">lume-model</a> and the EPICS configuration YAML as defined in <a href="EPICS/">EPICS configuration</a>. Additionally, a display may be autogenerated from the same configuration files. These commands are registered as entrypoints.</p>
+<p>To launch an example NN trained on the Iris data set, first install tensorflow:</p>
+<pre><code>$ conda install tensorflow
+</code></pre>
+<p>After installing lume-epics, the server can be launched by:</p>
+<pre><code>$ serve-from-template examples/files/iris_config.yml examples/files/iris_epics_config.yml
+</code></pre>
+<p>Protocols to use during serve may be disabled using the --serve-{PROTOCOL} flag. Both Channel Access and pvAccess are served by default.</p>
+<pre><code>$ serve-from-template examples/files/iris_config.yml examples/files/iris_epics_config.yml
+</code></pre>
+<p>Likewise, the client can be launched using the command:</p>
+<pre><code>$ render-from-template examples/files/iris_config.yml examples/files/iris_epics_config.yml
+</code></pre>
+<p>Additional arguments include the number of steps to show using the striptool and the number of columns to use when rendering the display:</p>
+<pre><code>$ render-from-template examples/files/iris_config.yml examples/files/iris_epics_config.yml  --striptool-limit 50 --ncol-widgets 5
+</code></pre>
+<p>Rendering in read-only mode will hide all entry controls and render a striptool for each of the variables.</p>
+<pre><code>$ render-from-template examples/files/iris_config.yml examples/files/iris_epics_config.yml   --striptool-limit 50 --ncol-widgets 5 --read-only
+</code></pre>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": ".", "features": ["toc.integrate", "toc.follow", "navigation.top", "navigation.tabs"], "search": "assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="assets/javascripts/bundle.b425cdc4.min.js"></script>
+      
+    
+  </body>
+</html>
