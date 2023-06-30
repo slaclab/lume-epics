@@ -81,6 +81,9 @@ class EpicsSlider:
 
         """
         self.bokeh_slider.value = self.controller.get_value(self.pvname)
+    
+    def reset(self):
+        self.bokeh_slider.value = self.variable.default
 
 
 def build_sliders(

@@ -1,0 +1,38 @@
+input_variables:
+  MedInc:
+    pvname: MedInc
+    protocol: pva
+    serve: true
+  HouseAge:
+    pvname: HouseAge
+    protocol: pva
+    serve: true
+  AveRooms:
+    pvname: AveRooms
+    protocol: pva
+    serve: true
+  AveBedrms:
+    pvname: AveBedrms
+    protocol: pva
+    serve: true
+  Population:
+    pvname: Population
+    protocol: pva
+    serve: true
+  AveOccup:
+    pvname: AveOccup
+    protocol: pva
+    serve: true
+  Latitude:
+    pvname: Latitude
+    protocol: pva
+    serve: true
+  Longitude:
+    pvname: Longitude
+    protocol: pva
+    serve: true
+output_variables:
+  MedHouseVal:
+    pvname: MedHouseVal
+    protocol: pva
+    serve: true
