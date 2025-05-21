@@ -1,4 +1,7 @@
 # lume-epics
+
+[doi:10.11578/dc.20220616.14](https://doi.org/10.11578/dc.20220616.14)
+
 Lume-epics is a dedicated API for serving LUME model variables with EPICS. Configurations for LUME model variables can be found in [lume-model](https://github.com/slaclab/lume-model).
 
 # Installation
@@ -49,3 +52,13 @@ if __name__ == "__main__":
 
 ## Compatable models
 See docs for notes on serving online models with lume-epics.
+
+## Copyright Notice:
+
+COPYRIGHT © SLAC National Accelerator Laboratory. All rights reserved.
+This work is supported [in part] by the U.S. Department of Energy, Office of Basic Energy Sciences under contract DE-AC02-76SF00515.
+
+## Usage Restrictions:
+
+Neither the name of the Leland Stanford Junior University, SLAC National Accelerator Laboratory, U.S. Department of Energy
+nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
