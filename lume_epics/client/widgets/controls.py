@@ -26,7 +26,7 @@ from bokeh.models.callbacks import CustomJS
 from bokeh import document
 from bokeh.layouts import column, row, gridplot
 
-from lume_model.variables import ScalarInputVariable
+from lume_model.variables import ScalarVariable
 from lume_epics.client.controller import Controller
 
 logger = logging.getLogger(__name__)
@@ -37,7 +37,7 @@ class EpicsSlider:
 
     """
 
-    def __init__(self, variable: ScalarInputVariable, controller: Controller):
+    def __init__(self, variable: ScalarVariable, controller: Controller):
         self.controller = controller
         self.variable = variable
         self.build_slider()
@@ -47,13 +47,13 @@ class EpicsSlider:
         Utility function for building a slider.
 
         Args:
-            variable (ScalarInputVariable): Variable associated with the slider.
+            variable (ScalarVariable): Variable associated with the slider.
 
             controller (Controller): Controller object for getting process variable values.
 
         """
         title = self.variable.name
-        if "units" in self.variable.__fields_set__:
+        if "units" in self.variable.model_fields_set:
             title += " (" + self.variable.units + ")"
 
         self.pvname = self.variable.name
@@ -87,13 +87,13 @@ class EpicsSlider:
 
 
 def build_sliders(
-    variables: List[ScalarInputVariable], controller: Controller,
+    variables: List[ScalarVariable], controller: Controller,
 ) -> List[Slider]:
     """
     Build sliders for a list of variables.
 
     Args:
-        variables (List[ScalarInputVariable]): List of variables for which to build sliders.
+        variables (List[ScalarVariable]): List of variables for which to build sliders.
 
         controller (Controller): Controller object for getting process variable values.
 
@@ -148,7 +148,7 @@ class EntryTable:
 
     def __init__(
         self,
-        variables: List[ScalarInputVariable],
+        variables: List[ScalarVariable],
         controller: Controller,
         row_height: int = 50,
         button_aspect_ratio: float = 6.0,
@@ -186,7 +186,7 @@ class EntryTable:
             label_base = labels.get(variable.name, variable.name)
 
             # check if units assigned
-            if "units" in variable.__fields_set__ and variable.units:
+            if "units" in variable.model_fields_set and variable.units:
                 self._labels[variable.name] = label_base + f" ({variable.units})"
 
             else:

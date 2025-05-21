@@ -2,15 +2,16 @@ import logging
 import copy
 import multiprocessing
 from multiprocessing.managers import DictProxy
+from multiprocessing.sharedctypes import Synchronized
 from queue import Full, Empty
 from lume_epics import model
 import numpy as np
 import time
 import signal
-from typing import List, Union
+from typing import List, Union, Any
 from functools import partial
 from typing import Dict
-from lume_model.variables import InputVariable, OutputVariable
+from lume_model.variables import Variable, ScalarVariable
 from p4p.client.thread import Context
 from p4p.nt import NTScalar, NTNDArray, NTTable
 from p4p.server.thread import SharedPV
@@ -25,7 +26,7 @@ p4p_logger.setLevel("DEBUG")
 # Comm server must also provide one inQueue in which it will receive inputs from Servers
 
 logger = logging.getLogger(__name__)
-
+logger.setLevel(logging.DEBUG)
 
 class PVAServer(multiprocessing.Process):
     """
@@ -35,8 +36,8 @@ class PVAServer(multiprocessing.Process):
         pva_server (P4PServer): p4p server instance
         exit_event (multiprocessing.Event): Event indicating pvAccess server error and communicating to main
         shutdown_event (multiprocessing.Event): Event indicating shutdown
-        _input_variables (List[InputVariable]): List of input variables
-        _output_variables (List[OutputVariable]): List of output variables
+        _input_variables (Dict[str, Variable]): List of input variables
+        _output_variables (Dict[str, Variable]): List of output variables
         _in_queue (multiprocessing.Queue): input variable queue
         _out_queue (multiprocessing.Queue): output variable update queue
         _providers (dict): Dictionary mapping pvname to p4p provider
@@ -52,21 +53,21 @@ class PVAServer(multiprocessing.Process):
 
     def __init__(
         self,
-        input_variables: List[InputVariable],
-        output_variables: List[OutputVariable],
+        input_variables: Dict[str, Variable],
+        output_variables: Dict[str, Variable],
         epics_config: dict,
         in_queue: multiprocessing.Queue,
         out_queue: multiprocessing.Queue,
-        running_indicator: multiprocessing.Value,
+        running_indicator: Synchronized,
         *args,
         **kwargs,
     ) -> None:
         """Initialize server process.
 
         Args:
-            input_variables (Dict[str, InputVariable]): Dictionary mapping pvname to lume-model input variable.
+            input_variables (Dict[str, Variable]): Dictionary mapping pvname to lume-model input variable.
 
-            output_variables (Dict[str, OutputVariable]):Dictionary mapping pvname to lume-model output variable.
+            output_variables (Dict[str, Variable]):Dictionary mapping pvname to lume-model output variable.
 
             epics_config (dict): Dictionary describing EPICS configuration for model variables
 
@@ -74,7 +75,7 @@ class PVAServer(multiprocessing.Process):
 
             out_queue (multiprocessing.Queue): Queue for tracking updates to output variables
 
-            running_indicator (multiprocessing.Value): Boolean indicator indicating running model execution
+            running_indicator (Synchronized): Boolean indicator indicating running model execution
 
         """
 
@@ -93,6 +94,8 @@ class PVAServer(multiprocessing.Process):
         self._monitors = {}
         self._cached_values = {}
         self._field_to_parent_map = {}
+        self._input_values = {}
+        self._output_values = {}
 
         # utility maps
         self._pvname_to_varname_map = {
@@ -120,19 +123,11 @@ class PVAServer(multiprocessing.Process):
         # check for already cached variable
         model_variable = self._cached_values.get(varname, model_variable)
 
-        if model_variable.variable_type == "image":
-            model_variable.x_min = value.attrib["x_min"]
-            model_variable.x_max = value.attrib["x_max"]
-            model_variable.y_min = value.attrib["y_min"]
-            model_variable.y_max = value.attrib["y_max"]
-        else:
-            model_variable.value = value
-
         self._cached_values[varname] = model_variable
 
         # only update if not running
         if not self._running_indicator.value:
-            self._in_queue.put({"protocol": self.protocol, "vars": self._cached_values})
+            self._in_queue.put({"protocol": self.protocol, "vars": self._cached_values, "vals": self._input_values})
             self._cached_values = {}
 
     def _monitor_callback(self, pvname, V) -> None:
@@ -147,23 +142,18 @@ class PVAServer(multiprocessing.Process):
         # check for already cached variable
         model_variable = self._cached_values.get(varname, model_variable)
 
-        if model_variable.variable_type == "image":
-            model_variable.x_min = value.attrib["x_min"]
-            model_variable.x_max = value.attrib["x_max"]
-            model_variable.y_min = value.attrib["y_min"]
-            model_variable.y_max = value.attrib["y_max"]
-
         self._cached_values[varname] = model_variable
+        self._input_values[varname] = value
 
         # only update if not running
         if not self._running_indicator.value:
-            self._in_queue.put({"protocol": self.protocol, "vars": self._cached_values})
+            self._in_queue.put({"protocol": self.protocol, "vars": self._cached_values, "vals": self._input_values})
             self._cached_values = {}
 
     def _initialize_model(self):
         """Initialize model"""
 
-        rep = {"protocol": "pva", "vars": self._input_variables}
+        rep = {"protocol": "pva", "vars": self._input_variables, "vals": self._input_values}
 
         self._in_queue.put(rep)
 
@@ -175,7 +165,7 @@ class PVAServer(multiprocessing.Process):
         # update value with stored defaults
         for var_name in self._input_variables:
             if self._epics_config[var_name]["serve"]:
-                self._input_variables[var_name].value = self._input_variables[
+                self._input_values[var_name] = self._input_variables[
                     var_name
                 ].default
 
@@ -193,7 +183,7 @@ class PVAServer(multiprocessing.Process):
                         f"Unable to connect to {self._varname_to_pvname_map[var_name]}"
                     )
 
-                self._input_variables[var_name].value = val
+                self._input_values[var_name] = val
 
         # update output variable values
         self._initialize_model()
@@ -237,54 +227,22 @@ class PVAServer(multiprocessing.Process):
                             self._field_to_parent_map[field] = variable_name
 
                             variable = variables[field]
+                            initial = variable.default_value
 
                             if variable is None:
                                 raise ValueError(
                                     f"Field {field} for {variable_name} not found in variable list"
                                 )
 
-                            if variable.variable_type == "scalar":
+                            if isinstance(variable, ScalarVariable):
                                 spec.append((field, "d"))
                                 nt = NTScalar("d")
-                                initial = variable.value
-
-                            if variable.variable_type == "table":
-                                spec.append((field, "v"))
-                                table_rep = ()
-                                for col in variable.columns:
-                                    # here we assume double type in tables...
-                                    table_rep += (col, "ad")
-
-                                nt = NTTable(table_rep)
-                                initial = nt.wrap(variable.value)
-
-                            if variable.variable_type == "array":
-                                spec.append((field, "v"))
-
-                                if variable.value_type == "str":
-                                    nt = NTScalar("s")
-                                    initial = variable.value
-
-                                else:
-                                    nd_array = variable.value.view(NTNDArrayData)
-                                    nt = NTNDArray()
-                                    initial = nt.wrap(nd_array)
-
-                            if variable.variable_type == "image":
-                                spec.append((field, "v"))
-
-                                nd_array = variable.value.view(NTNDArrayData)
-                                nd_array.attrib = {
-                                    "x_min": variable.x_min,
-                                    "y_min": variable.y_min,
-                                    "x_max": variable.x_max,
-                                    "y_max": variable.y_max,
-                                }
-
-                                nt = NTNDArray()
-                                initial = nt.wrap(nd_array)
+                                if initial is None: initial = 0.0
 
                             structure[field] = initial
+
+                        # Set default output var value
+                        self._output_values[variable.name] = initial
 
                         # assemble pv
                         self._structures[variable_name] = structure
@@ -296,41 +254,13 @@ class PVAServer(multiprocessing.Process):
 
                     else:
                         variable = variables[variable_name]
-                        # prepare scalar variable types
-                        if variable.variable_type == "scalar":
+
+                        initial = variable.default_value
+
+                        # prepare scalar variable typess
+                        if isinstance(variable, ScalarVariable):
                             nt = NTScalar("d")
-                            initial = variable.value
-
-                        # prepare image variable types
-                        elif variable.variable_type == "image":
-                            nd_array = variable.value.view(NTNDArrayData)
-                            nd_array.attrib = {
-                                "x_min": variable.x_min,
-                                "y_min": variable.y_min,
-                                "x_max": variable.x_max,
-                                "y_max": variable.y_max,
-                            }
-                            nt = NTNDArray()
-                            initial = nd_array
-
-                        elif variable.variable_type == "table":
-                            table_rep = ()
-                            for col in variable.columns:
-                                # here we assume double type in tables...
-                                table_rep += (col, "ad")
-
-                            nt = NTTable(table_rep)
-                            initial = nt.wrap(variable.value)
-
-                        elif variable.variable_type == "array":
-                            if variable.value_type == "str":
-                                nt = NTScalar("as")
-                                initial = variable.value
-
-                            else:
-                                nd_array = variable.value.view(NTNDArrayData)
-                                nt = NTNDArray()
-                                initial = nd_array
+                            if initial is None: initial = 0.0
 
                         else:
                             raise ValueError(
@@ -350,10 +280,16 @@ class PVAServer(multiprocessing.Process):
                         else:
                             pv = SharedPV(nt=nt, initial=initial)
 
+                        # Set default output var value
+                        self._output_values[variable.name] = initial
+
                         self._providers[pvname] = pv
 
                 # if not serving pv, set up monitor
                 else:
+                    variable = variables[variable_name]
+                    pvname = config.get("pvname")
+
                     if variable.name in self._input_variables:
                         self._monitors[pvname] = self._context.monitor(
                             pvname, partial(self._monitor_callback, pvname)
@@ -405,15 +341,16 @@ class PVAServer(multiprocessing.Process):
 
     def update_pvs(
         self,
-        input_variables: Dict[str, InputVariable],
-        output_variables: Dict[str, OutputVariable],
+        input_variables: Dict[str, Variable],
+        output_variables: Dict[str, Variable],
+        output_values: Dict[str, Any]
     ) -> None:
         """Update process variables over pvAccess.
 
         Args:
-            input_variables (Dict[str, InputVariable]): Dict of lume-epics output variables.
+            input_variables (Dict[str, Variable]): Dict of lume-epics output variables.
 
-            output_variables (Dict[str, OutputVariable]): Dict of lume-model output variables.
+            output_variables (Dict[str, Variable]): Dict of lume-model output variables.
 
         """
         variables = input_variables
@@ -426,39 +363,13 @@ class PVAServer(multiprocessing.Process):
                 logger.debug("Cannot update constant variable.")
 
             else:
-                if variable.variable_type == "image":
-                    logger.debug(
-                        "pvAccess image process variable %s updated.", variable.name
-                    )
-                    nd_array = variable.value.view(NTNDArrayData)
-
-                    # get dw and dh from model output
-                    nd_array.attrib = {
-                        "x_min": variable.x_min,
-                        "y_min": variable.y_min,
-                        "x_max": variable.x_max,
-                        "y_max": variable.y_max,
-                    }
-                    value = nd_array
-
-                elif variable.variable_type == "array":
-                    logger.debug(
-                        "pvAccess array process variable %s updated.", variable.name
-                    )
-                    if variable.value_type == "str":
-                        value = variable.value
-
-                    else:
-                        value = variable.value.view(NTNDArrayData)
-
                 # do not build attribute pvs
-                else:
-                    logger.debug(
-                        "pvAccess process variable %s updated with value %s.",
-                        variable.name,
-                        variable.value,
-                    )
-                    value = variable.value
+                logger.debug(
+                    "pvAccess process variable %s updated with value %s.",
+                    variable.name,
+                    output_values[variable.name],
+                )
+                value = output_values[variable.name]
 
             # update structure or pv
             if parent:
@@ -493,12 +404,13 @@ class PVAServer(multiprocessing.Process):
                 data = self._out_queue.get_nowait()
                 inputs = data.get("input_variables", {})
                 outputs = data.get("output_variables", {})
-                self.update_pvs(inputs, outputs)
+                output_values = data.get("output_values", {})
+                self.update_pvs(inputs, outputs, output_values)
 
                 # check cached values
                 if len(self._cached_values) > 0 and not self._running_indicator.value:
                     self._in_queue.put(
-                        {"protocol": self.protocol, "vars": self._cached_values}
+                        {"protocol": self.protocol, "vars": self._cached_values, "vals": self._input_values}
                     )
 
             except Empty:
