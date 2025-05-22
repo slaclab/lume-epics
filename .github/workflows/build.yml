@@ -3,7 +3,7 @@ name: Build lume-epics
 on:
   push:
     branches:
-      - master
+      - main
       - github-actions
   pull_request:
     branches:
@@ -15,21 +15,27 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macOS-latest, ubuntu-latest]
-        python-version: [3.7, 3.8, 3.9]
+        os: [ubuntu-latest]
+        python-version: ["3.10", "3.11", "3.12"]
 
-    name: Python ${{ matrix.python-version }}, ${{ matrix.os }} build
+    name: Python ${{ matrix.python-version }} (${{ matrix.os }})
     steps:
-      - uses: actions/checkout@v2
-      - uses: conda-incubator/setup-miniconda@v2
+      - uses: actions/checkout@v4
         with:
-          auto-activate-base: true
-          activate-environment: true
+          fetch-depth: 0
+      - name: Setup conda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          auto-activate-base: false
+          activate-environment: lume-epics
+          environment-file: environment.yml
+          channels: conda-forge
+          channel-priority: strict
           python-version: ${{ matrix.python-version }}
-          channels: anaconda,conda-forge
-          channel-priority: flexible
-      - name: Build package
-        shell: bash -l {0}
+      - name: Install build
         run: |
-          conda install conda-build
-          conda build -q conda-recipe --python=${{ matrix.python-version }} --output-folder bld-dir
+          python -m pip install build --user
+      - name: Build a source tarball
+        run: |
+          python -m build

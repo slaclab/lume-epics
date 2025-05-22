@@ -1,3 +1,0 @@
-include versioneer.py
-include lume_epics/_version.py
-include lume_epics/tests/files/*

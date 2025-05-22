@@ -1,0 +1,29 @@
+# conda env create -f dev-environment.yml
+name: lume-epics-dev
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.10
+  - pip
+  - pcaspy
+  - pyepics
+  - numpy
+  - bokeh
+  - click
+  - pyyaml
+  - lume-model>=1.4
+  - nose>=1.1.2
+  - pip:
+    - p4p
+
+  # dev requirements
+  - pre-commit
+  - doctr
+  - black
+  - pytest
+
+  # docs requirements
+  - mkdocs
+  - mkdocstrings
+  - mkdocstrings-python
+  - mkdocs-material

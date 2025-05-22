@@ -1,0 +1,71 @@
+[build-system]
+requires = ["setuptools", "versioningit"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lume-epics"
+description = "Lume-epics is a dedicated API for serving LUME model variables with EPICS."
+readme = "README.md"
+license-files = ["LICENSE"]
+authors = [{ name = "SLAC National Accelerator Laboratory" }]
+maintainers = [{ name = "SLAC National Accelerator Laboratory", email = "jgarra@slac.stanford.edu" }]
+keywords = [
+    "epics",
+    "lume",
+]
+classifiers = [
+	"Intended Audience :: Developers",
+    "Natural Language :: English",
+	"Programming Language :: Python :: 3 :: Only",
+	"Programming Language :: Python :: 3.10",
+	"Programming Language :: Python :: 3.11",
+	"Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "pcaspy",
+    "pyepics",
+    "p4p",
+    "numpy",
+    "bokeh",
+    "click",
+    "pyyaml",
+    "lume-model>=1.8",
+    "nose>=1.1.2"
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/slaclab/lume-epics"
+Issues = "https://github.com/slaclab/lume-epics/issues"
+
+[options]
+include_package_data = true
+
+[project.optional-dependencies]
+dev = [
+    "pre-commit",
+    "doctr",
+    "black",
+    "pytest"
+]
+docs = [
+    "mkdocs",
+    "mkdocstrings",
+    "mkdocstrings-python",
+    "mkdocs-material",
+]
+
+[project.scripts]
+render-from-template = "lume_epics.commands.render_from_template:render_from_template"
+serve-from-template = "lume_epics.commands.serve_from_template:serve_from_template"
+
+[tool.setuptools.packages.find]
+include = ["lume_epics"]
+
+[tool.versioningit.format]
+# Use versioneer formatting
+distance = "{base_version}+{distance}.{vcs}{rev}"
+dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
+distance-dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"

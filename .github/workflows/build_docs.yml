@@ -1,35 +1,30 @@
 
-name: Build docs
+name: Build Docs
 
 on:
   push:
     branches:
-      - master
+      - main
       - github-actions
 jobs:
   build:
     if: ${{ github.repository == 'slaclab/lume-epics' }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        python-version: [3.9]
-    name:  Build docs
+    runs-on: ubuntu-latest
+    name:  Build Docs
     steps:
-      - uses: actions/checkout@v2
-      - uses: conda-incubator/setup-miniconda@v2
+      - uses: actions/checkout@v4
         with:
-          auto-activate-base: true
-          activate-environment: true
-          python-version: ${{ matrix.python-version }}
-          channels: conda-forge,anaconda
-          channel-priority: strict
-      - name: Build package
+          fetch-depth: 0
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          auto-activate-base: false
+          activate-environment: lume-epics-dev
+          environment-file: dev-environment.yml
+          channels: conda-forge
+          python-version: "3.10"
+      - name: Build Docs
         shell: bash -l {0}
         run: |
-          conda config --set always_yes yes --set changeps1 no
-          conda install --file requirements.txt
-          conda install --file dev-requirements.txt
-          conda install --file docs-requirements.txt
           mkdocs build
           mkdocs gh-deploy --force
