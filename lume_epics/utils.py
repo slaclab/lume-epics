@@ -1,3 +1,4 @@
+from os import PathLike
 import yaml
 import logging
 import sys
@@ -5,11 +6,12 @@ import sys
 logger = logging.getLogger(__name__)
 
 
-def config_from_yaml(config_file):
+def config_from_yaml(config_file: str|PathLike):
     """Load yaml file into configuration
     """
 
-    config = yaml.safe_load(config_file)
+    with open(config_file, 'r') as fp:
+        config = yaml.safe_load(fp)
 
     if not isinstance(config, (dict,)):
         logger.exception("Invalid config file.")

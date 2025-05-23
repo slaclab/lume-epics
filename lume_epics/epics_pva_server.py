@@ -167,7 +167,7 @@ class PVAServer(multiprocessing.Process):
             if self._epics_config[var_name]["serve"]:
                 self._input_values[var_name] = self._input_variables[
                     var_name
-                ].default
+                ].default_value
 
             else:
                 if self._context is None:
