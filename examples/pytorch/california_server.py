@@ -1,16 +1,18 @@
 from lume_epics.epics_server import Server
-from lume_model.utils import model_from_yaml
+from lume_model.models import model_from_yaml, get_model
 from lume_epics.utils import config_from_yaml
 from pathlib import Path
 import json
 from botorch.models.transforms.input import AffineInputTransform
 import torch
 from pprint import pprint
+import yaml
 
 if __name__ == "__main__":
     # load the model and the variables from LUME model
-    with open("examples/files/california_config.yml", "r") as f:
-        model_class, model_kwargs = model_from_yaml(f, load_model=False)
+    with open("examples/files/california_config.yml", "r") as fp:
+        model_kwargs = yaml.safe_load(fp)
+    model_class = get_model(model_kwargs["model_class"])
 
     # load the EPICS pv definitions
     with open("examples/files/california_epics_config.yml", "r") as f:

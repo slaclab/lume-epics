@@ -2,27 +2,27 @@ input_variables:
   klys_li24_11:
     variable_class: ScalarVariable
     default_value: 1 # will be dropped in later lume-epics iter
-    range: [0, 100] # will be dropped in later lume-epics iter
+    ranvalue_rangege: [0, 100] # will be dropped in later lume-epics iter
 
   klys_li24_21:
     variable_class: ScalarVariable
     default_value: 1 # will be dropped in later lume-epics iter
-    range: [0, 100] # will be dropped in later lume-epics iter
+    value_range: [0, 100] # will be dropped in later lume-epics iter
 
   klys_li24_31:
     variable_class: ScalarVariable
     default_value: 1 # will be dropped in later lume-epics iter
-    range: [0, 100] # will be dropped in later lume-epics iter
+    value_range: [0, 100] # will be dropped in later lume-epics iter
 
   klys_li24_41:
     variable_class: ScalarVariable
     default_value: 1 # will be dropped in later lume-epics iter
-    range: [0, 100] # will be dropped in later lume-epics iter
+    value_range: [0, 100] # will be dropped in later lume-epics iter
 
   klys_li24_51:
     variable_class: ScalarVariable
     default_value: 1 # will be dropped in later lume-epics iter
-    range: [0, 100] # will be dropped in later lume-epics iter
+    value_range: [0, 100] # will be dropped in later lume-epics iter
 
 output_variables:
   summation:
