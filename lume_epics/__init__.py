@@ -27,3 +27,6 @@ PVA_VARS = [
 ]
 
 EPICS_ENV_VARS = CA_VARS + EPICS_BASE_VARS + PVA_VARS
+
+
+from ._version import __version__

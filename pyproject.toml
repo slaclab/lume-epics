@@ -4,11 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lume-epics"
-description = "Lume-epics is a dedicated API for serving LUME model variables with EPICS."
+description = "A dedicated API for serving LUME model variables with EPICS."
 readme = "README.md"
-license-files = ["LICENSE"]
 authors = [{ name = "SLAC National Accelerator Laboratory" }]
-maintainers = [{ name = "SLAC National Accelerator Laboratory", email = "jgarra@slac.stanford.edu" }]
+maintainers = [{ name = "SLAC TID-ID-CSE-ML Group", email = "ernesto@slac.stanford.edu" }]
 keywords = [
     "epics",
     "lume",
@@ -36,8 +35,12 @@ dependencies = [
 ]
 dynamic = ["version"]
 
+[project.license]
+file = "LICENSE"
+
 [project.urls]
 Homepage = "https://github.com/slaclab/lume-epics"
+Documentation = "https://slaclab.github.io/lume-epics"
 Issues = "https://github.com/slaclab/lume-epics/issues"
 
 [options]
@@ -69,3 +72,6 @@ include = ["lume_epics"]
 distance = "{base_version}+{distance}.{vcs}{rev}"
 dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
 distance-dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
+
+[tool.versioningit.write]
+file = "lume_epics/_version.py"
