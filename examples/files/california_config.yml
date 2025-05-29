@@ -2,58 +2,39 @@
 model_class: TorchModel
 model: examples/files/california_regression.pt
 model_info: examples/files/california_model_info.json
-output_format: variable
-requirements:
-  torch: 1.12
 
 input_variables:
   MedInc:
     default_value: 3.7857346534729004
-    range:
-      - 0.4999000132083893
-      - 15.000100135803223
+    value_range: [0.4999000132083893, 15.000100135803223]
     variable_class: ScalarVariable
   HouseAge:
     default_value: 29.282135009765625
-    range:
-      - 1.0
-      - 52.0
+    value_range: [1.0, 52.0]
     variable_class: ScalarVariable
   AveRooms:
     default_value: 5.4074907302856445
-    range:
-      - 0.8461538553237915
-      - 141.90908813476562
+    value_range: [0.8461538553237915, 141.90908813476562]
     variable_class: ScalarVariable
   AveBedrms:
     default_value: 1.1071722507476807
-    range:
-      - 0.375
-      - 34.06666564941406
+    value_range: [0.375, 34.06666564941406]
     variable_class: ScalarVariable
   Population:
     default_value: 1437.0687255859375
-    range:
-      - 3.0
-      - 28566.0
+    value_range: [3.0, 28566.0]
     variable_class: ScalarVariable
   AveOccup:
     default_value: 3.035413980484009
-    range:
-      - 0.692307710647583
-      - 599.7142944335938
+    value_range: [0.692307710647583, 599.7142944335938]
     variable_class: ScalarVariable
   Latitude:
     default_value: 35.28323745727539
-    range:
-      - 32.65999984741211
-      - 41.95000076293945
+    value_range: [32.65999984741211, 41.95000076293945]
     variable_class: ScalarVariable
   Longitude:
     default_value: -119.11573028564453
-    range:
-      - -124.3499984741211
-      - -114.30999755859375
+    value_range: [-124.3499984741211, -114.30999755859375]
     variable_class: ScalarVariable
 
 output_variables:

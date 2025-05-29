@@ -2,7 +2,7 @@ input_variables:
   klys_li24_11:
     variable_class: ScalarVariable
     default_value: 1 # will be dropped in later lume-epics iter
-    ranvalue_rangege: [0, 100] # will be dropped in later lume-epics iter
+    value_range: [0, 100] # will be dropped in later lume-epics iter
 
   klys_li24_21:
     variable_class: ScalarVariable

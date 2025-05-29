@@ -1,7 +1,7 @@
 input_variables:
   input1:
     pvname: test:input1
-    protocol: ca
+    protocol: pva
 
   input2:
     pvname: test:input2
@@ -14,4 +14,3 @@ output_variables:
     fields:
       - output1
       - output2
-      - output3

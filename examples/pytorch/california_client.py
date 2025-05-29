@@ -11,12 +11,10 @@ from lume_epics.client.widgets.controls import build_sliders
 from lume_epics.client.controller import Controller
 
 # load the model and the variables from LUME model
-with open("examples/files/california_config.yml", "r") as f:
-    input_variables, output_variables = variables_from_yaml(f)
+input_variables, output_variables = variables_from_yaml("examples/files/california_config.yml")
 
 # load the EPICS pv definitions
-with open("examples/files/california_epics_config.yml", "r") as f:
-    epics_config = config_from_yaml(f)
+epics_config = config_from_yaml("examples/files/california_epics_config.yml")
 
 # create controller from epics config
 controller = Controller(epics_config)

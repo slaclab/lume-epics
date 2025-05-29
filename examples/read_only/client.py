@@ -14,22 +14,15 @@ from lume_epics.client.controller import Controller
 
 
 # load variables
-with open("examples/files/demo_config.yml", "r") as f:
-    input_variables, output_variables = variables_from_yaml(f)
+input_variables, output_variables = variables_from_yaml("examples/files/demo_config.yml")
 
 # load epics config
-with open("examples/read_only/epics_config.yml", "r") as f:
-    epics_config = config_from_yaml(f)
-
+epics_config = config_from_yaml("examples/read_only/epics_config.yml")
 
 controller = Controller(epics_config)
 
 input_variable_names = list(input_variables.keys())
 output_variable_names = list(output_variables.keys())
-
-
-# select our image output variable to render
-image_output = [output_variables["output1"]]
 
 # use all input variables for slider
 # prepare as list for rendering
@@ -38,26 +31,14 @@ input_variables = list(input_variables.values())
 # build sliders
 sliders = build_sliders(input_variables, controller)
 
-# create image plot
-pal = palettes.viridis(256)
-color_mapper = LinearColorMapper(palette=pal, low=0, high=256)
-image_plot = ImagePlot(image_output, controller, color_mapper=color_mapper)
-
 striptool = Striptool(
-    [output_variables["output2"], output_variables["output3"]], controller
+    [output_variables["output1"], output_variables["output2"]], controller
 )
 
 entry_table = EntryTable(input_variables, controller)
 value_table = ValueTable(input_variables, controller)
 
-# Set up image update callback
-def image_update_callback():
-    image_plot.update()
-
-
 # set sizes
-image_plot.plot.height = 400
-image_plot.plot.width = 450
 striptool.plot.height = 400
 striptool.plot.width = 450
 
@@ -84,7 +65,6 @@ curdoc().add_root(
         row(column(title_div)),
         row(
             column([slider.bokeh_slider for slider in sliders], width=350),
-            column(image_plot.plot),
             column(striptool.selection, striptool.reset_button, striptool.plot),
         ),
         row(
@@ -96,7 +76,6 @@ curdoc().add_root(
     )
 )
 
-curdoc().add_periodic_callback(image_plot.update, 250)
 for slider in sliders:
     curdoc().add_periodic_callback(slider.update, 250)
 curdoc().add_periodic_callback(striptool.update, 250)

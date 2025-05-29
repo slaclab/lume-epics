@@ -15,7 +15,3 @@ output_variables:
   output2:
     pvname: test:output2
     protocol: pva
-
-  output3:
-    pvname: test:output3
-    protocol: pva

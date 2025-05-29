@@ -15,19 +15,8 @@ input_variables:
 output_variables:
   output1:
     name: output1
-    variable_class: ImageVariable
-    x_label: "value1"
-    y_label: "value2"
-    axis_units: ["mm", "mm"]
-    x_min: 0
-    x_max: 10
-    y_min: 0
-    y_max: 10
-
-  output2:
-    name: output2
     variable_class: ScalarVariable
   
-  output3:
-    name: output3
+  output2:
+    name: output2
     variable_class: ScalarVariable
