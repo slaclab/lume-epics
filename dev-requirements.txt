@@ -1,5 +1,0 @@
-pre-commit
-doctr
-black
-mkdocs
-pytest

@@ -1,0 +1,35 @@
+# Referenced lume-model for this, thanks!
+# https://github.com/slaclab/lume-model/blob/main/.github/workflows/pypi_upload.yml
+
+name: Publish to PyPI
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    if: ${{ github.repository == 'slaclab/lume-epics' }}
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi-release
+      url: https://pypi.org/p/lume-epics
+    permissions:
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install build
+        run: |
+          python -m pip install build --user
+      - name: Build a source tarball
+        run: |
+          python -m build
+      - name: Publish distribution to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

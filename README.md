@@ -2,15 +2,19 @@
 
 [doi:10.11578/dc.20220616.14](https://doi.org/10.11578/dc.20220616.14)
 
-Lume-epics is a dedicated API for serving LUME model variables with EPICS. Configurations for LUME model variables can be found in [lume-model](https://github.com/slaclab/lume-model).
+`lume-epics` is a dedicated API for serving LUME model variables with EPICS. Configurations for LUME model variables can be found in [lume-model](https://github.com/slaclab/lume-model).
 
 # Installation
 
-Lume-epics may be installed via conda on the `conda-forge` channel:
+`lume-epics` may be installed via conda on the `conda-forge` channel:
 <br>
 ``` $ conda install lume-epics -c conda-forge ```
 <br>
 
+Or from PyPI:
+<br>
+``` $ pip install lume-epics ```
+<br>
 
 Alternatively, you may install from the GitHub repository using:
 <br>
@@ -19,7 +23,7 @@ Alternatively, you may install from the GitHub repository using:
 
 ## Server
 
-The EPICS server requires a model class, model_kwargs, and an epics configuration for instantiation. Once instantiated, the server is started using the `Server.start()` method, which has an optional monitor keyword argument, `monitor`, that controls thread execution. When `monitor=True`, the server is run in the main thread and may be stopped using keyboard interrupt (`Ctr+C`). If using `monitor=False`, the server can be stopped manually using the `Server.stop()` method.
+The EPICS server requires a model class, `model_kwargs`, and an epics configuration for instantiation. Once instantiated, the server is started using the `Server.start()` method, which has an optional monitor keyword argument, `monitor`, that controls thread execution. When `monitor=True`, the server is run in the main thread and may be stopped using keyboard interrupt (`Ctrl+C`). If using `monitor=False`, the server can be stopped manually using the `Server.stop()` method.
 
 ```python
 from lume_epics.epics_server import Server
@@ -51,7 +55,7 @@ if __name__ == "__main__":
 ```
 
 ## Compatable models
-See docs for notes on serving online models with lume-epics.
+See docs for notes on serving online models with `lume-epics`.
 
 ## Copyright Notice:
 
