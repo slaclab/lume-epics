@@ -1,0 +1,7 @@
+blank_issues_enabled: true
+contact_links:
+- name: Internal Slack
+  url: https://stanford.enterprise.slack.com/workspace/T1X4J8FJ8
+  about: |
+    If you are a member of the SLAC organization, you can also
+    talk to the maintainers in the \#lume-epics channel.
