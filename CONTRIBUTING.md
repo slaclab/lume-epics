@@ -5,6 +5,10 @@ Thank you for your interest in contributing to **lume-epics**! Your contribution
 ### How to Contribute
 
 1. **Fork and Clone the Repository**
+
+> [!IMPORTANT]
+> **Contributors with write access should skip this step and push directly to this repository.**
+
    - Fork the [lume-epics repository](https://github.com/slaclab/lume-epics) on GitHub.
    - Clone your fork to your local machine:
      ```bash
@@ -16,8 +20,8 @@ Thank you for your interest in contributing to **lume-epics**! Your contribution
    - Install the necessary dependencies:
      ```bash
      conda env create -f dev-environment.yml
-	 conda activate lume-epics-dev
-	 pip install -e .
+     conda activate lume-epics-dev
+     pip install -e .
      ```
 
 3. **Move to a New Branch**
@@ -31,7 +35,7 @@ Thank you for your interest in contributing to **lume-epics**! Your contribution
      git checkout origin/pre-release && git checkout -b patch-#
 	 ```
 
-3. **Implement Your Changes**
+4. **Implement Your Changes**
    - **Commits:** Try to maximize brevity for commit messages while also keeping them descriptive.
      Try to keep each commit focused on one or two logical changes for easier reviewing.
      Messages should be understandable without looking at the code changes.
@@ -41,14 +45,14 @@ Thank you for your interest in contributing to **lume-epics**! Your contribution
    - **Communication:** For significant changes, open an issue to discuss your approach before starting.
 
 <!-- Uncomment this section (and bump future section numbers) when tests work!
-4. **Run Tests Locally**
+5. **Run Tests Locally**
    - Ensure all tests pass before submitting:
      ```bash
      pytest
      ```
 -->
 
-4. **Create a Pull Request**
+5. **Create a Pull Request**
    - When you feel like your feature is ready to be merged into lume-epics make a PR and request feedback from the maintainers.
    - Provide a descriptive title and description of your changes.
    - The PR should target the *pre-release* branch.
