@@ -88,7 +88,7 @@ class PVAServer(multiprocessing.Process):
         self._epics_config = epics_config
         self._in_queue = in_queue
         self._out_queue = out_queue
-        self._providers = {}
+        self._providers: Dict[str, SharedPV|None] = {}
         self._running_indicator = running_indicator
         # monitors for read only
         self._monitors = {}
@@ -118,12 +118,13 @@ class PVAServer(multiprocessing.Process):
         value = value.raw.value
 
         varname = self._pvname_to_varname_map[pvname]
-        model_variable = self._input_variables[varname]
+        model_variable = self._get_default_value(self._input_variables[varname])
 
         # check for already cached variable
         model_variable = self._cached_values.get(varname, model_variable)
 
         self._cached_values[varname] = model_variable
+        self._input_values[varname] = value
 
         # only update if not running
         if not self._running_indicator.value:
@@ -134,7 +135,7 @@ class PVAServer(multiprocessing.Process):
         """Callback function used for updating read_only process variables."""
         value = V.raw.value
         varname = self._pvname_to_varname_map[pvname]
-        model_variable = self._input_variables[varname]
+        model_variable = self._get_default_value(self._input_variables[varname])
 
         if not model_variable:
             model_variable = self._output_variables[varname]
@@ -149,6 +150,13 @@ class PVAServer(multiprocessing.Process):
         if not self._running_indicator.value:
             self._in_queue.put({"protocol": self.protocol, "vars": self._cached_values, "vals": self._input_values})
             self._cached_values = {}
+
+    def _get_default_value(self, variable: Variable) -> Any:
+        """ Returns the default value for the variable """
+        if isinstance(variable, ScalarVariable):
+            return variable.default_value
+        else:
+            return None
 
     def _initialize_model(self):
         """Initialize model"""
@@ -212,7 +220,7 @@ class PVAServer(multiprocessing.Process):
 
             # initialize global inputs
             self._structures = {}
-            self._structure_specs = {}
+            self._structure_types: Dict[str, Type] = {}
             for variable_name, config in self._epics_config.items():
                 if config["serve"]:
                     fields = config.get("fields")
@@ -244,11 +252,14 @@ class PVAServer(multiprocessing.Process):
                         # Set default output var value
                         self._output_values[variable.name] = initial
 
-                        # assemble pv
-                        self._structures[variable_name] = structure
-                        self._structure_specs[variable_name] = spec
+                        # Assemble type and value
                         struct_type = Type(id=variable_name, spec=spec)
                         struct_value = Value(struct_type, structure)
+
+                        # Store off type and current value
+                        self._structures[variable_name] = structure
+                        self._structure_types[variable_name] = struct_type
+
                         pv = SharedPV(initial=struct_value)
                         self._providers[pvname] = pv
 
@@ -359,9 +370,9 @@ class PVAServer(multiprocessing.Process):
         for variable in variables.values():
             parent = self._field_to_parent_map.get(variable.name)
 
-            if variable.name in self._input_variables and variable.is_constant:
+            if variable.name in self._input_variables and isinstance(variable, ScalarVariable) and variable.is_constant:
                 logger.debug("Cannot update constant variable.")
-
+                continue
             else:
                 # do not build attribute pvs
                 logger.debug(
@@ -374,8 +385,7 @@ class PVAServer(multiprocessing.Process):
             # update structure or pv
             if parent:
                 self._structures[parent][variable.name] = value
-                struct_type = Type(id=parent, spec=self._structure_specs[parent])
-                value = Value(struct_type, self._structures[parent])
+                value = Value(self._structure_types[parent], self._structures[parent])
                 pvname = self._varname_to_pvname_map[parent]
                 output_provider = self._providers[pvname]
 
