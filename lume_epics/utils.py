@@ -27,12 +27,16 @@ def config_from_yaml(config_file: str|PathLike):
         protocol = var_config.get("protocol")
         serve = var_config.get("serve", True)
         pvname = var_config.get("pvname")
+        desc = var_config.get("description", "")
 
         if not protocol:
             raise ValueError(f"No protocol provided for {variable}")
 
         if not pvname:
             raise ValueError(f"No pvname provided for {variable}")
+
+        if not isinstance(desc, str):
+            raise ValueError(f"'description' for {variable} is not string")
 
         fields = var_config.get("fields")
 
@@ -43,6 +47,7 @@ def config_from_yaml(config_file: str|PathLike):
             "pvname": pvname,
             "serve": serve,
             "protocol": protocol,
+            "description": desc,
         }
 
         if fields:
