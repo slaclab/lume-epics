@@ -1,5 +1,5 @@
 from lume_epics.epics_server import Server
-from lume_model.models import model_from_yaml, get_model
+from lume_model.models import model_from_yaml, get_model, TorchModel
 from lume_epics.utils import config_from_yaml
 from pathlib import Path
 import json
@@ -8,15 +8,24 @@ import torch
 from pprint import pprint
 import yaml
 
+class MyTorchModel(TorchModel):
+    """
+    Subclass of TorchModel that automatically converts tensors to floats on evaluation.
+    """
+    def _evaluate(self, input_dict):
+        result = super()._evaluate(input_dict)
+        return {
+            k: float(v) for k,v in result.items()
+        }
+
 if __name__ == "__main__":
     # load the model and the variables from LUME model
     with open("examples/files/california_config.yml", "r") as fp:
         model_kwargs = yaml.safe_load(fp)
-    model_class = get_model(model_kwargs["model_class"])
+    model_class = MyTorchModel
 
     # load the EPICS pv definitions
-    with open("examples/files/california_epics_config.yml", "r") as f:
-        epics_config = config_from_yaml(f)
+    epics_config = config_from_yaml("examples/files/california_epics_config.yml")
 
     # load the transformers required for the model
     with open("examples/files/california_normalization.json", "r") as f:
