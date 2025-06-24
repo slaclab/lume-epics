@@ -1,10 +1,11 @@
 import copy
 import logging
 import multiprocessing
+from multiprocessing.sharedctypes import Synchronized
 import time
 import signal
-from typing import Dict
-from lume_model.variables import Variable, InputVariable, OutputVariable
+from typing import Dict, Any
+from lume_model.variables import Variable, ScalarVariable
 import numpy as np
 
 import os
@@ -68,9 +69,9 @@ class CAServer(CAProcess):
 
         _ca_driver (Driver): pcaspy Driver instance
 
-        _input_variables (Dict[str, InputVariable]): Mapping of input variable name to variable
+        _input_variables (Dict[str, Variable]): Mapping of input variable name to variable
 
-        _output_variables (Dict[str, InputVariable]): Mapping of output variable name to variable
+        _output_variables (Dict[str, Variable]): Mapping of output variable name to variable
 
         _server_thread (ServerThread): Thread for running the server
 
@@ -78,7 +79,7 @@ class CAServer(CAProcess):
 
         exit_event (multiprocessing.Event): Event indicating early exit
 
-        _running_indicator (multiprocessing.Value): Value indicating whether model execution ongoing
+        _running_indicator (Synchronized): Value indicating whether model execution ongoing
 
         _epics_config (dict): Dictionary describing EPICS configuration for model variables
 
@@ -92,24 +93,24 @@ class CAServer(CAProcess):
 
     def __init__(
         self,
-        input_variables: Dict[str, InputVariable],
-        output_variables: Dict[str, OutputVariable],
+        input_variables: Dict[str, Variable],
+        output_variables: Dict[str, Variable],
         epics_config: dict,
         in_queue: multiprocessing.Queue,
         out_queue: multiprocessing.Queue,
-        running_indicator: multiprocessing.Value,
+        running_indicator: Synchronized,
         *args,
         **kwargs,
     ) -> None:
         """Initialize server process.
 
         Args:
-            input_variables (Dict[str, InputVariable]): Dictionary mapping pvname to lume-model input variable.
-            output_variables (Dict[str, OutputVariable]):Dictionary mapping pvname to lume-model output variable.
+            input_variables (Dict[str, Variable]): Dictionary mapping pvname to lume-model input variable.
+            output_variables (Dict[str, Variable]):Dictionary mapping pvname to lume-model output variable.
             epics_config (dict): Dictionary mapping pvname to EPICS configuration.
             in_queue (multiprocessing.Queue): Queue for tracking updates to input variables.
             out_queue (multiprocessing.Queue): Queue for tracking updates to output variables.
-            running_indicator (multiprocessing.Value): Multiprocessing value for indicating if server running.
+            running_indicator (Synchronized): Multiprocessing value for indicating if server running.
 
         """
         super().__init__(*args, **kwargs)
@@ -125,6 +126,7 @@ class CAServer(CAProcess):
         self._epics_config = epics_config
         self.exit_event = multiprocessing.Event()
         self.shutdown_event = multiprocessing.Event()
+        self._values = {}
 
         # utility maps
         self._pvname_to_varname_map = {
@@ -135,7 +137,7 @@ class CAServer(CAProcess):
         }
 
         # cached pv values
-        self._cached_values = {}
+        self._cached_values: Dict[str, Variable] = {}
         self._monitors = {}
 
     def update_pv(self, pvname, value) -> None:
@@ -154,39 +156,15 @@ class CAServer(CAProcess):
         variable = self._input_variables[model_var_name]
 
         # check for already cached variable
-        variable = self._cached_values.get(model_var_name, variable)
+        variable: Variable = self._cached_values.get(model_var_name, variable)
 
-        # check for image variable and proper assignments
-        if variable.variable_type == "image":
-
-            attr_type = pvname.split(":")[-1]
-
-            if attr_type == "ArrayData_RBV":
-                value = np.array(value)
-                value = value.reshape(variable.shape)
-                variable.value = value
-
-            if attr_type == "MinX_RBV":
-                variable.x_min = value
-
-            if attr_type == "MinY_RBV":
-                variable.y_min = value
-
-            if attr_type == "MaxX_RBV":
-                variable.x_max = value
-
-            if attr_type == "MaxY_RBV":
-                variable.y_max = value
-
-        # assign value
-        else:
-            variable.value = value
+        self._values[variable.name] = value
 
         self._cached_values[model_var_name] = variable
 
         # only update if not running
         if not self._running_indicator.value:
-            self._in_queue.put({"protocol": "ca", "vars": self._cached_values})
+            self._in_queue.put({"protocol": "ca", "vars": self._cached_values, "vals": self._values})
             self._cached_values = {}
 
     def _monitor_callback(self, pvname=None, value=None, **kwargs) -> None:
@@ -198,43 +176,20 @@ class CAServer(CAProcess):
             variable = self._output_variables.get(model_var_name)
 
         # check for already cached variable
-        variable = self._cached_values.get(model_var_name, variable)
+        variable: Variable = self._cached_values.get(model_var_name, variable)
 
-        # check for image variable and proper assignments
-        if variable.variable_type == "image":
-
-            attr_type = pvname.split(":")[-1]
-
-            if attr_type == "ArrayData_RBV":
-                value = value.reshape(variable.shape())
-                variable.value = value
-
-            if attr_type == "MinX_RBV":
-                variable.x_min = value
-
-            if attr_type == "MinY_RBV":
-                variable.y_mix = value
-
-            if attr_type == "MaxX_RBV":
-                variable.x_max = value
-
-            if attr_type == "MaxY_RBV":
-                variable.y_max = value
-
-        # assign value
-        else:
-            variable.value = value
+        self._values[variable.name] = value
 
         self._cached_values[model_var_name] = variable
 
         # only update if not running
         if not self._running_indicator.value:
-            self._in_queue.put({"protocol": "ca", "vars": self._cached_values})
+            self._in_queue.put({"protocol": "ca", "vars": self._cached_values, "vals": self._values})
             self._cached_values = {}
 
     def _initialize_model(self):
         """Initialize model"""
-        self._in_queue.put({"protocol": "ca", "vars": self._input_variables})
+        self._in_queue.put({"protocol": "ca", "vars": self._input_variables, "vals": self._values})
 
     def setup_server(self) -> None:
         """Configure and start server."""
@@ -246,9 +201,9 @@ class CAServer(CAProcess):
         # update value with stored defaults
         for var_name in self._input_variables:
             if self._epics_config[var_name]["serve"]:
-                self._input_variables[var_name].value = self._input_variables[
+                self._values[var_name] = self._input_variables[
                     var_name
-                ].default
+                ].default_value
 
             else:
                 pvname = self._varname_to_pvname_map[var_name]
@@ -260,7 +215,7 @@ class CAServer(CAProcess):
                     self.exit_event.set()
                     return False
 
-                self._input_variables[var_name].value = val
+                self._values[var_name] = val
 
         # initialize channel access server
         self._ca_server = SimpleServer()
@@ -323,15 +278,15 @@ class CAServer(CAProcess):
 
     def update_pvs(
         self,
-        input_variables: Dict[str, InputVariable],
-        output_variables: Dict[str, OutputVariable],
+        input_variables: Dict[str, Variable],
+        output_variables: Dict[str, Variable],
     ) -> None:
         """Update process variables over Channel Access.
 
         Args:
-            input_variables (Dict[str, InputVariable]): List of lume-epics output variables.
+            input_variables (Dict[str, Variable]): List of lume-epics output variables.
 
-            output_variables (Dict[str, OutputVariable]): List of lume-model output variables.
+            output_variables (Dict[str, Variable]): List of lume-model output variables.
 
         """
         variables = input_variables
@@ -367,6 +322,12 @@ class CAServer(CAProcess):
     def shutdown(self):
         """Safely shutdown the server process."""
         self.shutdown_event.set()
+        
+    def get_value(self, variable: str) -> Any | None:
+        try:
+            return self._values[variable]
+        except KeyError:
+            return None
 
 
 def build_pvdb(variables: List[Variable], epics_config: dict) -> tuple:
@@ -390,173 +351,14 @@ def build_pvdb(variables: List[Variable], epics_config: dict) -> tuple:
     for variable in variables:
         pvname = epics_config.get(variable.name)["pvname"]
 
-        if variable.variable_type == "image":
-
-            if variable.value is None:
-                ndim = np.nan
-                shape = np.nan
-                array_size_x = np.nan
-                array_size_y = np.nan
-                array_size = np.nan
-                array_data = np.nan
-                count = np.nan
-
-            else:
-                ndim = variable.value.ndim
-                shape = variable.value.shape
-                array_size_x = variable.value.shape[0]
-                array_size_y = variable.value.shape[1]
-                array_size = int(np.prod(variable.value.shape))
-                array_data = variable.value.flatten()
-                count = int(np.prod(variable.value.shape))
-
-            # infer color mode
-            if ndim == 2:
-                color_mode = 0
-
-            elif ndim == 3:
-                color_mode = 1
-
-            else:
-                logger.info("Color mode cannot be inferred from image shape %s.", ndim)
-                color_mode = np.nan
-
-            # assign default PVS
-            pvdb.update(
-                {
-                    f"{pvname}:NDimensions_RBV": {
-                        "type": "float",
-                        "prec": variable.precision,
-                        "value": ndim,
-                    },
-                    f"{pvname}:Dimensions_RBV": {
-                        "type": "int",
-                        "prec": variable.precision,
-                        "count": ndim,
-                        "value": shape,
-                    },
-                    f"{pvname}:ArraySizeX_RBV": {
-                        "type": "int",
-                        "value": array_size_x,
-                    },
-                    f"{pvname}:ArraySizeY_RBV": {
-                        "type": "int",
-                        "value": array_size_y,
-                    },
-                    f"{pvname}:ArraySize_RBV": {
-                        "type": "int",
-                        "value": array_size,
-                    },
-                    f"{pvname}:ArrayData_RBV": {
-                        "type": "float",
-                        "prec": variable.precision,
-                        "count": count,
-                        "value": array_data,
-                    },
-                    f"{pvname}:MinX_RBV": {
-                        "type": "float",
-                        "value": variable.x_min,
-                    },
-                    f"{pvname}:MinY_RBV": {
-                        "type": "float",
-                        "value": variable.y_min,
-                    },
-                    f"{pvname}:MaxX_RBV": {
-                        "type": "float",
-                        "value": variable.x_max,
-                    },
-                    f"{pvname}:MaxY_RBV": {
-                        "type": "float",
-                        "value": variable.y_max,
-                    },
-                    f"{pvname}:ColorMode_RBV": {
-                        "type": "int",
-                        "value": color_mode,
-                    },
-                }
-            )
-
-            child_to_parent_map.update(
-                {
-                    f"{pvname}:{child}": variable.name
-                    for child in [
-                        "NDimensions_RBV",
-                        "Dimensions_RBV",
-                        "ArraySizeX_RBV",
-                        "ArraySizeY_RBV",
-                        "ArraySize_RBV",
-                        "ArrayData_RBV",
-                        "MinX_RBV",
-                        "MinY_RBV",
-                        "MaxX_RBV",
-                        "MaxY_RBV",
-                        "ColorMode_RBV",
-                    ]
-                }
-            )
-
-            if "units" in variable.__fields_set__:
-                pvdb[f"{pvname}:ArrayData_RBV"]["unit"] = variable.units
-
-            # handle rgb arrays
-            if ndim > 2:
-                pvdb[f"{pvname}:ArraySizeZ_RBV"] = {
-                    "type": "int",
-                    "value": variable.value.shape[2],
-                }
-
-        elif variable.variable_type == "scalar":
-            pvdb[pvname] = variable.dict(exclude_unset=True, by_alias=True)
+        if isinstance(variable, ScalarVariable):
+            pvdb[pvname] = variable.model_dump(exclude_unset=True, by_alias=True)
             if variable.value_range is not None:
                 pvdb[pvname]["hilim"] = variable.value_range[1]
                 pvdb[pvname]["lolim"] = variable.value_range[0]
 
-            if variable.units is not None:
-                pvdb[pvname]["unit"] = variable.units
-
-        elif variable.variable_type == "array":
-
-            # assign default PVS
-            pvdb.update(
-                {
-                    f"{pvname}:NDimensions_RBV": {
-                        "type": "float",
-                        "prec": variable.precision,
-                        "value": variable.value.ndim,
-                    },
-                    f"{pvname}:Dimensions_RBV": {
-                        "type": "int",
-                        "prec": variable.precision,
-                        "count": variable.value.ndim,
-                        "value": variable.value.shape,
-                    },
-                    f"{pvname}:ArrayData_RBV": {
-                        "type": variable.value_type,
-                        "prec": variable.precision,
-                        "count": int(np.prod(variable.value.shape)),
-                        "value": variable.value.flatten(),
-                    },
-                    f"{pvname}:ArraySize_RBV": {
-                        "type": "int",
-                        "value": int(np.prod(variable.value.shape)),
-                    },
-                }
-            )
-
-            child_to_parent_map.update(
-                {
-                    f"{pvname}:{child}": variable.name
-                    for child in [
-                        "NDimensions_RBV",
-                        "Dimensions_RBV",
-                        "ArraySize_RBV",
-                        "ArrayData_RBV",
-                    ]
-                }
-            )
-
-            if "units" in variable.__fields_set__:
-                pvdb[f"{pvname}:ArrayData_RBV"]["unit"] = variable.units
+            if variable.unit is not None:
+                pvdb[pvname]["unit"] = variable.unit
 
     return pvdb, child_to_parent_map
 
@@ -566,7 +368,7 @@ class CADriver(Driver):
     Class for handling read and write requests to Channel Access process variables.
     """
 
-    def __init__(self, server) -> None:
+    def __init__(self, server: CAServer) -> None:
         """Initialize the Channel Access driver. Store input state and output state."""
         super(CADriver, self).__init__()
         self.server = server
@@ -643,40 +445,12 @@ class CADriver(Driver):
                 logger.debug(
                     "Cannot update constant variable %s, %s", variable.name, pvname
                 )
-
-            else:
-                if variable.variable_type == "image":
-                    logger.debug(
-                        "Channel Access image process variable %s updated.",
-                        pvname,
-                    )
-                    self.setParam(pvname + ":ArrayData_RBV", variable.value.flatten())
-                    self.setParam(pvname + ":MinX_RBV", variable.x_min)
-                    self.setParam(pvname + ":MinY_RBV", variable.y_min)
-                    self.setParam(pvname + ":MaxX_RBV", variable.x_max)
-                    self.setParam(pvname + ":MaxY_RBV", variable.y_max)
-
-                elif variable.variable_type == "scalar":
-                    logger.debug(
-                        "Channel Access process variable %s updated wth value %s.",
-                        pvname,
-                        variable.value,
-                    )
-                    self.setParam(pvname, variable.value)
-
-                elif variable.variable_type == "array":
-                    logger.debug(
-                        "Channel Access image process variable %s updated.",
-                        pvname,
-                    )
-
-                    self.setParam(pvname + ":ArrayData_RBV", variable.value.flatten())
-
-                else:
-                    logger.debug(
-                        "No instructions for handling variable %s of type %s",
-                        variable.name,
-                        variable.variable_type,
-                    )
+            elif isinstance(variable, ScalarVariable):
+                logger.debug(
+                    "Channel Access process variable %s updated wth value %s.",
+                    pvname,
+                    self.server.get_value(variable.name),
+                )
+                self.setParam(pvname, self.server.get_value(variable.name))
 
         self.updatePVs()

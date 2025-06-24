@@ -4,22 +4,17 @@ from lume_model.variables import (
     ImageOutputVariable,
     ScalarOutputVariable,
 )
-from lume_model.models import BaseModel
+from lume_model.base import LUMEBaseModel
 from lume_model.utils import save_variables
 
 
-class DemoModel(BaseModel):
+class DemoModel(LUMEBaseModel):
     def __init__(self, input_variables=None, output_variables=None):
         self.input_variables = input_variables
         self.output_variables = output_variables
 
-    def evaluate(self, input_variables):
-        self.output_variables["output1"].value = np.random.uniform(
-            input_variables["input1"].value,  # lower dist bound
-            input_variables["input2"].value,  # upper dist bound
-            (50, 50),
-        )
-        self.output_variables["output2"].value = input_variables["input1"].value
-        self.output_variables["output3"].value = input_variables["input2"].value
-
-        return self.output_variables
+    def _evaluate(self, input_dict: dict):
+        return {
+            "output1": input_dict["input1"].value,
+            "output2": input_dict["input2"].value,
+        }

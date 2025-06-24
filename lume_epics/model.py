@@ -12,8 +12,8 @@ import logging
 from typing import Dict, Tuple, Mapping, Union, List
 from abc import ABC, abstractmethod
 
-from lume_model.variables import InputVariable, OutputVariable
-from lume_model.models import BaseModel
+from lume_model.variables import Variable
+from lume_model.base import LUMEBaseModel
 
 logger = logging.getLogger(__name__)
 
@@ -25,21 +25,21 @@ class OnlineModel:
     Attributes:
         model (BaseModel): Model for execution.
 
-        input_variables (Dict[str, InputVariable]): List of lume-model variables to use as inputs.
+        input_variables (Dict[str, Variable]): List of lume-model variables to use as inputs.
 
-        ouput_variables (Dict[str, OutputVariable]): List of lume-model variables to use as outputs.
+        ouput_variables (Dict[str, Variable]): List of lume-model variables to use as outputs.
 
     """
 
     def __init__(
         self,
-        model: BaseModel,
+        model: LUMEBaseModel,
     ) -> None:
         """
         Initialize OnlineModel with the base model class.
 
         Args:
-            model (BaseModel): Instantiated model.
+            model (LUMEBaseModel): Instantiated model.
 
         """
         self.model = model
@@ -48,13 +48,13 @@ class OnlineModel:
         self.output_variables = self.model.output_variables
 
     def run(
-        self, input_variables: Dict[str, InputVariable]
-    ) -> Dict[str, OutputVariable]:
+        self, input_variables: Dict[str, Variable]
+    ) -> Dict[str, Variable]:
         """
         Executes both scalar and image model given process variable value inputs.
 
         Args:
-            input_variables (Dict[str, InputVariable]): Dict of lume-model variables to use as inputs.
+            input_variables (Dict[str, Variable]): Dict of lume-model variables to use as inputs.
 
         """
         # update input variables and get state representation

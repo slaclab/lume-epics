@@ -1,6 +1,6 @@
 import click
 from lume_epics.epics_server import Server
-from lume_model.utils import model_from_yaml
+from lume_model.models import model_from_yaml
 from lume_epics.utils import config_from_yaml
 
 

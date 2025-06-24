@@ -8,11 +8,8 @@ import logging
 
 
 if __name__ == "__main__":
-    with open("examples/files/demo_config.yml", "r") as f:
-        input_variables, output_variables = variables_from_yaml(f)
-
-    with open("examples/read_only/epics_config.yml", "r") as f:
-        epics_config = config_from_yaml(f)
+    input_variables, output_variables = variables_from_yaml("examples/files/demo_config.yml")
+    epics_config = config_from_yaml("examples/read_only/epics_config.yml")
 
     server = Server(
         DemoModel,
