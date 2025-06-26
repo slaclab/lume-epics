@@ -8,7 +8,8 @@ from lume_epics import model
 import numpy as np
 import time
 import signal
-from typing import List, Union, Any
+import math
+from typing import List, Union, Any, Tuple
 from functools import partial
 from typing import Dict
 from lume_model.variables import Variable, ScalarVariable
@@ -158,6 +159,65 @@ class PVAServer(multiprocessing.Process):
         else:
             return None
 
+    def _build_scalar_type(self, initial, config: dict) -> Tuple[Value, NTScalar]:
+        """
+        Builds a scalar type based on the spec.
+
+        Parameters
+        ----------
+        initial : Any
+            Initial value
+        config : dict
+            Configuration
+
+        Returns
+        -------
+        tuple[Value, NTScalar]
+            Tuple containing the wrapped initia value and the NTScalar type
+        """
+        nt = NTScalar("d", display=True, control=True)
+        initial_value = nt.wrap(initial) if initial else nt.wrap(0.0)
+
+        # Set display parameters
+        initial_value['display']['description'] = config.get('description', '')
+
+        # Start with sensible default for the timestamp
+        self._update_timestamp(initial_value)
+
+        return (initial_value, nt)
+
+    def _make_timestamp(self, ts: float) -> Tuple[int, int]:
+        """
+        Converts a timestamp into a tuple that can be fed to EPICS
+
+        Parameters
+        ----------
+        ts : float
+            Timestamp, in seconds since UNIX epoch
+
+        Returns
+        -------
+        Tuple[int, int]
+            (Seconds, nanoseconds) since epoch
+        """
+        f, i = math.modf(ts)
+        return (i, int(f * 1e9))
+
+    def _update_timestamp(self, pv: Value, ts: float = time.time()) -> None:
+        """
+        Updates the timestamp on a PV structure
+
+        Parameters
+        ----------
+        pv : Value
+            PV to update
+        ts : float
+            Timestamp in seconds since UNIX epoch
+        """
+        sec, nsec = self._make_timestamp(ts)
+        pv['timeStamp']['secondsPastEpoch'] = sec
+        pv['timeStamp']['nanoseconds'] = nsec
+
     def _initialize_model(self):
         """Initialize model"""
 
@@ -243,9 +303,8 @@ class PVAServer(multiprocessing.Process):
                                 )
 
                             if isinstance(variable, ScalarVariable):
-                                spec.append((field, "d"))
-                                nt = NTScalar("d")
-                                if initial is None: initial = 0.0
+                                initial, nt = self._build_scalar_type(initial, config)
+                                spec.append((field, 'v')) # Using variant here because we can't extract tuple struct desc from the NT types in p4p...
 
                             structure[field] = initial
 
@@ -268,11 +327,9 @@ class PVAServer(multiprocessing.Process):
 
                         initial = variable.default_value
 
-                        # prepare scalar variable typess
+                        # prepare scalar variable types
                         if isinstance(variable, ScalarVariable):
-                            nt = NTScalar("d")
-                            if initial is None: initial = 0.0
-
+                            initial, nt = self._build_scalar_type(initial, config)
                         else:
                             raise ValueError(
                                 "Unsupported variable type provided: %s",
@@ -384,17 +441,22 @@ class PVAServer(multiprocessing.Process):
 
             # update structure or pv
             if parent:
-                self._structures[parent][variable.name] = value
+                self._structures[parent][variable.name]['value'] = value
                 value = Value(self._structure_types[parent], self._structures[parent])
                 pvname = self._varname_to_pvname_map[parent]
                 output_provider = self._providers[pvname]
+
+                self._update_timestamp(value[variable.name])
 
             else:
                 pvname = self._varname_to_pvname_map[variable.name]
                 output_provider = self._providers[pvname]
 
             if output_provider:
-                output_provider.post(value)
+                if isinstance(value, Value):
+                    output_provider.post(value)
+                else:
+                    output_provider.post(value, timestamp=time.time())
 
             # in this case externally hosted
             else:
