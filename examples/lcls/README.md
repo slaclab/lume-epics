@@ -1,21 +1,18 @@
 # LCLS Model + Client
 
-Provided you're connected to the SLAC network via VPN, this demo will monitor LCLS pvs, execute summation of those PV values on value change, serve an output pv, and display the results in a Bokeh-based web app.
+This example demonstrates a summation of klystron amplitude PVs and serves the result over PVA.
 
+The example may be run with real PV data from the accelerator, or standalone with dummy simulated values.
 
-Open two terminal windows. Activate a Python environment with an updated `lume-epics` installation. Set the channel access address list in each:
-```
-$ export EPICS_CA_ADDR_LIST={LCLS_PROD_HOST}:{CA_SERVER_PORT}
-```
-
-## Server
-In the first window, run:
-```
-python examples/lcls/server.py
+To run in standalone mode:
+```bash
+$ cd examples
+$ python3 -m lcls.server --standalone
 ```
 
-## Client
-In the second window, run:
-```
-bokeh serve examples/lcls/client.py --show
+If you're on the SLAC network, configure the EPICS environment to point to the production gateway, and then run:
+```bash
+$ source $EPICS_SETUP/envSet_prodOnDev.bash
+$ cd examples
+$ python3 -m lcls.server
 ```
