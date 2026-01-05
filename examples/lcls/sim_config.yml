@@ -1,0 +1,19 @@
+KLYS:LI24:11:AMPL:
+  value: 51.123
+  range: 2
+
+KLYS:LI24:21:AMPL:
+  value: 24.0234
+  range: 2
+
+KLYS:LI24:31:AMPL:
+  value: 56.4697
+  range: 2
+
+KLYS:LI24:41:AMPL:
+  value: 55.2002
+  range: 2
+
+KLYS:LI24:51:AMPL:
+  value: 57.666
+  range: 2
