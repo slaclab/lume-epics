@@ -225,6 +225,148 @@ class PVAServer(multiprocessing.Process):
 
         self._in_queue.put(rep)
 
+    def _create_monitor(self, variable: Variable, config: dict) -> None:
+        """
+        Creates a new monitored remote PV
+
+        Parameters
+        ----------
+        variable : Variable
+            LUME variable
+        config : dict
+            Configuration
+        """
+        pvname = config.get("pvname")
+
+        if variable.name in self._input_variables:
+            self._monitors[pvname] = self._context.monitor(
+                pvname, partial(self._monitor_callback, pvname)
+            )
+        # in this case, externally hosted output variable
+        else:
+            self._providers[pvname] = None
+
+    def _create_summary(self):
+        """Creates the summary PV, describing the model"""
+        pvname = self._epics_config["summary"].get("pvname")
+        owner = self._epics_config["summary"].get("owner")
+        date_published = self._epics_config["summary"].get("date_published")
+        description = self._epics_config["summary"].get("description")
+        id = self._epics_config["summary"].get("id")
+
+        spec = [
+            ("id", "s"),
+            ("owner", "s"),
+            ("date_published", "s"),
+            ("description", "s"),
+            ("input_variables", "as"),
+            ("output_variables", "as"),
+        ]
+        values = {
+            "id": id,
+            "date_published": date_published,
+            "description": description,
+            "owner": owner,
+            "input_variables": [
+                self._epics_config[var]["pvname"]
+                for var in self._input_variables
+            ],
+            "output_variables": [
+                self._epics_config[var]["pvname"]
+                for var in self._input_variables
+            ],
+        }
+
+        pv_type = Type(id="summary", spec=spec)
+        value = Value(pv_type, values)
+        pv = SharedPV(initial=value)
+        self._providers[pvname] = pv
+
+    def _create_struct(self, config: dict, variable_name: str, variables: Dict[str, Variable]) -> None:
+        """
+        Create a new structure
+
+        Parameters
+        ----------
+        config : dict
+            Configuration for this structure/variable, from the YAML file
+        variable_name : str
+            Name of the variable
+        variables : Dict[str, Variable]
+            List of variables described already
+        """
+        spec = []
+        structure = {}
+
+        fields = config.get("fields")
+        pvname = config.get("pvname")
+
+        for field in fields:
+            # track fields in dict
+            self._field_to_parent_map[field] = variable_name
+            variable = variables[field]
+            initial = variable.default_value
+
+            if variable is None:
+                raise ValueError(
+                    f"Field {field} for {variable_name} not found in variable list"
+                )
+
+            if isinstance(variable, ScalarVariable):
+                initial, nt = self._build_scalar_type(initial, config)
+                spec.append((field, 'v')) # Using variant here because we can't extract tuple struct desc from the NT types in p4p...
+            structure[field] = initial
+
+        # Set default output var value
+        self._output_values[variable.name] = initial
+
+        # Assemble type and value
+        struct_type = Type(id=variable_name, spec=spec)
+        struct_value = Value(struct_type, structure)
+
+        # Store off type and current value
+        self._structures[variable_name] = structure
+        self._structure_types[variable_name] = struct_type
+        pv = SharedPV(initial=struct_value)
+        self._providers[pvname] = pv
+
+    def _create_variable(self, config: dict, variable: Variable) -> None:
+        """
+        Create a new variable
+
+        Parameters
+        ----------
+        config : dict
+            Configuration for this variable
+        variable : Variable
+            LUME variable
+        """
+        pvname = config.get("pvname")
+        initial = variable.default_value
+
+        # prepare scalar variable types
+        if isinstance(variable, ScalarVariable):
+            initial, nt = self._build_scalar_type(initial, config)
+        else:
+            raise ValueError(
+                "Unsupported variable type provided: %s",
+                variable.variable_type,
+            )
+
+        if variable.name in self._input_variables:
+            handler = PVAccessInputHandler(
+                pvname=pvname,
+                is_constant=variable.is_constant,
+                server=self,
+            )
+            pv = SharedPV(handler=handler, nt=nt, initial=initial)
+        else:
+            pv = SharedPV(nt=nt, initial=initial)
+
+        # Set default output var value
+        self._output_values[variable.name] = initial
+        self._providers[pvname] = pv
+
     def setup_server(self) -> None:
         """Configure and start server."""
 
@@ -262,150 +404,45 @@ class PVAServer(multiprocessing.Process):
             except Empty:
                 pass
 
+        # No need to do this if we're being shutdown
         if self.shutdown_event.is_set():
-            pass
+            return
 
-        # if startup hasn't failed
-        else:
-            model_output_vars = model_outputs.get("output_variables", {})
-            self._output_variables.update(model_output_vars)
+        model_output_vars = model_outputs.get("output_variables", {})
+        self._output_variables.update(model_output_vars)
+        
+        variables = copy.deepcopy(self._input_variables)
+        variables.update(self._output_variables)
+        
+        # ignore interrupt in subprocess
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+        logger.info("Initializing pvAccess server")
+        
+        # initialize global inputs
+        self._structures = {}
+        self._structure_types: Dict[str, Type] = {}
 
-            variables = copy.deepcopy(self._input_variables)
-            variables.update(self._output_variables)
+        # Initialize all of the variables specified in our config
+        for variable_name, config in self._epics_config.items():
+            # Not served, create a monitor
+            if not config["serve"]:
+                self._create_monitor(variables[variable_name], config)
+                continue
 
-            # ignore interrupt in subprocess
-            signal.signal(signal.SIGINT, signal.SIG_IGN)
+            # Handle structures
+            if "fields" in config:
+                self._create_struct(config, variable_name, variables)
+            else:
+                self._create_variable(config, variables[variable_name])
 
-            logger.info("Initializing pvAccess server")
+        # Create a summary PV, if requested.
+        if "summary" in self._epics_config:
+            self._create_summary()
 
-            # initialize global inputs
-            self._structures = {}
-            self._structure_types: Dict[str, Type] = {}
-            for variable_name, config in self._epics_config.items():
-                if config["serve"]:
-                    fields = config.get("fields")
-                    pvname = config.get("pvname")
+        # initialize pva server
+        self.pva_server = P4PServer(providers=[self._providers])
 
-                    if fields is not None:
-                        spec = []
-                        structure = {}
-
-                        for field in fields:
-                            # track fields in dict
-                            self._field_to_parent_map[field] = variable_name
-
-                            variable = variables[field]
-                            initial = variable.default_value
-
-                            if variable is None:
-                                raise ValueError(
-                                    f"Field {field} for {variable_name} not found in variable list"
-                                )
-
-                            if isinstance(variable, ScalarVariable):
-                                initial, nt = self._build_scalar_type(initial, config)
-                                spec.append((field, 'v')) # Using variant here because we can't extract tuple struct desc from the NT types in p4p...
-
-                            structure[field] = initial
-
-                        # Set default output var value
-                        self._output_values[variable.name] = initial
-
-                        # Assemble type and value
-                        struct_type = Type(id=variable_name, spec=spec)
-                        struct_value = Value(struct_type, structure)
-
-                        # Store off type and current value
-                        self._structures[variable_name] = structure
-                        self._structure_types[variable_name] = struct_type
-
-                        pv = SharedPV(initial=struct_value)
-                        self._providers[pvname] = pv
-
-                    else:
-                        variable = variables[variable_name]
-
-                        initial = variable.default_value
-
-                        # prepare scalar variable types
-                        if isinstance(variable, ScalarVariable):
-                            initial, nt = self._build_scalar_type(initial, config)
-                        else:
-                            raise ValueError(
-                                "Unsupported variable type provided: %s",
-                                variable.variable_type,
-                            )
-
-                        if variable.name in self._input_variables:
-                            handler = PVAccessInputHandler(
-                                pvname=pvname,
-                                is_constant=variable.is_constant,
-                                server=self,
-                            )
-
-                            pv = SharedPV(handler=handler, nt=nt, initial=initial)
-
-                        else:
-                            pv = SharedPV(nt=nt, initial=initial)
-
-                        # Set default output var value
-                        self._output_values[variable.name] = initial
-
-                        self._providers[pvname] = pv
-
-                # if not serving pv, set up monitor
-                else:
-                    variable = variables[variable_name]
-                    pvname = config.get("pvname")
-
-                    if variable.name in self._input_variables:
-                        self._monitors[pvname] = self._context.monitor(
-                            pvname, partial(self._monitor_callback, pvname)
-                        )
-
-                    # in this case, externally hosted output variable
-                    else:
-                        self._providers[pvname] = None
-
-            if "summary" in self._epics_config:
-                pvname = self._epics_config["summary"].get("pvname")
-                owner = self._epics_config["summary"].get("owner")
-                date_published = self._epics_config["summary"].get("date_published")
-                description = self._epics_config["summary"].get("description")
-                id = self._epics_config["summary"].get("id")
-
-                spec = [
-                    ("id", "s"),
-                    ("owner", "s"),
-                    ("date_published", "s"),
-                    ("description", "s"),
-                    ("input_variables", "as"),
-                    ("output_variables", "as"),
-                ]
-                values = {
-                    "id": id,
-                    "date_published": date_published,
-                    "description": description,
-                    "owner": owner,
-                    "input_variables": [
-                        self._epics_config[var]["pvname"]
-                        for var in self._input_variables
-                    ],
-                    "output_variables": [
-                        self._epics_config[var]["pvname"]
-                        for var in self._input_variables
-                    ],
-                }
-
-                pv_type = Type(id="summary", spec=spec)
-                value = Value(pv_type, values)
-                pv = SharedPV(initial=value)
-                self._providers[pvname] = pv
-
-            # initialize pva server
-            self.pva_server = P4PServer(providers=[self._providers])
-
-            logger.info("pvAccess server started")
+        logger.info("pvAccess server started")
 
     def update_pvs(
         self,
