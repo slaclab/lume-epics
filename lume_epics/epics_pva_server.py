@@ -4,7 +4,7 @@ import multiprocessing
 from multiprocessing.managers import DictProxy
 from multiprocessing.sharedctypes import Synchronized
 from queue import Full, Empty
-from lume_epics import model
+from lume_epics import model, types
 import numpy as np
 import time
 import signal
@@ -20,6 +20,7 @@ from p4p.server import Server as P4PServer
 from p4p.nt.ndarray import ntndarray as NTNDArrayData
 from p4p.server.raw import ServOpWrap
 from p4p import Value, Type
+from lume_epics.types import type_handler
 
 p4p_logger = logging.getLogger("p4p")
 p4p_logger.setLevel("DEBUG")
@@ -119,7 +120,8 @@ class PVAServer(multiprocessing.Process):
         value = value.raw.value
 
         varname = self._pvname_to_varname_map[pvname]
-        model_variable = self._get_default_value(self._input_variables[varname])
+        var = self._input_variables[varname]
+        model_variable = type_handler(var).default_value(var)
 
         # check for already cached variable
         model_variable = self._cached_values.get(varname, model_variable)
@@ -136,7 +138,8 @@ class PVAServer(multiprocessing.Process):
         """Callback function used for updating read_only process variables."""
         value = V.raw.value
         varname = self._pvname_to_varname_map[pvname]
-        model_variable = self._get_default_value(self._input_variables[varname])
+        var = self._input_variables[varname]
+        model_variable = type_handler(var).default_value(var)
 
         if not model_variable:
             model_variable = self._output_variables[varname]
@@ -151,40 +154,6 @@ class PVAServer(multiprocessing.Process):
         if not self._running_indicator.value:
             self._in_queue.put({"protocol": self.protocol, "vars": self._cached_values, "vals": self._input_values})
             self._cached_values = {}
-
-    def _get_default_value(self, variable: Variable) -> Any:
-        """ Returns the default value for the variable """
-        if isinstance(variable, ScalarVariable):
-            return variable.default_value
-        else:
-            return None
-
-    def _build_scalar_type(self, initial, config: dict) -> Tuple[Value, NTScalar]:
-        """
-        Builds a scalar type based on the spec.
-
-        Parameters
-        ----------
-        initial : Any
-            Initial value
-        config : dict
-            Configuration
-
-        Returns
-        -------
-        tuple[Value, NTScalar]
-            Tuple containing the wrapped initia value and the NTScalar type
-        """
-        nt = NTScalar("d", display=True, control=True)
-        initial_value = nt.wrap(initial) if initial else nt.wrap(0.0)
-
-        # Set display parameters
-        initial_value['display']['description'] = config.get('description', '')
-
-        # Start with sensible default for the timestamp
-        self._update_timestamp(initial_value)
-
-        return (initial_value, nt)
 
     def _make_timestamp(self, ts: float) -> Tuple[int, int]:
         """
@@ -203,9 +172,9 @@ class PVAServer(multiprocessing.Process):
         f, i = math.modf(ts)
         return (i, int(f * 1e9))
 
-    def _update_timestamp(self, pv: Value, ts: float = time.time()) -> None:
+    def _update_timestamp(self, pv: Value, ts: float = 0) -> None:
         """
-        Updates the timestamp on a PV structure
+        Updates the timestamp on a PV structure, if it has one
 
         Parameters
         ----------
@@ -214,7 +183,10 @@ class PVAServer(multiprocessing.Process):
         ts : float
             Timestamp in seconds since UNIX epoch
         """
-        sec, nsec = self._make_timestamp(ts)
+        if 'timeStamp' not in pv:
+            return
+
+        sec, nsec = self._make_timestamp(ts if ts > 0 else time.time())
         pv['timeStamp']['secondsPastEpoch'] = sec
         pv['timeStamp']['nanoseconds'] = nsec
 
@@ -312,9 +284,13 @@ class PVAServer(multiprocessing.Process):
                     f"Field {field} for {variable_name} not found in variable list"
                 )
 
-            if isinstance(variable, ScalarVariable):
-                initial, nt = self._build_scalar_type(initial, config)
-                spec.append((field, 'v')) # Using variant here because we can't extract tuple struct desc from the NT types in p4p...
+            handler = type_handler(variable)
+            if handler is None:
+                raise ValueError(f"Unsupported variable type provided: {type(variable)}")
+
+            initial = handler.initial_value(config, variable)
+            spec.append((field, 'v')) # Using variant here because we can't extract tuple struct desc from the NT types in p4p...
+
             structure[field] = initial
 
         # Set default output var value
@@ -342,16 +318,13 @@ class PVAServer(multiprocessing.Process):
             LUME variable
         """
         pvname = config.get("pvname")
-        initial = variable.default_value
 
-        # prepare scalar variable types
-        if isinstance(variable, ScalarVariable):
-            initial, nt = self._build_scalar_type(initial, config)
-        else:
-            raise ValueError(
-                "Unsupported variable type provided: %s",
-                variable.variable_type,
-            )
+        handler = type_handler(variable)
+        if handler is None:
+            raise ValueError(f"Unsupported variable type provided: {type(variable)}")
+
+        # Create an initial Value()
+        initial = handler.initial_value(config, variable)
 
         if variable.name in self._input_variables:
             handler = PVAccessInputHandler(
@@ -359,9 +332,9 @@ class PVAServer(multiprocessing.Process):
                 is_constant=variable.is_constant,
                 server=self,
             )
-            pv = SharedPV(handler=handler, nt=nt, initial=initial)
+            pv = SharedPV(handler=handler, initial=initial)
         else:
-            pv = SharedPV(nt=nt, initial=initial)
+            pv = SharedPV(initial=initial)
 
         # Set default output var value
         self._output_values[variable.name] = initial
@@ -476,6 +449,8 @@ class PVAServer(multiprocessing.Process):
                 )
                 value = output_values[variable.name]
 
+            handler = type_handler(variable)
+
             # update structure or pv
             if parent:
                 self._structures[parent][variable.name]['value'] = value
@@ -490,10 +465,12 @@ class PVAServer(multiprocessing.Process):
                 output_provider = self._providers[pvname]
 
             if output_provider:
-                if isinstance(value, Value):
-                    output_provider.post(value)
-                else:
-                    output_provider.post(value, timestamp=time.time())
+                # Convert to value if it hasn't been already
+                if not isinstance(value, Value):
+                    value = handler.to_value(value)
+
+                self._update_timestamp(value)
+                output_provider.post(value)
 
             # in this case externally hosted
             else:
@@ -541,6 +518,7 @@ class PVAccessInputHandler:
     """
     Handler object that defines the callbacks to execute on put operations to input
     process variables.
+    This will proxy PUT operations into the internal cache.
     """
 
     def __init__(self, pvname: str, is_constant: bool, server: PVAServer):
