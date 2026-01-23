@@ -28,7 +28,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--standalone', action='store_true', help='Spins up an internal EPICS PVA server to simulate the PVs used by this test')
     args = parser.parse_args()
-    
+
+    sim_server = None
+
     # Spin up P4P server if requested
     if args.standalone:
         with open(Path(__file__).parent / "sim_config.yml") as fp:
